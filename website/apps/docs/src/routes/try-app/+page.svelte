@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { env } from '$env/dynamic/public';
 
 	type CopyState = 'idle' | 'done' | 'failed';
 
-	const sharedDemoUrl = 'https://appview.paramx.social';
-	const sharedPdsUrl = 'https://pds.paramx.social';
+	const fallbackSharedDemoUrl = 'https://web.paramx.social.ngrok.pro';
+	const fallbackSharedPdsUrl = 'https://pds.paramx.social.ngrok.pro';
+	const fallbackAndroidApkUrl =
+		'https://pub-dfee4e25e68c4ca397417416b1307bde.r2.dev/para-android-latest.apk';
+	const sharedDemoUrl = env.PUBLIC_SHARED_DEMO_URL?.trim() || fallbackSharedDemoUrl;
+	const sharedPdsUrl = env.PUBLIC_SHARED_PDS_URL?.trim() || fallbackSharedPdsUrl;
+	const androidApkUrl = env.PUBLIC_ANDROID_APK_URL?.trim() || fallbackAndroidApkUrl;
+	const hasAndroidApk = Boolean(androidApkUrl);
+	const androidApkLabel = env.PUBLIC_ANDROID_APK_LABEL?.trim() || 'Download Android APK';
 	const waitlistTemplate = `Hi PARA team,
 
 I'd like access to the current build link.
@@ -24,9 +32,11 @@ Thanks.`;
 			copy: 'Best when you want to inspect the current civic surfaces without waiting for a new package.'
 		},
 		{
-			label: 'Build link waitlist',
-			title: 'Ask for a direct build link',
-			copy: 'Best when you need a packaged build, a newer binary, or a link you can hand to a tester.'
+			label: hasAndroidApk ? 'Android APK' : 'Build link waitlist',
+			title: hasAndroidApk ? 'Download the current Android package' : 'Ask for a direct build link',
+			copy: hasAndroidApk
+				? 'Best when you need the latest hosted Android binary without waiting for a manual handoff.'
+				: 'Best when you need a packaged build, a newer binary, or a link you can hand to a tester.'
 		},
 		{
 			label: 'Run locally',
@@ -56,7 +66,13 @@ Thanks.`;
 		{
 			label: 'Fastest path',
 			value:
-				'Open the shared host or send the build-link request draft if you need something newer.'
+				hasAndroidApk
+					? 'Open the shared host or download the current Android APK directly.'
+					: 'Open the shared host or send the build-link request draft if you need something newer.'
+		},
+		{
+			label: 'Android package',
+			value: hasAndroidApk ? androidApkUrl : 'Configure PUBLIC_ANDROID_APK_URL to expose a hosted APK.'
 		}
 	] as const;
 
@@ -120,7 +136,19 @@ Thanks.`;
 				>
 					Open shared host
 				</a>
-				<a class="app-button app-button-accent" href={buildRequestDraft}>Request build link</a>
+				{#if hasAndroidApk}
+					<a
+						class="app-button app-button-accent"
+						download
+						href={androidApkUrl}
+						rel="noreferrer"
+						target="_blank"
+					>
+						{androidApkLabel}
+					</a>
+				{:else}
+					<a class="app-button app-button-accent" href={buildRequestDraft}>Request build link</a>
+				{/if}
 				<button
 					class="app-button app-button-secondary"
 					onclick={() => copyText(sharedDemoUrl, 'link')}
@@ -136,7 +164,9 @@ Thanks.`;
 
 			<div class="hero-chip-row">
 				<span class="hero-chip">Shared host ready</span>
-				<span class="hero-chip">Build request draft included</span>
+				<span class="hero-chip"
+					>{hasAndroidApk ? 'Android APK hosted' : 'Build request draft included'}</span
+				>
 				<span class="hero-chip">Local stack commands below</span>
 			</div>
 		</div>
@@ -177,11 +207,16 @@ Thanks.`;
 
 	<section class="waitlist-section">
 		<div class="waitlist-copy docs-section-card">
-			<p class="docs-section-kicker">Build link waitlist</p>
-			<h2>Need a build link? Use the request draft.</h2>
+			<p class="docs-section-kicker">{hasAndroidApk ? 'Android package' : 'Build link waitlist'}</p>
+			<h2>{hasAndroidApk ? 'Android build is hosted. Use the request draft for anything else.' : 'Need a build link? Use the request draft.'}</h2>
 			<p>
-				If the shared host is not enough, this is the next-best operational path. The draft below
-				lets you ask for a build link with the details someone on the PARA side will actually need.
+				{#if hasAndroidApk}
+					The current Android package is available directly. Keep the request draft for iOS, private
+					tester handoffs, or when you need a newer internal build than the hosted APK.
+				{:else}
+					If the shared host is not enough, this is the next-best operational path. The draft below
+					lets you ask for a build link with the details someone on the PARA side will actually need.
+				{/if}
 			</p>
 			<ul>
 				{#each requestChecklist as item (item)}
@@ -191,16 +226,31 @@ Thanks.`;
 		</div>
 
 		<div class="waitlist-card">
-			<p class="panel-kicker">Ready-to-send request</p>
-			<h2>Prepare the message before you ask for access.</h2>
+			<p class="panel-kicker">{hasAndroidApk ? 'Fallback request' : 'Ready-to-send request'}</p>
+			<h2>{hasAndroidApk ? 'Use the hosted APK first, then fall back to this request.' : 'Prepare the message before you ask for access.'}</h2>
 			<pre><code>{waitlistTemplate}</code></pre>
 			<p class="waitlist-note">
-				The request draft opens your mail client without assuming a fixed public inbox.
+				{hasAndroidApk
+					? 'The draft stays useful for non-Android requests and for newer internal packages.'
+					: 'The request draft opens your mail client without assuming a fixed public inbox.'}
 			</p>
 			<div class="try-app-cta-row">
-				<a class="app-button app-button-primary" href={buildRequestDraft}>Open request draft</a>
+				{#if hasAndroidApk}
+					<a
+						class="app-button app-button-primary"
+						download
+						href={androidApkUrl}
+						rel="noreferrer"
+						target="_blank"
+					>
+						{androidApkLabel}
+					</a>
+					<a class="app-button app-button-secondary" href={buildRequestDraft}>Open request draft</a>
+				{:else}
+					<a class="app-button app-button-primary" href={buildRequestDraft}>Open request draft</a>
+				{/if}
 				<button
-					class="app-button app-button-secondary"
+					class={`app-button ${hasAndroidApk ? 'app-button-accent' : 'app-button-secondary'}`}
 					onclick={() => copyText(waitlistTemplate, 'template')}
 					type="button"
 				>
