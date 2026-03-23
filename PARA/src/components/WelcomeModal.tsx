@@ -6,7 +6,6 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {FocusGuards, FocusScope} from 'radix-ui/internal'
 
-import {CINZEL_FONT_FAMILY, useCinzelFont} from '#/lib/hooks/useCinzelFont'
 import {logger} from '#/logger'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {Logomark} from '#/view/icons/Logomark'
@@ -32,7 +31,6 @@ export function WelcomeModal({control}: WelcomeModalProps) {
   const {gtMobile} = useBreakpoints()
   const [isExiting, setIsExiting] = useState(false)
   const [signInLinkHovered, setSignInLinkHovered] = useState(false)
-  useCinzelFont()
 
   const fadeOutAndClose = (callback?: () => void) => {
     setIsExiting(true)
@@ -156,10 +154,18 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                       backgroundColor: '#354358',
                       borderColor: '#354358',
                       borderWidth: 1,
+                      ...web({
+                        outlineStyle: 'none',
+                        boxShadow: 'none',
+                      }),
                     }}
                     hoverStyle={{
                       backgroundColor: '#263245',
                       borderColor: '#263245',
+                      ...web({
+                        outlineStyle: 'none',
+                        boxShadow: 'none',
+                      }),
                     }}>
                     <ButtonText>
                       <Trans>Create account</Trans>
@@ -175,7 +181,11 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                     hoverStyle={[a.bg_transparent]}>
                     {({hovered}) => (
                       <ButtonText
-                        style={[hovered && [a.underline], {color: '#006AFF'}]}>
+                        style={[
+                          {
+                            color: hovered ? '#263245' : '#354358',
+                          },
+                        ]}>
                         <Trans>Explore the app</Trans>
                       </ButtonText>
                     )}
@@ -199,11 +209,9 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                         style={[
                           a.font_medium,
                           {
-                            color: '#006AFF',
+                            color: signInLinkHovered ? '#263245' : '#354358',
                             fontSize: undefined,
-                            fontFamily: CINZEL_FONT_FAMILY,
                           },
-                          signInLinkHovered && a.underline,
                         ]}
                         onPress={onPressSignIn}>
                         <Trans>Sign in</Trans>
