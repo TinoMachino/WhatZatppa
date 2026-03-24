@@ -195,17 +195,6 @@
 		width: fit-content;
 	}
 
-	.hero-title {
-		margin: 0;
-		font-family: var(--ps-font-mono);
-		font-size: clamp(4rem, 8vw, 6.3rem);
-		font-weight: 500;
-		line-height: 0.88;
-		letter-spacing: -0.05em;
-		text-transform: uppercase;
-		color: #ffffff;
-	}
-
 	.hero-tagline {
 		margin: -0.1rem 0 0;
 		font-family: var(--ps-font-mono);

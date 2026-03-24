@@ -2,8 +2,13 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import StatusPill from '$lib/components/StatusPill.svelte';
+	import { openSourceRepos } from '$lib/content/site';
 
 	let { children, data } = $props();
+
+	function isSectionActive(href: string) {
+		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+	}
 </script>
 
 <div class="docs-shell">
@@ -21,12 +26,34 @@
 				<p class="sidebar-title">Sections</p>
 				<div class="nav-list">
 					{#each data.primaryNav as item (item.href)}
-						<a class:active={page.url.pathname === item.href} href={resolve(item.href)}>
+						<a class:active={isSectionActive(item.href)} href={resolve(item.href)}>
 							{item.label}
 						</a>
 					{/each}
 				</div>
 			</nav>
+
+			<div class="sidebar-block">
+				<p class="sidebar-title">Reader paths</p>
+				<div class="nav-list compact">
+					{#each data.readerNav as item (item.href)}
+						<a class:active={page.url.pathname === item.href} href={resolve(item.href)}>
+							{item.label}
+						</a>
+					{/each}
+				</div>
+			</div>
+
+			<div class="sidebar-block">
+				<p class="sidebar-title">Product flows</p>
+				<div class="nav-list compact">
+					{#each data.flowNav as item (item.href)}
+						<a class:active={isSectionActive(item.href)} href={resolve(item.href)}>
+							{item.label}
+						</a>
+					{/each}
+				</div>
+			</div>
 
 			<div class="sidebar-block">
 				<p class="sidebar-title">Schemas</p>
@@ -53,6 +80,15 @@
 						<StatusPill status={note.status} />
 					</div>
 				{/each}
+			</div>
+
+			<div class="sidebar-block">
+				<p class="sidebar-title">Open source repos</p>
+				<div class="nav-list compact">
+					{#each openSourceRepos as repo (repo.href)}
+						<a href={repo.href} target="_blank" rel="noreferrer">{repo.label}</a>
+					{/each}
+				</div>
 			</div>
 		</aside>
 

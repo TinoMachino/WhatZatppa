@@ -1,6 +1,7 @@
-<script lang="ts">
+	<script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { openSourceRepos } from '$lib/content/site';
 	import '@parasocial/ui/tokens.css';
 	import favicon from '$lib/assets/favicon.png';
 	import logomark from '$lib/assets/logomark.svg';
@@ -65,6 +66,11 @@
 					Browse the thesis, product surfaces, trust model, app access, and schema reference from
 					any entry point.
 				</p>
+				<div class="footer-repo-list">
+					{#each openSourceRepos as repo (repo.href)}
+						<a href={repo.href} target="_blank" rel="noreferrer">{repo.label} repo</a>
+					{/each}
+				</div>
 			</div>
 			<div class="footer-links">
 				<a href={resolve('/docs')}>Docs</a>
@@ -186,7 +192,6 @@
 		text-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 	}
 
-	.site-brand,
 	.footer-mark {
 		display: inline-flex;
 		align-items: center;
@@ -261,6 +266,22 @@
 		margin: 0.45rem 0 0;
 		color: #a1a1aa;
 		line-height: 1.65;
+	}
+
+	.footer-repo-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.85rem;
+		margin-top: 0.9rem;
+	}
+
+	.footer-repo-list a {
+		color: #5b5a66;
+		font-weight: 600;
+	}
+
+	.footer-repo-list a:hover {
+		color: #2e2033;
 	}
 
 	@media (max-width: 960px) {

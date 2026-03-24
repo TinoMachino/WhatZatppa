@@ -2,6 +2,24 @@ export const docsBase = '/docs';
 export const aboutBase = '/about';
 export const productTourHref = '/tour';
 
+export const openSourceRepos = [
+	{
+		label: 'Website',
+		href: 'https://github.com/TinoMachino/para-website',
+		copy: 'Public docs and website workspace'
+	},
+	{
+		label: 'App',
+		href: 'https://github.com/TinoMachino/para-app',
+		copy: 'Public PARA client workspace'
+	},
+	{
+		label: 'Backend',
+		href: 'https://github.com/TinoMachino/WhatZatppa',
+		copy: 'Public WhatZatppa backend workspace'
+	}
+] as const;
+
 export const heroPrimaryAction = {
 	label: 'Take the Product Tour',
 	href: productTourHref

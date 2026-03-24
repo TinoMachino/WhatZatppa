@@ -1,8 +1,16 @@
 import architectureNotesJson from "../fixtures/architecture/current.json";
 import planMilestonesJson from "../fixtures/plan/current.json";
 import actorDefsJson from "../fixtures/schemas/com.para.actor.defs.json";
+import actorGetProfileStatsJson from "../fixtures/schemas/com.para.actor.getProfileStats.json";
+import civicDefsJson from "../fixtures/schemas/com.para.civic.defs.json";
+import civicGetCabildeoJson from "../fixtures/schemas/com.para.civic.getCabildeo.json";
+import civicListCabildeosJson from "../fixtures/schemas/com.para.civic.listCabildeos.json";
 import communityDefsJson from "../fixtures/schemas/com.para.community.defs.json";
+import communityGetGovernanceJson from "../fixtures/schemas/com.para.community.getGovernance.json";
+import highlightDefsJson from "../fixtures/schemas/com.para.highlight.defs.json";
+import highlightListHighlightsJson from "../fixtures/schemas/com.para.highlight.listHighlights.json";
 import postJson from "../fixtures/schemas/com.para.post.json";
+import socialPostMetaJson from "../fixtures/schemas/com.para.social.postMeta.json";
 import statusJson from "../fixtures/schemas/com.para.status.json";
 import schemaIndexJson from "../fixtures/schemas/index.json";
 import { z } from "zod";
@@ -30,6 +38,14 @@ export const schemaDocumentSchema = schemaIndexEntrySchema.extend({
   examples: z.array(z.string()).optional(),
   relationships: z.array(z.string()).optional(),
   constraints: z.array(z.string()).optional(),
+  lifecycle: z.array(z.string()).optional(),
+  writers: z.array(z.string()).optional(),
+  readers: z.array(z.string()).optional(),
+  routes: z.array(z.string()).optional(),
+  xrpcMethods: z.array(z.string()).optional(),
+  indexing: z.array(z.string()).optional(),
+  moderation: z.array(z.string()).optional(),
+  productSurfaces: z.array(z.string()).optional(),
   fields: z.array(fieldDefinitionSchema),
 });
 
@@ -57,6 +73,14 @@ const schemaDocuments = [
   postJson,
   communityDefsJson,
   actorDefsJson,
+  actorGetProfileStatsJson,
+  civicDefsJson,
+  civicGetCabildeoJson,
+  civicListCabildeosJson,
+  communityGetGovernanceJson,
+  highlightDefsJson,
+  highlightListHighlightsJson,
+  socialPostMetaJson,
   statusJson,
 ].map((schema) => schemaDocumentSchema.parse(schema));
 

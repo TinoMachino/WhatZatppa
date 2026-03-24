@@ -13,6 +13,14 @@
 	PARA documentation should read like documentation, not like a backlog or a pitch deck. Browse the thesis, the product model, trust and safety, app access, or the schema reference in whatever order fits what you want to understand.
 
 	<div class="docs-link-grid">
+		<a class="docs-link-card" href="/docs/getting-started">
+			<strong>Getting started</strong>
+			<span>Choose the shortest path for product readers, engineers, contributors, or app explorers.</span>
+		</a>
+		<a class="docs-link-card" href="/docs/how-it-works">
+			<strong>How it works</strong>
+			<span>Read the route-level docs for communities, RAQ, cabildeo, highlights, map, and messages.</span>
+		</a>
 		<a class="docs-link-card" href="/about">
 			<strong>About</strong>
 			<span>Read the political thesis, the Mexico origin story, and the product worldview.</span>
@@ -33,16 +41,27 @@
 			<strong>Schema reference</strong>
 			<span>Browse the curated `com.para.*` reference pages and their implementation framing.</span>
 		</a>
+		<a class="docs-link-card" href="/docs/glossary">
+			<strong>Glossary</strong>
+			<span>Use the canonical vocabulary for RAQ, cabildeo, matters, flairs, and civic intelligence.</span>
+		</a>
+		<a class="docs-link-card" href="/docs/status">
+			<strong>Status guide</strong>
+			<span>See what the site means by implemented, partial, experimental, and thesis-only.</span>
+		</a>
 	</div>
 </section>
 
 ## What lives here
 
 - An About page that explains the political thesis: identity, flairs, voting, RAQ, agents, and anonymity
+- A Getting started page with short paths for readers, engineers, contributors, and app explorers
+- A How it works section that documents the actual civic route families
 - A Product page that shows the product visually: UI gallery, posts, maps, and civic surface examples
 - A standalone Trust and safety page that explains identity, moderation, verification, privacy, account, and saved-content behavior
 - A standalone Try app page that centralizes the current shared host, build-link request flow, and local run commands
-- Manual schema reference for selected `com.para.*` records and definitions, with backend framing appended there
+- A glossary and explicit maturity guide so the docs vocabulary and status language stay consistent
+- Manual schema reference for selected `com.para.*` records, queries, and definitions, with backend framing appended there
 - A secondary roadmap page for ongoing docs work, outside the main navigation
 
 <div class="docs-editorial-block">
@@ -145,9 +164,13 @@ The first version of the site described a generic PARA backend. The second versi
 
 ## Read next
 
+- Read the [Getting started page](/docs/getting-started)
+- Read [How it works](/docs/how-it-works)
 - Read the [About page](/about)
 - Read the [Product page](/docs/product)
 - Read the [Trust and safety page](/trust-and-safety)
 - Read the [Try app page](/try-app)
+- Read the [Glossary](/docs/glossary)
+- Read the [Status guide](/docs/status)
 - Browse the [schema reference](/docs/schemas)
 - Browse the [roadmap](/docs/roadmap) for ongoing documentation work

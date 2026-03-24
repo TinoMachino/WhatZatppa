@@ -54,6 +54,10 @@
 					<dt>Website source path</dt>
 					<dd><code>{data.schema.sourcePath ?? 'TBD'}</code></dd>
 				</div>
+				<div>
+					<dt>Product surfaces</dt>
+					<dd>{data.schema.productSurfaces?.join(', ') ?? 'TBD'}</dd>
+				</div>
 			</dl>
 		</div>
 
@@ -80,6 +84,103 @@
 				</ul>
 			{:else}
 				<p class="empty">No published relationships yet.</p>
+			{/if}
+		</div>
+	</div>
+</section>
+
+<section class="detail-grid secondary-grid">
+	<div class="docs-panel detail-card">
+		<h2>Lifecycle</h2>
+		{#if data.schema.lifecycle?.length}
+			<ul>
+				{#each data.schema.lifecycle as item (item)}
+					<li>{item}</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="empty">No lifecycle notes published yet.</p>
+		{/if}
+	</div>
+
+	<div class="meta-column">
+		<div class="docs-panel detail-card">
+			<h2>Writers</h2>
+			{#if data.schema.writers?.length}
+				<ul>
+					{#each data.schema.writers as item (item)}
+						<li>{item}</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="empty">No writer notes published yet.</p>
+			{/if}
+		</div>
+
+		<div class="docs-panel detail-card">
+			<h2>Readers</h2>
+			{#if data.schema.readers?.length}
+				<ul>
+					{#each data.schema.readers as item (item)}
+						<li>{item}</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="empty">No reader notes published yet.</p>
+			{/if}
+		</div>
+	</div>
+</section>
+
+<section class="detail-grid secondary-grid">
+	<div class="docs-panel detail-card">
+		<h2>Routes</h2>
+		{#if data.schema.routes?.length}
+			<ul>
+				{#each data.schema.routes as route (route)}
+					<li><code>{route}</code></li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="empty">No route bindings published yet.</p>
+		{/if}
+	</div>
+
+	<div class="meta-column">
+		<div class="docs-panel detail-card">
+			<h2>XRPC methods</h2>
+			{#if data.schema.xrpcMethods?.length}
+				<ul>
+					{#each data.schema.xrpcMethods as method (method)}
+						<li><code>{method}</code></li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="empty">No xrpc notes published yet.</p>
+			{/if}
+		</div>
+
+		<div class="docs-panel detail-card">
+			<h2>Indexing and moderation</h2>
+			{#if data.schema.indexing?.length || data.schema.moderation?.length}
+				{#if data.schema.indexing?.length}
+					<p class="subhead">Indexing</p>
+					<ul>
+						{#each data.schema.indexing as item (item)}
+							<li>{item}</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if data.schema.moderation?.length}
+					<p class="subhead">Moderation</p>
+					<ul>
+						{#each data.schema.moderation as item (item)}
+							<li>{item}</li>
+						{/each}
+					</ul>
+				{/if}
+			{:else}
+				<p class="empty">No indexing or moderation notes published yet.</p>
 			{/if}
 		</div>
 	</div>
@@ -122,6 +223,10 @@
 
 	.detail-card {
 		padding: 1.35rem;
+	}
+
+	.secondary-grid {
+		margin-top: 1rem;
 	}
 
 	.field-list {
@@ -167,6 +272,15 @@
 	dd {
 		color: #cdc8d8;
 		line-height: 1.7;
+	}
+
+	.subhead {
+		margin: 0 0 0.45rem;
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: #9e97ae;
 	}
 
 	.field-head span {

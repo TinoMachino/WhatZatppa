@@ -3,13 +3,14 @@
 	import GlobeAnimation from '$lib/components/GlobeAnimation.svelte';
 	import {
 		aboutBase,
-		heroPrimaryAction,
-		heroSecondaryAction,
 		docsBase,
 		developerPromises,
+		heroPrimaryAction,
+		heroSecondaryAction,
 		landingFeatures,
 		landingPillars,
-		landingSignals
+		landingSignals,
+		openSourceRepos
 	} from '$lib/content/site';
 </script>
 
@@ -182,6 +183,13 @@
 				<p class="footer-copy">
 					One same-origin path from the homepage into product framing, roadmap, and schema docs.
 				</p>
+				<div class="repo-links">
+					{#each openSourceRepos as repo (repo.href)}
+						<a href={repo.href} class="hover-link" target="_blank" rel="noreferrer">
+							{repo.label} repo
+						</a>
+					{/each}
+				</div>
 			</div>
 			<div class="footer-links">
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
@@ -343,7 +351,8 @@
 
 	.cta-row,
 	.chip-list,
-	.footer-links {
+	.footer-links,
+	.repo-links {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.85rem;
@@ -594,6 +603,10 @@
 		font-family: var(--ps-font-display);
 		font-size: 2rem;
 		font-weight: 800;
+	}
+
+	.repo-links {
+		margin-top: 0.85rem;
 	}
 
 	.fade-in {
