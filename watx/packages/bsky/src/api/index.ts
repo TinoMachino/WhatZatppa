@@ -82,6 +82,9 @@ import getUnspeccedSuggestedFeeds from './app/bsky/unspecced/getSuggestedFeeds'
 import getSuggestedOnboardingUsers from './app/bsky/unspecced/getSuggestedOnboardingUsers'
 import getSuggestedStarterPacks from './app/bsky/unspecced/getSuggestedStarterPacks'
 import getSuggestedUsers from './app/bsky/unspecced/getSuggestedUsers'
+import getSuggestedUsersForDiscover from './app/bsky/unspecced/getSuggestedUsersForDiscover'
+import getSuggestedUsersForExplore from './app/bsky/unspecced/getSuggestedUsersForExplore'
+import getSuggestedUsersForSeeMore from './app/bsky/unspecced/getSuggestedUsersForSeeMore'
 import getTaggedSuggestions from './app/bsky/unspecced/getTaggedSuggestions'
 import getTrendingTopics from './app/bsky/unspecced/getTrendingTopics'
 import getTrends from './app/bsky/unspecced/getTrends'
@@ -97,7 +100,10 @@ import getParaProfileStats from './com/para/actor/getProfileStats'
 import getParaCabildeo from './com/para/civic/getCabildeo'
 import listParaCabildeoPositions from './com/para/civic/listCabildeoPositions'
 import listParaCabildeos from './com/para/civic/listCabildeos'
+import putParaLivePresence from './com/para/civic/putLivePresence'
+import getParaCommunityBoard from './com/para/community/getBoard'
 import getParaCommunityGovernance from './com/para/community/getGovernance'
+import listParaCommunityBoards from './com/para/community/listBoards'
 import getParaAuthorFeed from './com/para/feed/getAuthorFeed'
 import getParaPostThread from './com/para/feed/getPostThread'
 import getParaPosts from './com/para/feed/getPosts'
@@ -184,6 +190,9 @@ export default function (server: Server, ctx: AppContext) {
   getSuggestedOnboardingUsers(server, ctx)
   getSuggestedStarterPacks(server, ctx)
   getSuggestedUsers(server, ctx)
+  getSuggestedUsersForDiscover(server, ctx)
+  getSuggestedUsersForExplore(server, ctx)
+  getSuggestedUsersForSeeMore(server, ctx)
   getUnspeccedSuggestedFeeds(server, ctx)
   getLabelerServices(server, ctx)
   searchActors(server, ctx)
@@ -220,7 +229,10 @@ export default function (server: Server, ctx: AppContext) {
   listParaCabildeos(server, ctx)
   getParaCabildeo(server, ctx)
   listParaCabildeoPositions(server, ctx)
+  putParaLivePresence(server, ctx)
+  getParaCommunityBoard(server, ctx)
   getParaCommunityGovernance(server, ctx)
+  listParaCommunityBoards(server, ctx)
   listParaHighlights(server, ctx)
   getParaHighlight(server, ctx)
   getParaAuthorFeed(server, ctx)

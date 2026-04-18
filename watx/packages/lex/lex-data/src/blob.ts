@@ -1,4 +1,4 @@
-import { Cid, RawCid, ifCid, validateCidString } from './cid.js'
+import { Cid, RawCid, ifCid, parseCid, validateCidString } from './cid.js'
 import { LexValue } from './lex.js'
 import { isPlainObject, isPlainProto } from './object.js'
 
@@ -34,6 +34,12 @@ export type BlobRef<Ref extends Cid = Cid> = {
 }
 
 /**
+ * Compatibility alias for callers that still refer to the typed blob shape
+ * explicitly.
+ */
+export type TypedBlobRef<Ref extends Cid = Cid> = BlobRef<Ref>
+
+/**
  * Options for validating a {@link BlobRef}.
  */
 export type BlobRefCheckOptions = {
@@ -58,6 +64,49 @@ export type InferCheckedBlobRef<TOptions extends BlobRefCheckOptions> =
     : { strict: boolean } extends TOptions
       ? BlobRef
       : BlobRef<RawCid>
+
+/**
+ * Compatibility alias for callers that still refer to the typed-only helper.
+ */
+export type InferTypedBlobRef<TOptions extends BlobRefCheckOptions> =
+  InferCheckedBlobRef<TOptions>
+
+export function getBlobMime(blob: BlobRef | LegacyBlobRef): string
+export function getBlobMime(
+  blob?: BlobRef | LegacyBlobRef,
+): string | undefined
+export function getBlobMime(
+  blob?: BlobRef | LegacyBlobRef,
+): string | undefined {
+  return blob?.mimeType
+}
+
+export function getBlobSize(blob: BlobRef | LegacyBlobRef): number | undefined {
+  if ('$type' in blob && blob.size >= 0) return blob.size
+  return undefined
+}
+
+export function getBlobCid(blob: BlobRef | LegacyBlobRef): Cid
+export function getBlobCid(
+  blob?: BlobRef | LegacyBlobRef,
+): Cid | undefined
+export function getBlobCid(
+  blob?: BlobRef | LegacyBlobRef,
+): Cid | undefined {
+  if (!blob) return undefined
+  return '$type' in blob ? blob.ref : parseCid(blob.cid)
+}
+
+export function getBlobCidString(blob: BlobRef | LegacyBlobRef): string
+export function getBlobCidString(
+  blob?: BlobRef | LegacyBlobRef,
+): string | undefined
+export function getBlobCidString(
+  blob?: BlobRef | LegacyBlobRef,
+): string | undefined {
+  if (!blob) return undefined
+  return '$type' in blob ? blob.ref.toString() : blob.cid
+}
 
 /**
  * Type guard to check if a value is a valid {@link BlobRef}.
@@ -143,6 +192,22 @@ export function isBlobRef(
   }
 
   return true
+}
+
+export function isTypedBlobRef(input: unknown): input is TypedBlobRef<RawCid>
+export function isTypedBlobRef<TOptions extends BlobRefCheckOptions>(
+  input: unknown,
+  options: TOptions,
+): input is InferTypedBlobRef<TOptions>
+export function isTypedBlobRef(
+  input: unknown,
+  options?: BlobRefCheckOptions,
+): input is TypedBlobRef<RawCid>
+export function isTypedBlobRef(
+  input: unknown,
+  options?: BlobRefCheckOptions,
+): input is TypedBlobRef {
+  return isBlobRef(input, options)
 }
 
 /**

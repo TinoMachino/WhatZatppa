@@ -130,8 +130,10 @@ export function PostControlButtonText({style, ...props}: TextProps) {
     <Text
       style={[
         color,
+        a.user_select_none,
         big ? a.text_md : a.text_sm,
         active && a.font_semi_bold,
+        {includeFontPadding: false, textAlignVertical: 'center'},
         style,
       ]}
       {...props}

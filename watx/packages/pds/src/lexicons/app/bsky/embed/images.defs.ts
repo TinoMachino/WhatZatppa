@@ -38,6 +38,10 @@ export const $assert = /*#__PURE__*/ main.assert.bind(main),
 
 type Image = {
   $type?: 'app.bsky.embed.images#image'
+
+  /**
+   * The raw image file. May be up to 2 MB, formerly limited to 1 MB.
+   */
   image: l.BlobRef
 
   /**
@@ -55,7 +59,7 @@ const image = l.typedObject<Image>(
   l.object({
     image: l.blob({
       accept: ['image/*'],
-      maxSize: 1000000,
+      maxSize: 2000000,
       allowLegacy: false,
     }),
     alt: l.string(),

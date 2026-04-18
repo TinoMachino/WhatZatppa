@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.sendMessageBatch'
 
 export { $nsid }
 
+/** Sends a batch of messages to a conversation. */
 const main = l.procedure(
   $nsid,
   l.params(),
@@ -22,6 +23,7 @@ const main = l.procedure(
       l.ref<ConvoDefs.MessageView>((() => ConvoDefs.messageView) as any),
     ),
   }),
+  ['ConvoLocked', 'InvalidConvo'],
 )
 export { main }
 

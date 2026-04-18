@@ -2,6 +2,7 @@ import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.confirmEmail({
@@ -21,8 +22,9 @@ export default function (server: Server, ctx: AppContext) {
         throw new InvalidRequestError('user not found', 'AccountNotFound')
       }
 
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.server.confirmEmail(
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.server.confirmEmail.main,
           input.body,
           await ctx.entrywayAuthHeaders(
             req,

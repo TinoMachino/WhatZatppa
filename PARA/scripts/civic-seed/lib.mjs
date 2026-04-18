@@ -1,11 +1,27 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {TID} from '@atproto/common-web'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const FAKE_STRONG_REF_CID =
   'bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku'
+const PROFILE_CREDENTIALS = {
+  'dev-env': path.resolve(__dirname, 'profiles', 'dev-env.credentials.json'),
+  'local-dev': path.resolve(__dirname, 'profiles', 'dev-env.credentials.json'),
+}
+const TID_COLLECTIONS = new Set([
+  'app.bsky.feed.like',
+  'app.bsky.feed.post',
+  'app.bsky.feed.repost',
+  'app.bsky.graph.follow',
+  'app.bsky.graph.verification',
+  'com.para.civic.cabildeo',
+  'com.para.civic.delegation',
+  'com.para.civic.position',
+  'com.para.civic.vote',
+])
 
 export function defaultManifestPath() {
   return path.resolve(__dirname, 'manifest.v1.json')
@@ -24,6 +40,8 @@ export function resolveCliConfig(argv, env = process.env) {
     service: env.PARA_CIVIC_SEED_SERVICE || 'http://localhost:2583',
     manifestPath: env.PARA_CIVIC_SEED_MANIFEST || defaultManifestPath(),
     credentialsPath: env.PARA_CIVIC_SEED_CREDENTIALS || null,
+    profile: env.PARA_CIVIC_SEED_PROFILE || null,
+    introspectUrl: env.PARA_CIVIC_SEED_INTROSPECT_URL || null,
     createAccounts: parseBoolEnv(env.PARA_CIVIC_SEED_CREATE_ACCOUNTS, true),
     dryRun: false,
     verbose: false,
@@ -40,6 +58,12 @@ export function resolveCliConfig(argv, env = process.env) {
         break
       case '--credentials':
         config.credentialsPath = requiredValue(args, ++i, '--credentials')
+        break
+      case '--profile':
+        config.profile = requiredValue(args, ++i, '--profile')
+        break
+      case '--introspect-url':
+        config.introspectUrl = requiredValue(args, ++i, '--introspect-url')
         break
       case '--create-accounts':
         config.createAccounts = true
@@ -61,9 +85,45 @@ export function resolveCliConfig(argv, env = process.env) {
   config.manifestPath = path.resolve(config.manifestPath)
   if (config.credentialsPath) {
     config.credentialsPath = path.resolve(config.credentialsPath)
+  } else if (config.profile) {
+    config.credentialsPath = resolveProfileCredentialsPath(config.profile)
+  }
+  if (config.introspectUrl) {
+    config.introspectUrl = config.introspectUrl.replace(/\/+$/, '')
   }
 
   return config
+}
+
+export async function syncAppViewFromIntrospection(
+  introspectUrl,
+  handles = [],
+  fetchImpl = fetch,
+) {
+  const response = await fetchImpl(
+    `${introspectUrl}/process-all?timeoutMs=60000`,
+    {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({handles}),
+    },
+  )
+
+  let payload = null
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+
+  if (!response.ok || payload?.ok === false) {
+    const errorMessage =
+      payload?.error ||
+      `Introspection sync failed with HTTP ${response.status}`
+    throw new Error(errorMessage)
+  }
+
+  return payload
 }
 
 export async function loadManifest(filePath) {
@@ -310,7 +370,7 @@ export function buildSeedOperations({manifest, actorsByAlias}) {
     throw new Error(`Unsupported bulk scenario type: ${scenario.type}`)
   }
 
-  return operations
+  return normalizeTidOperations(operations)
 }
 
 export function toResetOperations(operations) {
@@ -945,6 +1005,7 @@ function buildPostOperation({entry, actorsByAlias, group, context}) {
     did: actor.did,
     collection: 'app.bsky.feed.post',
     rkey: entry.rkey,
+    createdAt: entry.createdAt,
     refKey: resolvePostRefKey(entry),
     record: buildPostRecord(entry),
   }
@@ -958,6 +1019,7 @@ function buildReplyPostOperation({entry, actorsByAlias, group, context}) {
     did: actor.did,
     collection: 'app.bsky.feed.post',
     rkey: entry.rkey,
+    createdAt: entry.createdAt,
     refKey: resolvePostRefKey(entry),
     recordBuilder(runtimeState) {
       const parent = resolveRecordRef(
@@ -985,6 +1047,7 @@ function buildLikeOperation({entry, actorsByAlias, group, context}) {
     actorAlias: entry.actor,
     did: actor.did,
     collection: 'app.bsky.feed.like',
+    createdAt: entry.createdAt,
     rkey:
       entry.rkey ||
       `seed-like-${sanitizeRkeyComponent(entry.actor)}-${sanitizeRkeyComponent(entry.subjectRef)}`,
@@ -1008,6 +1071,7 @@ function buildRepostOperation({entry, actorsByAlias, group, context}) {
     actorAlias: entry.actor,
     did: actor.did,
     collection: 'app.bsky.feed.repost',
+    createdAt: entry.createdAt,
     rkey:
       entry.rkey ||
       `seed-repost-${sanitizeRkeyComponent(entry.actor)}-${sanitizeRkeyComponent(entry.subjectRef)}`,
@@ -1106,6 +1170,39 @@ function compactObject(value) {
   return output
 }
 
+function normalizeTidOperations(operations) {
+  const counters = new Map()
+  return operations.map((op, index) => {
+    if (!TID_COLLECTIONS.has(op.collection) || isValidTid(op.rkey)) {
+      return op
+    }
+
+    const createdAt = op.createdAt || op.record?.createdAt
+    const createdMs = Date.parse(createdAt || '')
+    const baseMicros = Number.isFinite(createdMs)
+      ? createdMs * 1000
+      : Date.parse('2026-01-01T00:00:00.000Z') * 1000 + index
+    const counterKey = `${op.did}:${op.collection}:${baseMicros}`
+    const offset = counters.get(counterKey) || 0
+    counters.set(counterKey, offset + 1)
+
+    return {
+      ...op,
+      rkey: TID.fromTime(baseMicros + offset, 0).toString(),
+    }
+  })
+}
+
+function isValidTid(value) {
+  if (!value) return false
+  try {
+    TID.fromStr(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function sanitizeRkeyComponent(value) {
   return String(value)
     .toLowerCase()
@@ -1166,6 +1263,16 @@ function parseBoolEnv(value, fallback) {
   if (value === '1' || value === 'true') return true
   if (value === '0' || value === 'false') return false
   return fallback
+}
+
+function resolveProfileCredentialsPath(profile) {
+  const profilePath = PROFILE_CREDENTIALS[profile]
+  if (!profilePath) {
+    throw new Error(
+      `Unknown seed profile "${profile}". Available profiles: ${Object.keys(PROFILE_CREDENTIALS).join(', ')}`,
+    )
+  }
+  return profilePath
 }
 
 function requiredValue(args, index, flag) {

@@ -1,13 +1,25 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react'
-import {Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native'
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
-import {buildSearchIndex, computeCentroid, filterSearchIndex} from '#/lib/constants/mapHelpers'
+import {
+  buildSearchIndex,
+  computeCentroid,
+  filterSearchIndex,
+} from '#/lib/constants/mapHelpers'
 import {normalizeMexicoStateName} from '#/lib/constants/mexico'
+import {getCitiesWithCoordinatesForState} from '#/lib/constants/mexicoCityCoordinates'
+import {type CityData, MEXICO_CITY_DATA} from '#/lib/constants/mexicoCityData'
 import * as MexicoGeoJSON from '#/lib/constants/mexicoGeoJSON.json'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {POST_FLAIRS} from '#/lib/tags'
@@ -53,7 +65,27 @@ type GeoFeature = {
 type MapScreenImplProps = Props & {
   MapViewComponent?: any
   PolygonComponent?: any
+  MarkerComponent?: any
+  MarkerClustererComponent?: any
   unavailableMessage?: string
+}
+
+type MapRegion = typeof INITIAL_REGION
+
+type PreparedStateFeature = {
+  name: string
+  normalizedName: string
+  centroid: Coordinate
+  coordinates: Coordinate[]
+  polygons: Array<{
+    key: string
+    coordinates: Coordinate[]
+  }>
+}
+
+type CityMarkerDatum = CityData & {
+  stateName: string
+  coordinate: Coordinate
 }
 
 function featureName(feature: GeoFeature) {
@@ -83,6 +115,36 @@ function getFeatureCoordinates(feature: GeoFeature): Coordinate[][] {
   }
 
   return []
+}
+
+function getCitiesForState(stateName: string) {
+  const match = Object.entries(MEXICO_CITY_DATA).find(
+    ([candidate]) =>
+      normalizeMexicoStateName(candidate) ===
+      normalizeMexicoStateName(stateName),
+  )
+  return match?.[1] || []
+}
+
+function getPartyColor(party: string) {
+  switch (party) {
+    case 'Morena':
+      return '#8B1538'
+    case 'PAN':
+      return '#003087'
+    case 'PRI':
+      return '#00923F'
+    case 'MC':
+      return '#FF6B00'
+    case 'PVEM':
+      return '#228B22'
+    case 'PT':
+      return '#FF0000'
+    case 'PRD':
+      return '#FFD700'
+    default:
+      return '#5B6B84'
+  }
 }
 
 function getLayerFillColor({
@@ -126,11 +188,7 @@ function getLayerFillColor({
   return `${theme.palette.primary_500}3A`
 }
 
-function MapUnavailable({
-  message,
-}: {
-  message: string
-}) {
+function MapUnavailable({message}: {message: string}) {
   const t = useTheme()
 
   return (
@@ -169,6 +227,8 @@ function MapUnavailable({
 export function MapScreenImpl({
   MapViewComponent,
   PolygonComponent,
+  MarkerComponent,
+  MarkerClustererComponent,
   unavailableMessage,
 }: MapScreenImplProps) {
   const {_: translate} = useLingui()
@@ -177,10 +237,15 @@ export function MapScreenImpl({
   const insets = useSafeAreaInsets()
   const mapRef = useRef<any>(null)
 
-  const [selectedState, setSelectedState] = useState<{name: string} | null>(null)
+  const [selectedState, setSelectedState] = useState<{name: string} | null>(
+    null,
+  )
   const [showCities, setShowCities] = useState(false)
   const [showDistricts, setShowDistricts] = useState(false)
-  const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(null)
+  const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(
+    null,
+  )
+  const [selectedCityName, setSelectedCityName] = useState<string | null>(null)
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeLayer, setActiveLayer] = useState<MapLayer>('states')
@@ -189,27 +254,109 @@ export function MapScreenImpl({
     'Matter',
   )
   const [selectedDiscourseItem, setSelectedDiscourseItem] = useState('')
+  const [mapRegion, setMapRegion] = useState<MapRegion>(INITIAL_REGION)
 
   const geoFeatures = useMemo(
     () => ((MexicoGeoJSON as any).features || []) as GeoFeature[],
     [],
   )
 
-  const searchIndex = useMemo(() => buildSearchIndex(geoFeatures), [geoFeatures])
+  const preparedStateFeatures = useMemo<PreparedStateFeature[]>(
+    () =>
+      geoFeatures.map((feature, index) => {
+        const name = featureName(feature)
+        const polygons = getFeatureCoordinates(feature).map(
+          (coordinates, polygonIndex) => ({
+            key: `${name}-${index}-${polygonIndex}`,
+            coordinates,
+          }),
+        )
+
+        return {
+          name,
+          normalizedName: normalizeMexicoStateName(name),
+          centroid: computeCentroid(feature),
+          coordinates: polygons.flatMap(polygon => polygon.coordinates),
+          polygons,
+        }
+      }),
+    [geoFeatures],
+  )
+
+  const searchIndex = useMemo(
+    () => buildSearchIndex(geoFeatures),
+    [geoFeatures],
+  )
   const searchResults = useMemo(
     () => filterSearchIndex(searchIndex, searchQuery, 10),
     [searchIndex, searchQuery],
   )
 
   const stateFeaturesByName = useMemo(() => {
-    const map = new Map<string, GeoFeature>()
+    const map = new Map<string, PreparedStateFeature>()
 
-    for (const feature of geoFeatures) {
-      map.set(normalizeMexicoStateName(featureName(feature)), feature)
+    for (const feature of preparedStateFeatures) {
+      map.set(feature.normalizedName, feature)
     }
 
     return map
-  }, [geoFeatures])
+  }, [preparedStateFeatures])
+
+  const selectedStateCities = useMemo<CityMarkerDatum[]>(() => {
+    if (!selectedState) return []
+
+    return getCitiesWithCoordinatesForState(
+      selectedState.name,
+      getCitiesForState(selectedState.name),
+    ).map(city => ({
+      ...city,
+      stateName: selectedState.name,
+    }))
+  }, [selectedState])
+
+  const focusCity = useCallback(
+    (stateName: string, cityName: string) => {
+      const cities = getCitiesWithCoordinatesForState(
+        stateName,
+        getCitiesForState(stateName),
+      )
+      const city = cities.find(item => item.name === cityName)
+      const preparedState = stateFeaturesByName.get(
+        normalizeMexicoStateName(stateName),
+      )
+
+      setSelectedState({name: preparedState?.name || stateName})
+      setActiveLayer('cities')
+      setShowCities(true)
+      setShowDistricts(false)
+      setSelectedDistrictId(null)
+      setSelectedCityName(cityName)
+
+      if (!city) {
+        if (preparedState?.coordinates.length) {
+          mapRef.current?.fitToCoordinates?.(preparedState.coordinates, {
+            edgePadding: {top: 48, right: 48, bottom: 48, left: 48},
+            animated: true,
+          })
+        }
+        return
+      }
+
+      const region = {
+        latitude: city.coordinate.latitude,
+        longitude: city.coordinate.longitude,
+        latitudeDelta: 1.2,
+        longitudeDelta: 1.2,
+      }
+
+      mapRef.current?.animateToRegion?.(region, 500)
+      mapRef.current?.animateCamera?.({
+        center: city.coordinate,
+        zoom: 9.5,
+      })
+    },
+    [stateFeaturesByName],
+  )
 
   const focusState = useCallback(
     (
@@ -219,18 +366,30 @@ export function MapScreenImpl({
         districtId?: number | null
       } = {},
     ) => {
-      const feature = stateFeaturesByName.get(normalizeMexicoStateName(stateName))
+      const feature = stateFeaturesByName.get(
+        normalizeMexicoStateName(stateName),
+      )
       const nextLayer = options.openLayer ?? activeLayer
-      setSelectedState({name: stateName})
+
+      setSelectedState({name: feature?.name || stateName})
       setShowCities(nextLayer === 'cities')
       setShowDistricts(nextLayer === 'districts')
-      setSelectedDistrictId(nextLayer === 'districts' ? options.districtId ?? null : null)
+      setSelectedDistrictId(
+        nextLayer === 'districts' ? (options.districtId ?? null) : null,
+      )
+      setSelectedCityName(null)
 
       if (!feature) return
 
-      const centroid = computeCentroid(feature)
+      if (feature.coordinates.length) {
+        mapRef.current?.fitToCoordinates?.(feature.coordinates, {
+          edgePadding: {top: 48, right: 48, bottom: 48, left: 48},
+          animated: true,
+        })
+      }
+
       mapRef.current?.animateCamera?.({
-        center: centroid,
+        center: feature.centroid,
         zoom: nextLayer === 'cities' ? 8 : 6.5,
       })
     },
@@ -253,7 +412,9 @@ export function MapScreenImpl({
         if (typeof camera?.altitude === 'number') {
           mapRef.current?.animateCamera?.({
             altitude:
-              direction === 'in' ? camera.altitude * 0.6 : camera.altitude * 1.6,
+              direction === 'in'
+                ? camera.altitude * 0.6
+                : camera.altitude * 1.6,
           })
         }
       })
@@ -267,37 +428,43 @@ export function MapScreenImpl({
     setShowCities(false)
     setShowDistricts(false)
     setSelectedDistrictId(null)
+    setSelectedCityName(null)
     setSearchQuery('')
     setSearchExpanded(false)
+    setMapRegion(INITIAL_REGION)
   }, [])
 
   const renderedPolygons = useMemo(() => {
     if (!PolygonComponent) return null
 
-    return geoFeatures.flatMap((feature, index) => {
-      const name = featureName(feature)
-      const isSelected = selectedState?.name === name
-      const coordinatesList = getFeatureCoordinates(feature)
+    return preparedStateFeatures.flatMap(feature => {
+      const isSelected = selectedState?.name === feature.name
       const fillColor = getLayerFillColor({
         activeLayer,
         isSelected,
         selectedDiscourseItem,
-        stateName: name,
+        stateName: feature.name,
         theme: t,
       })
-      const strokeColor = isSelected ? t.palette.primary_500 : `${t.palette.primary_500}CC`
-      const strokeWidth = isSelected ? 1.6 : activeLayer === 'states' ? 0.8 : 0.6
+      const strokeColor = isSelected
+        ? t.palette.primary_500
+        : `${t.palette.primary_500}CC`
+      const strokeWidth = isSelected
+        ? 1.6
+        : activeLayer === 'states'
+          ? 0.8
+          : 0.6
 
-      return coordinatesList.map((coordinates, polygonIndex) => (
+      return feature.polygons.map(polygon => (
         <PolygonComponent
-          key={`${name}-${index}-${polygonIndex}`}
-          coordinates={coordinates}
+          key={polygon.key}
+          coordinates={polygon.coordinates}
           fillColor={fillColor}
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
           tappable
           zIndex={isSelected ? 12 : 1}
-          onPress={() => focusState(name, {openLayer: activeLayer})}
+          onPress={() => focusState(feature.name, {openLayer: activeLayer})}
         />
       ))
     })
@@ -305,11 +472,81 @@ export function MapScreenImpl({
     PolygonComponent,
     activeLayer,
     focusState,
-    geoFeatures,
+    preparedStateFeatures,
     selectedDiscourseItem,
     selectedState?.name,
     t,
   ])
+
+  const rawCityMarkers = useMemo(() => {
+    if (!MarkerComponent || !showCities || !selectedState) return []
+
+    return selectedStateCities.map(city => {
+      const partyColor = getPartyColor(city.dominantParty)
+      const isSelected = selectedCityName === city.name
+
+      return (
+        <MarkerComponent
+          key={`${city.stateName}:${city.name}`}
+          coordinate={city.coordinate}
+          title={city.name}
+          description={`${city.population} · ${city.dominantParty}`}
+          anchor={{x: 0.5, y: 0.5}}
+          tappable
+          tracksViewChanges={false}
+          zIndex={isSelected ? 20 : 14}
+          onPress={() => {
+            setSelectedCityName(city.name)
+            focusCity(city.stateName, city.name)
+          }}>
+          <View style={styles.cityMarkerWrap}>
+            <View
+              style={[
+                styles.cityMarkerDot,
+                {
+                  backgroundColor: partyColor,
+                  transform: [{scale: isSelected ? 1.18 : 1}],
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.cityMarkerLabel,
+                t.atoms.bg,
+                a.border,
+                t.atoms.border_contrast_low,
+              ]}>
+              <Text style={[a.text_2xs, a.font_bold, t.atoms.text]}>
+                {city.name}
+              </Text>
+            </View>
+          </View>
+        </MarkerComponent>
+      )
+    })
+  }, [
+    MarkerComponent,
+    focusCity,
+    selectedCityName,
+    selectedState,
+    selectedStateCities,
+    showCities,
+    t,
+  ])
+
+  const renderedCityMarkers = useMemo(() => {
+    if (rawCityMarkers.length === 0) return null
+
+    if (MarkerClustererComponent && rawCityMarkers.length > 8) {
+      return (
+        <MarkerClustererComponent region={mapRegion}>
+          {rawCityMarkers}
+        </MarkerClustererComponent>
+      )
+    }
+
+    return rawCityMarkers
+  }, [MarkerClustererComponent, mapRegion, rawCityMarkers])
 
   const webLeftMargin = {
     marginLeft: 'calc(50% - 300px)',
@@ -333,13 +570,27 @@ export function MapScreenImpl({
               ref={mapRef}
               style={StyleSheet.absoluteFill}
               initialRegion={INITIAL_REGION}
+              provider={web('google')}
+              onRegionChangeComplete={(region: MapRegion) => {
+                if (
+                  region &&
+                  Number.isFinite(region.latitude) &&
+                  Number.isFinite(region.longitude) &&
+                  Number.isFinite(region.latitudeDelta) &&
+                  Number.isFinite(region.longitudeDelta)
+                ) {
+                  setMapRegion(region)
+                }
+              }}
               onPress={() => {
                 setSelectedState(null)
                 setShowCities(false)
                 setShowDistricts(false)
                 setSelectedDistrictId(null)
+                setSelectedCityName(null)
               }}>
               {renderedPolygons}
+              {renderedCityMarkers}
             </MapViewComponent>
           ) : (
             <MapUnavailable
@@ -355,25 +606,21 @@ export function MapScreenImpl({
             setSearchExpanded={setSearchExpanded}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-              searchResults={searchResults}
-              onSelect={result => {
-                if (result.type === 'district') {
-                  setActiveLayer('districts')
-                  focusState(result.stateName, {
-                    openLayer: 'districts',
-                    districtId: result.districtId || null,
-                  })
-                } else {
-                  const nextLayer = result.type === 'city' ? 'cities' : activeLayer
-                  if (result.type === 'city') {
-                    setActiveLayer('cities')
-                  }
-                  focusState(result.stateName, {openLayer: nextLayer})
-                  if (result.type === 'city') {
-                    setSelectedDistrictId(null)
-                  }
-                }
-                setSearchExpanded(false)
+            searchResults={searchResults}
+            onSelect={result => {
+              if (result.type === 'district') {
+                setActiveLayer('districts')
+                focusState(result.stateName, {
+                  openLayer: 'districts',
+                  districtId: result.districtId || null,
+                })
+              } else if (result.type === 'city') {
+                focusCity(result.stateName, result.name)
+              } else {
+                focusState(result.stateName, {openLayer: activeLayer})
+              }
+
+              setSearchExpanded(false)
               setSearchQuery('')
             }}
           />
@@ -391,6 +638,9 @@ export function MapScreenImpl({
               }
               if (layer !== 'districts') {
                 setSelectedDistrictId(null)
+              }
+              if (layer !== 'cities') {
+                setSelectedCityName(null)
               }
             }}
           />
@@ -419,12 +669,7 @@ export function MapScreenImpl({
           )}
 
           <View
-            style={[
-              a.absolute,
-              {right: 20, top: 20},
-              a.gap_sm,
-              {zIndex: 20},
-            ]}>
+            style={[a.absolute, {right: 20, top: 20}, a.gap_sm, {zIndex: 20}]}>
             <TouchableOpacity
               accessibilityRole="button"
               onPress={handleRecenter}
@@ -453,63 +698,73 @@ export function MapScreenImpl({
             </TouchableOpacity>
           </View>
 
-          {!searchExpanded && selectedDiscourseItem && selectedDiscourseItem !== 'Any' && (
-            <View
-              style={[
-                a.absolute,
-                {top: 20, right: 76},
-                a.p_md,
-                a.rounded_full,
-                t.atoms.bg_contrast_25,
-                web({backdropFilter: 'blur(12px)'}),
-                a.border,
-                {borderColor: '#FF5A36'},
-                a.shadow_sm,
-                a.flex_row,
-                a.align_center,
-                a.gap_sm,
-                {maxWidth: gtMobile ? 240 : 180},
-                {zIndex: 20},
-              ]}>
-              <Text style={[a.text_sm, a.font_bold, t.atoms.text]}>
-                Heatmap: {selectedDiscourseItem}
-              </Text>
-              <TouchableOpacity
-                accessibilityRole="button"
-                onPress={() => setSelectedDiscourseItem('')}>
-                <Text
-                  style={[
-                    a.text_md,
-                    a.font_bold,
-                    t.atoms.text_contrast_medium,
-                  ]}>
-                  ✕
+          {!searchExpanded &&
+            selectedDiscourseItem &&
+            selectedDiscourseItem !== 'Any' && (
+              <View
+                style={[
+                  a.absolute,
+                  {top: 20, right: 76},
+                  a.p_md,
+                  a.rounded_full,
+                  t.atoms.bg_contrast_25,
+                  web({backdropFilter: 'blur(12px)'}),
+                  a.border,
+                  {borderColor: '#FF5A36'},
+                  a.shadow_sm,
+                  a.flex_row,
+                  a.align_center,
+                  a.gap_sm,
+                  {maxWidth: gtMobile ? 240 : 180},
+                  {zIndex: 20},
+                ]}>
+                <Text style={[a.text_sm, a.font_bold, t.atoms.text]}>
+                  Heatmap: {selectedDiscourseItem}
                 </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={() => setSelectedDiscourseItem('')}>
+                  <Text
+                    style={[
+                      a.text_md,
+                      a.font_bold,
+                      t.atoms.text_contrast_medium,
+                    ]}>
+                    ✕
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
           <SelectedStateOverlay
             selectedState={selectedState}
-            visible={!!selectedState && activeLayer === 'states' && !showCities && !showDistricts}
+            visible={
+              !!selectedState &&
+              activeLayer === 'states' &&
+              !showCities &&
+              !showDistricts
+            }
             insets={insets}
             onClose={() => {
               setSelectedState(null)
               setShowCities(false)
               setShowDistricts(false)
               setSelectedDistrictId(null)
+              setSelectedCityName(null)
             }}
             onShowCities={() => {
               setActiveLayer('cities')
               setShowCities(true)
               setShowDistricts(false)
               setSelectedDistrictId(null)
+              setSelectedCityName(null)
             }}
             onShowDistricts={() => {
               setActiveLayer('districts')
               setShowDistricts(true)
               setShowCities(false)
               setSelectedDistrictId(null)
+              setSelectedCityName(null)
             }}
           />
 
@@ -519,6 +774,7 @@ export function MapScreenImpl({
             onClose={() => {
               setActiveLayer('states')
               setShowCities(false)
+              setSelectedCityName(null)
             }}
           />
 
@@ -575,16 +831,22 @@ export function MapScreenImpl({
               />
 
               <View style={[a.mb_md]}>
-                <Text style={[a.text_xs, a.font_bold, t.atoms.text_contrast_medium]}>
+                <Text
+                  style={[
+                    a.text_xs,
+                    a.font_bold,
+                    t.atoms.text_contrast_medium,
+                  ]}>
                   DISCUSSION HEAT
                 </Text>
                 <Text style={[a.text_lg, a.font_bold, t.atoms.text, a.mt_xs]}>
                   <Trans>Choose a discourse lens</Trans>
                 </Text>
-                <Text style={[a.text_sm, t.atoms.text_contrast_medium, a.mt_xs]}>
+                <Text
+                  style={[a.text_sm, t.atoms.text_contrast_medium, a.mt_xs]}>
                   <Trans>
-                    This is a visual layer only. It changes how states are tinted
-                    across the map.
+                    This is a visual layer only. It changes how states are
+                    tinted across the map.
                   </Trans>
                 </Text>
               </View>
@@ -661,7 +923,12 @@ export function MapScreenImpl({
                   setShowDiscourseModal(false)
                 }}
                 style={[a.mt_md, a.align_center]}>
-                <Text style={[a.text_sm, a.font_bold, t.atoms.text_contrast_medium]}>
+                <Text
+                  style={[
+                    a.text_sm,
+                    a.font_bold,
+                    t.atoms.text_contrast_medium,
+                  ]}>
                   <Trans>Clear heatmap</Trans>
                 </Text>
               </TouchableOpacity>
@@ -696,4 +963,17 @@ const styles = {
   pillButtonActive: (t: ReturnType<typeof useTheme>) => [
     {borderColor: t.palette.primary_500, backgroundColor: '#ffffff10'},
   ],
+  cityMarkerWrap: [a.align_center, a.justify_center],
+  cityMarkerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 3},
+  },
+  cityMarkerLabel: [a.mt_xs, a.px_sm, {paddingVertical: 3, borderRadius: 999}],
 }

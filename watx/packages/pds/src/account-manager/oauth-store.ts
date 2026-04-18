@@ -3,6 +3,12 @@ import { Client, createOp as createPlcOp } from '@did-plc/lib'
 import { Selectable } from 'kysely'
 import { Keypair, Secp256k1Keypair } from '@atproto/crypto'
 import {
+  HandleString,
+  asAtIdentifierString,
+  isDidString,
+  isHandleString,
+} from '@atproto/lex'
+import {
   Account,
   AccountStore,
   AuthenticateAccountData,
@@ -16,6 +22,7 @@ import {
   DeviceStore,
   FoundRequestResult,
   HandleUnavailableError,
+  InvalidCredentialsError,
   InvalidInviteCodeError,
   InvalidRequestError,
   LexiconData,
@@ -46,7 +53,7 @@ import { ImageUrlBuilder } from '../image/image-url-builder'
 import { dbLogger } from '../logger'
 import { ServerMailer } from '../mailer'
 import { Sequencer, syncEvtDataFromCommit } from '../sequencer'
-import { AccountManager } from './account-manager'
+import { AccountManager, InvalidPasswordError } from './account-manager'
 import * as schemas from './db/schema'
 import * as accountHelper from './helpers/account'
 import { AccountStatus } from './helpers/account'
@@ -125,6 +132,8 @@ export class OAuthStore
     // @TODO Send an account creation confirmation email (+verification link) to the user (in their locale)
     // @NOTE Password strength & length already enforced by the OAuthProvider
 
+    assert(isHandleString(handle), 'Handle must be a valid HandleString')
+
     await Promise.all([
       this.verifyEmailAvailability(email),
       this.verifyHandleAvailability(handle),
@@ -148,6 +157,7 @@ export class OAuthStore
     })
 
     const { did, op } = plcCreate
+    assert(isDidString(did), 'Generated DID is not a valid DidString')
 
     try {
       await this.actorStore.create(did, signingKey)
@@ -226,8 +236,11 @@ export class OAuthStore
 
       return this.buildAccount(user)
     } catch (err) {
+      if (err instanceof InvalidPasswordError) {
+        throw new InvalidCredentialsError(err.message, err.did, err)
+      }
       if (err instanceof XrpcAuthRequiredError) {
-        throw new InvalidRequestError(err.message, err)
+        throw new InvalidCredentialsError(err.message, undefined, err)
       }
       throw err
     }
@@ -245,9 +258,14 @@ export class OAuthStore
     account: Account
     authorizedClients: AuthorizedClients
   }> {
-    const accountRow = await accountHelper.getAccount(this.db, sub, {
-      includeDeactivated: true,
-    })
+    const accountRow = await accountHelper.getAccount(
+      this.db,
+      // @TODO @atproto/oauth-provider should strongly type `Sub` as `DidString`
+      asAtIdentifierString(sub),
+      {
+        includeDeactivated: true,
+      },
+    )
 
     assert(accountRow, 'Account not found')
 
@@ -374,7 +392,7 @@ export class OAuthStore
     }
   }
 
-  async verifyHandleAvailability(handle: string): Promise<void> {
+  async verifyHandleAvailability(handle: HandleString): Promise<void> {
     // @NOTE Handle validity & normalization already enforced by the OAuthProvider
     try {
       const normalized =
@@ -621,11 +639,21 @@ export class OAuthStore
 
         account.name ||= displayName
         account.picture ||= avatar
-          ? this.imageUrlBuilder.build('avatar', did, avatar.ref.toString())
+          ? this.imageUrlBuilder.build('avatar', did, blobCidString(avatar))
           : undefined
       }
     }
 
     return account
   }
+}
+
+const blobCidString = (blob: {
+  ref?: { toString(): string }
+  cid?: string
+}): string => {
+  const ref = blob.ref?.toString()
+  if (ref) return ref
+  if (typeof blob.cid === 'string') return blob.cid
+  throw new TypeError('Invalid blob ref')
 }

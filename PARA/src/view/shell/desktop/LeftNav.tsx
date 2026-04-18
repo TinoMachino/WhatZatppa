@@ -604,7 +604,6 @@ function ComposeBtn() {
 
 function BaseNavItem() {
   const pal = usePalette('default')
-  const {_} = useLingui()
 
   return (
     <NavItem
@@ -617,7 +616,7 @@ function BaseNavItem() {
           width={NAV_ICON_WIDTH}
         />
       }
-      label={_(msg`Base`)}
+      label="Base"
     />
   )
 }
@@ -650,7 +649,6 @@ function MessagesNavItem() {
 
 function CommunitiesNavItem() {
   const pal = usePalette('default')
-  const {_} = useLingui()
 
   return (
     <NavItem
@@ -665,7 +663,7 @@ function CommunitiesNavItem() {
           width={NAV_ICON_WIDTH}
         />
       }
-      label={_(msg`Communities`)}
+      label="Communities"
     />
   )
 }

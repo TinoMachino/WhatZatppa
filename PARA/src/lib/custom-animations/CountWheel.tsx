@@ -158,6 +158,7 @@ export function CountWheel({
               style={[
                 big ? a.text_md : a.text_sm,
                 a.user_select_none,
+                {includeFontPadding: false, textAlignVertical: 'center'},
                 voteColor // Add this check first
                   ? [a.font_semi_bold, {color: voteColor}]
                   : direction === 'down'
@@ -178,6 +179,7 @@ export function CountWheel({
                 style={[
                   big ? a.text_md : a.text_sm,
                   a.user_select_none,
+                  {includeFontPadding: false, textAlignVertical: 'center'},
                   voteColor // Add this check first
                     ? [a.font_semi_bold, {color: voteColor}]
                     : direction === 'down'

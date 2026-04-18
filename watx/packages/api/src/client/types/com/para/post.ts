@@ -43,6 +43,8 @@ export interface Main {
   flairs?: string[]
   /** Optional para-specific post type (policy, matter, meme, etc). */
   postType?: string
+  /** Optional title for policy or proposal posts, summarizing the content. */
+  title?: string
   /** Client-declared timestamp when this post was originally created. */
   createdAt: string
   [k: string]: unknown

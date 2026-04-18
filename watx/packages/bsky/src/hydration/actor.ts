@@ -34,6 +34,7 @@ export type Actor = {
   takedownRef?: string
   isLabeler: boolean
   allowIncomingChatsFrom?: string
+  allowGroupChatInvitesFrom?: string
   upstreamStatus?: string
   createdAt?: Date
   priorityNotifications: boolean
@@ -41,6 +42,13 @@ export type Actor = {
   verifications: VerificationHydrationState[]
   status?: RecordInfo<StatusRecord>
   germ?: RecordInfo<GermDeclarationRecord>
+  cabildeoLive?: {
+    cabildeoUri: string
+    community: string
+    phase: string
+    expiresAt: string
+    liveUri: string
+  }
   allowActivitySubscriptionsFrom: AllowActivitySubscriptions
   /**
    * Debug information for internal development
@@ -267,6 +275,8 @@ export class ActorHydrator {
         takedownRef: safeTakedownRef(actor),
         isLabeler: actor.labeler ?? false,
         allowIncomingChatsFrom: actor.allowIncomingChatsFrom || undefined,
+        allowGroupChatInvitesFrom:
+          actor.allowGroupChatInvitesFrom || undefined,
         upstreamStatus: actor.upstreamStatus || undefined,
         createdAt: parseDate(actor.createdAt),
         priorityNotifications: actor.priorityNotifications,
@@ -274,6 +284,15 @@ export class ActorHydrator {
         verifications,
         status: status,
         germ: germ,
+        cabildeoLive: actor.cabildeoLive
+          ? {
+              cabildeoUri: actor.cabildeoLive.cabildeoUri,
+              community: actor.cabildeoLive.community,
+              phase: actor.cabildeoLive.phase,
+              expiresAt: actor.cabildeoLive.expiresAt,
+              liveUri: actor.cabildeoLive.liveUri,
+            }
+          : undefined,
         allowActivitySubscriptionsFrom: allowActivitySubscriptionsFrom(
           actor.allowActivitySubscriptionsFrom,
         ),

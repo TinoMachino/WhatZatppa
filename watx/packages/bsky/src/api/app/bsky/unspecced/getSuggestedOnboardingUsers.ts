@@ -1,5 +1,5 @@
-import AtpAgent from '@atproto/api'
 import { dedupeStrs, mapDefined, noUndefinedVals } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { InternalServerError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import {
@@ -9,6 +9,7 @@ import {
 } from '../../../../hydration/hydrator'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/unspecced/getSuggestedOnboardingUsers'
+import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
   PresentationFnInput,
@@ -33,13 +34,6 @@ export default function (server: Server, ctx: AppContext) {
       const hydrateCtx = await ctx.hydrator.createContext({
         labelers,
         viewer,
-        featureGatesMap: ctx.featureGatesClient.checkGates(
-          ['suggested_onboarding_users:discover_agent:enable'],
-          {
-            viewer,
-            req,
-          },
-        ),
       })
       const headers = noUndefinedVals({
         'accept-language': req.headers['accept-language'],
@@ -63,57 +57,39 @@ export default function (server: Server, ctx: AppContext) {
   })
 }
 
-// TODO: rename to `skeleton` once we can fully migrate to Discover
-const skeletonFromDiscover = async (
-  input: SkeletonFnInput<Context, Params>,
-) => {
-  const { params, ctx } = input
-  if (!ctx.suggestionsAgent)
-    throw new InternalServerError('Suggestions agent not available')
-
-  const res =
-    await ctx.suggestionsAgent.app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton(
-      {
-        limit: params.limit,
-        viewer: params.hydrateCtx.viewer ?? undefined,
-        category: params.category,
-      },
-      {
-        headers: params.headers,
-      },
-    )
-
-  return res.data
-}
-
-const skeletonFromTopics = async (input: SkeletonFnInput<Context, Params>) => {
-  const { params, ctx } = input
-  if (!ctx.topicsAgent)
-    throw new InternalServerError('Topics agent not available')
-
-  // NOTE: This is intentionally using `getSuggestedUsersSkeleton`, not `getSuggestedOnboardingUsersSkeleton`.
-  // We won't bother implementing `getSuggestedOnboardingUsersSkeleton` in topics since we're phasing out of it.
-  const res =
-    await ctx.topicsAgent.app.bsky.unspecced.getSuggestedUsersSkeleton(
-      {
-        limit: params.limit,
-        viewer: params.hydrateCtx.viewer ?? undefined,
-        category: params.category,
-      },
-      {
-        headers: params.headers,
-      },
-    )
-
-  return res.data
-}
-
 const skeleton = async (input: SkeletonFnInput<Context, Params>) => {
-  const useDiscover = input.params.hydrateCtx.featureGatesMap.get(
-    'suggested_onboarding_users:discover_agent:enable',
+  const { params, ctx } = input
+  if (ctx.suggestionsClient) {
+    return ctx.suggestionsClient.call(
+      app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton,
+      {
+        limit: params.limit,
+        viewer: params.hydrateCtx.viewer ?? undefined,
+        category: params.category,
+      } as app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton.$Params,
+      {
+        headers: params.headers,
+      },
+    )
+  }
+
+  if (!ctx.topicsClient) {
+    throw new InternalServerError('Suggestions agent not available')
+  }
+
+  // Fallback retained for watx environments that have not moved onboarding
+  // suggestions from topics to the dedicated suggestions service yet.
+  return ctx.topicsClient.call(
+    app.bsky.unspecced.getSuggestedUsersSkeleton,
+    {
+      limit: params.limit,
+      viewer: params.hydrateCtx.viewer ?? undefined,
+      category: params.category,
+    } as app.bsky.unspecced.getSuggestedUsersSkeleton.$Params,
+    {
+      headers: params.headers,
+    },
   )
-  const skeletonFn = useDiscover ? skeletonFromDiscover : skeletonFromTopics
-  return skeletonFn(input)
 }
 
 const hydration = async (
@@ -168,8 +144,8 @@ const presentation = (
 type Context = {
   hydrator: Hydrator
   views: Views
-  topicsAgent: AtpAgent | undefined
-  suggestionsAgent: AtpAgent | undefined
+  topicsClient: Client | undefined
+  suggestionsClient: Client | undefined
 }
 
 type Params = QueryParams & {

@@ -5,8 +5,8 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
-import {ComposeIcon2} from '#/lib/icons'
 import {useBottomBarOffset} from '#/lib/hooks/useBottomBarOffset'
+import {ComposeIcon2} from '#/lib/icons'
 import {type NavigationProp} from '#/lib/routes/types'
 import {s} from '#/lib/styles'
 import {useProfileQuery} from '#/state/queries/profile'
@@ -143,7 +143,7 @@ export function BaseScreen() {
         </Layout.Header.Content>
         <Layout.Header.Slot>
           <Button
-            label={_(msg`Communities`)}
+            label="Communities"
             size="small"
             variant="ghost"
             color="secondary"

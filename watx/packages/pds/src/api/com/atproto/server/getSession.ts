@@ -6,6 +6,7 @@ import { AccessOutput, OAuthOutput } from '../../../../auth-output'
 import { AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 import { didDocForSession } from './util'
 
 export default function (server: Server, ctx: AppContext) {
@@ -17,21 +18,22 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ auth, req }) => {
-      if (ctx.entrywayAgent) {
+      if (ctx.entrywayClient) {
         const headers = await ctx.entrywayAuthHeaders(
           req,
           auth.credentials.did,
           'com.atproto.server.getSession',
         )
 
-        const res = await ctx.entrywayAgent.com.atproto.server.getSession(
-          undefined,
+        const data = await ctx.entrywayClient.call(
+          com.atproto.server.getSession.main,
+          {},
           headers,
         )
 
         return {
           encoding: 'application/json',
-          body: output(auth, res.data),
+          body: output(auth, data),
         }
       }
 
@@ -47,18 +49,19 @@ export default function (server: Server, ctx: AppContext) {
       }
 
       const { status, active } = formatAccountStatus(user)
+      const sessionData = {
+        did: user.did,
+        handle: user.handle ?? INVALID_HANDLE,
+        emailConfirmed: !!user.emailConfirmedAt,
+        active,
+        ...(status ? { status } : {}),
+        ...(didDoc ? { didDoc } : {}),
+        ...(user.email ? { email: user.email } : {}),
+      }
 
       return {
         encoding: 'application/json',
-        body: output(auth, {
-          did: user.did,
-          didDoc,
-          handle: user.handle ?? INVALID_HANDLE,
-          email: user.email ?? undefined,
-          emailConfirmed: !!user.emailConfirmedAt,
-          active,
-          status,
-        }),
+        body: output(auth, sessionData),
       }
     },
   })

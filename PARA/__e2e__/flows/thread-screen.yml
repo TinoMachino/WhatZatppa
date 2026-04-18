@@ -37,40 +37,31 @@ appId: xyz.blueskyweb.app
     id: "likeBtn"
     childOf:
         id: "postThreadItem-by-carla.test"
-
-# Can repost the root post
+# Can quote the root post
 - tapOn:
-    id: "repostBtn"
+    id: "highlightBtn"
     childOf:
         id: "postThreadItem-by-bob.test"
-- tapOn: "Repost"
-- assertVisible:
-    id: "repostCount-expanded"
 - tapOn:
-    id: "repostBtn"
-    childOf:
-        id: "postThreadItem-by-bob.test"
-- tapOn: "Remove repost"
-- assertNotVisible:
-    id: "repostCount-expanded"
+    id: "quoteBtn"
+- inputText: "Quoting the root post"
+- tapOn:
+    id: "composerPublishBtn"
+- assertVisible:
+    id: "quoteCount-expanded"
 
 
-# Can repost a reply post
+# Can quote a reply post
 - tapOn:
-    id: "repostBtn"
+    id: "highlightBtn"
     childOf:
         id: "postThreadItem-by-carla.test"
-- tapOn: "Repost"
+- tapOn:
+    id: "quoteBtn"
+- inputText: "Quoting the reply post"
+- tapOn:
+    id: "composerPublishBtn"
 - assertVisible:
-    id: "repostCount"
-    childOf:
-        id: "postThreadItem-by-carla.test"
-- tapOn:
-    id: "repostBtn"
-    childOf:
-        id: "postThreadItem-by-carla.test"
-- tapOn: "Remove repost"
-- assertNotVisible:
-    id: "repostCount"
+    id: "quoteCount"
     childOf:
         id: "postThreadItem-by-carla.test"

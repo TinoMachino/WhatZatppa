@@ -90,11 +90,30 @@ Important:
 - Use `make run-dev-env-persistent` for this demo flow.
 - Do not use `make run-dev-env` in this runbook.
 - Start both ngrok tunnels before starting the backend.
+- The dev-env introspection server is local-only at `http://127.0.0.1:2581`.
 - The ngrok hostnames are for public identity and external reachability.
 - Internal `dev-env` bootstrap still talks to local services on `localhost`.
 - If `.env.shared-demo` points to `pds.paramx.social.ngrok.pro` and `appview.paramx.social.ngrok.pro` but the tunnels are not live yet, bootstrap can fail with:
   - `XRPCError: fetch failed`
   - `UND_ERR_CONNECT_TIMEOUT`
+
+
+Seed Demo Data
+--------------
+Run this after Terminal 3 is healthy:
+
+```bash
+cd /Users/mlv/Desktop/MASTER/PARA
+yarn seed:civic:apply --introspect-url http://127.0.0.1:2581
+```
+
+What this does:
+- Writes the civic demo records into the local PDS.
+- Immediately tells the local dev-env to drain PDS events into AppView.
+
+Important:
+- Do not use plain `yarn seed:civic:apply` for the demo stack anymore.
+- If the seed command exits nonzero, treat that as a backend/AppView sync failure and fix it before opening the app.
 
 
 Terminal 4: PARA BSKYWEB FRONTEND
@@ -229,15 +248,19 @@ Quick Smoke Check
 3. Confirm Terminal 3 prints:
    - `Main PDS https://pds.paramx.social.ngrok.pro`
    - `Bsky Appview https://appview.paramx.social.ngrok.pro`
+   - `Dev-env introspection server http://127.0.0.1:2581`
 4. Verify health:
    - `curl http://localhost:2583/xrpc/_health`
    - `curl http://localhost:2584/xrpc/_health`
    - `curl https://pds.paramx.social.ngrok.pro/xrpc/_health`
    - `curl https://appview.paramx.social.ngrok.pro/xrpc/_health`
-5. Open `http://localhost:8100`.
-6. If Terminal 5 is running, open `https://web.paramx.social.ngrok.pro` and confirm it shows the same frontend.
-7. If Terminal 6 is running, confirm the Expo client also loads.
-8. Verify any VC-facing link points to the frontend URL, not AppView.
+5. Verify AppView can now see seeded actors and posts:
+   - `curl 'http://localhost:2584/xrpc/app.bsky.actor.getProfile?actor=active-a.test'`
+   - `curl 'http://localhost:2584/xrpc/app.bsky.feed.getAuthorFeed?actor=active-a.test&limit=3'`
+6. Open `http://localhost:8100` and confirm Home/Base show posts.
+7. If Terminal 5 is running, open `https://web.paramx.social.ngrok.pro` and confirm it shows the same frontend.
+8. If Terminal 6 is running, confirm the Expo client also loads.
+9. Verify any VC-facing link points to the frontend URL, not AppView.
 
 
 If Something Breaks

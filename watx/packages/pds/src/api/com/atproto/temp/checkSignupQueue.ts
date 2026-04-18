@@ -2,7 +2,7 @@ import { ForbiddenError } from '@atproto/xrpc-server'
 import { AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 
 // THIS IS A TEMPORARY UNSPECCED ROUTE
 export default function (server: Server, ctx: AppContext) {
@@ -16,7 +16,7 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ req }) => {
-      if (!ctx.entrywayAgent) {
+      if (!ctx.entrywayClient) {
         return {
           encoding: 'application/json',
           body: {
@@ -24,12 +24,14 @@ export default function (server: Server, ctx: AppContext) {
           },
         }
       }
-      return resultPassthru(
-        await ctx.entrywayAgent.com.atproto.temp.checkSignupQueue(
-          undefined,
-          ctx.entrywayPassthruHeaders(req),
-        ),
+      const result = await ctx.entrywayClient.xrpc(
+        com.atproto.temp.checkSignupQueue.main,
+        ctx.entrywayPassthruHeaders(req),
       )
+      return {
+        encoding: 'application/json',
+        body: result.body,
+      }
     },
   })
 }

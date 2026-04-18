@@ -1,10 +1,10 @@
-import {View} from 'react-native'
+import {useWindowDimensions, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
 import {logger} from '#/logger'
 import {type Shadow} from '#/state/cache/types'
-import {atoms as a, useBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useAlf, useBreakpoints, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {useFullVerificationState} from '#/components/verification'
@@ -81,12 +81,18 @@ export function Badge({
   const verificationsDialogControl = useDialogControl()
   const verifierDialogControl = useDialogControl()
   const {gtPhone} = useBreakpoints()
+  const {fontScale: nativeScaleMultiplier} = useWindowDimensions()
+  const {
+    fonts: {scaleMultiplier: alfScaleMultiplier},
+  } = useAlf()
   let dimensions = 12
   if (size === 'lg') {
     dimensions = gtPhone ? 20 : 18
   } else if (size === 'md') {
     dimensions = 14
   }
+  const scaledDimensions =
+    dimensions * nativeScaleMultiplier * alfScaleMultiplier
 
   const verifiedByHidden = !state.profile.showBadge && state.profile.isViewer
 
@@ -115,8 +121,8 @@ export function Badge({
               a.align_end,
               a.transition_transform,
               {
-                width: dimensions,
-                height: dimensions,
+                width: scaledDimensions,
+                height: scaledDimensions,
                 transform: [
                   {
                     scale: hovered ? 1.1 : 1,

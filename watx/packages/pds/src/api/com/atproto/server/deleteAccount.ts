@@ -4,6 +4,7 @@ import { AccountStatus } from '../../../../account-manager/account-manager'
 import { OLD_PASSWORD_MAX_LENGTH } from '../../../../account-manager/helpers/scrypt'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.deleteAccount({
@@ -22,9 +23,10 @@ export default function (server: Server, ctx: AppContext) {
         throw new InvalidRequestError('account not found')
       }
 
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.server.deleteAccount(
-          input.body,
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.server.deleteAccount.main,
+          input.body as com.atproto.server.deleteAccount.$InputBody,
           ctx.entrywayPassthruHeaders(req),
         )
         return

@@ -18,6 +18,8 @@ import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
 import {usePalette} from '#/lib/hooks/usePalette'
 import {type NavigationProp} from '#/lib/routes/types'
 import {cleanError} from '#/lib/strings/errors'
+import {type CabildeoPhase} from '#/lib/api/para-lexicons'
+import {MOCK_CABILDEOS} from '#/lib/constants/mockData'
 import {useCommunityGovernanceQuery} from '#/state/queries/community-governance'
 import {useSearchPostsQuery} from '#/state/queries/search-posts'
 // import {SettingsSliderVertical_Stroke2_Corner0_Rounded as SettingsIcon} from '#/components/icons/SettingsSlider'
@@ -38,6 +40,19 @@ type CommunityProfileParams = {
   communityId?: string
   _communityId?: string
   communityName: string
+}
+
+}
+
+const PHASE_CONFIG: Record<
+  CabildeoPhase,
+  {label: string; color: string; icon: string}
+> = {
+  draft: {label: 'Borrador', color: '#8E8E93', icon: '📝'},
+  open: {label: 'Abierto', color: '#007AFF', icon: '📖'},
+  deliberating: {label: 'Deliberando', color: '#FF9500', icon: '🗣️'},
+  voting: {label: 'Votación', color: '#34C759', icon: '🗳️'},
+  resolved: {label: 'Resuelto', color: '#AF52DE', icon: '✅'},
 }
 
 export function CommunityProfileScreen() {
@@ -76,7 +91,7 @@ export function CommunityProfileScreen() {
     return data?.pages.flatMap(page => page.posts) || []
   }, [data])
 
-  const [activeTab, setActiveTab] = useState<'Feed' | 'about'>('Feed')
+  const [activeTab, setActiveTab] = useState<'Feed' | 'Deliberation' | 'about'>('Feed')
   const [isJoined, setIsJoined] = useState(false)
   const [isFollowingAgent, setIsFollowingAgent] = useState(false)
   const [isPTR, setIsPTR] = useState(false)
@@ -472,6 +487,30 @@ export function CommunityProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
+              style={[styles.tab, activeTab === 'Deliberation' && styles.activeTab]}
+              onPress={() => setActiveTab('Deliberation')}>
+              <Text
+                style={[
+                  styles.tabText,
+                  pal.text,
+                  activeTab === 'Deliberation' && {
+                    color: t.palette.primary_500,
+                    fontWeight: 'bold',
+                  },
+                ]}>
+                <Trans>Cabildeo</Trans>
+              </Text>
+              {activeTab === 'Deliberation' && (
+                <View
+                  style={[
+                    styles.tabIndicator,
+                    {backgroundColor: t.palette.primary_500},
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.tab, activeTab === 'about' && styles.activeTab]}
               onPress={() => setActiveTab('about')}>
               <Text
@@ -544,6 +583,90 @@ export function CommunityProfileScreen() {
                     />
                   </ScrollView>
                 )}
+              </View>
+            )}
+
+            {activeTab === 'Deliberation' && (
+              <View style={styles.deliberationContainer}>
+                {/* Propose Policy Action */}
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  style={[styles.proposePolicyBtn, {backgroundColor: t.palette.primary_500}]}
+                  onPress={() => navigation.navigate('CreateCabildeo')}>
+                  <Text style={[styles.proposePolicyBtnText, {color: '#fff'}]}>
+                    + Proponer una Política (Cabildeo)
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Cabildeo Cards mapped for this community */}
+                <View style={styles.cardList}>
+                  {MOCK_CABILDEOS.filter(c => c.community.includes(communityName) || communityName === 'Community').map((cabildeo, index) => {
+                    const phase = PHASE_CONFIG[cabildeo.phase]
+                    const isMultiCommunity = cabildeo.communities && cabildeo.communities.length > 0
+
+                    return (
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        key={index}
+                        activeOpacity={0.8}
+                        onPress={() => navigation.navigate('CabildeoDetail', {index})}
+                        style={[
+                          styles.card,
+                          t.atoms.bg_contrast_25,
+                          {borderLeftColor: phase.color, borderLeftWidth: 4},
+                        ]}>
+                        <View style={styles.cardHeader}>
+                          <View style={[styles.phaseBadge, {backgroundColor: phase.color + '20'}]}>
+                            <Text style={[styles.phaseBadgeText, {color: phase.color}]}>
+                              {phase.icon} {phase.label}
+                            </Text>
+                          </View>
+                          {cabildeo.region && (
+                            <Text style={[styles.regionTag, t.atoms.text_contrast_medium]}>📍 {cabildeo.region}</Text>
+                          )}
+                        </View>
+
+                        <Text style={[styles.cardTitle, t.atoms.text]} numberOfLines={2}>
+                          {cabildeo.title}
+                        </Text>
+                        <Text style={[styles.cardDesc, t.atoms.text_contrast_medium]} numberOfLines={2}>
+                          {cabildeo.description}
+                        </Text>
+
+                        <View style={styles.cardFooter}>
+                          <Text style={[styles.communityTag, {color: t.palette.primary_500}]}>
+                            {cabildeo.community}
+                          </Text>
+                          {isMultiCommunity && (
+                            <View style={[styles.quadraticBadge, {backgroundColor: '#FF9500' + '20'}]}>
+                              <Text style={[styles.quadraticText, {color: '#FF9500'}]}>√ Cuadrático</Text>
+                            </View>
+                          )}
+                          {cabildeo.geoRestricted && (
+                            <View style={[styles.quadraticBadge, {backgroundColor: '#FF3B30' + '15'}]}>
+                              <Text style={[styles.quadraticText, {color: '#FF3B30'}]}>🔒 Solo {cabildeo.region}</Text>
+                            </View>
+                          )}
+                          <Text style={[styles.optionCount, t.atoms.text_contrast_medium]}>
+                            {cabildeo.options.length} opciones
+                          </Text>
+                        </View>
+
+                        {cabildeo.outcome && (
+                          <View style={[styles.outcomePreview, {borderTopColor: t.palette.contrast_100}]}>
+                            <Text style={[styles.outcomeLabel, t.atoms.text_contrast_medium]}>Resultado:</Text>
+                            <Text style={[styles.outcomeWinner, {color: phase.color}]}>
+                              {cabildeo.options[cabildeo.outcome.winningOption]?.label}
+                            </Text>
+                            <Text style={[styles.outcomeParticipants, t.atoms.text_contrast_medium]}>
+                              · {cabildeo.outcome.totalParticipants} participantes
+                            </Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
               </View>
             )}
 
@@ -668,6 +791,73 @@ export function CommunityProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  deliberationContainer: {
+    padding: 16,
+    paddingTop: 8,
+  },
+  proposePolicyBtn: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  proposePolicyBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  cardList: {gap: 14},
+  card: {
+    borderRadius: 16,
+    padding: 16,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  phaseBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  phaseBadgeText: {fontSize: 12, fontWeight: '800'},
+  regionTag: {fontSize: 12, fontWeight: '600'},
+  cardTitle: {fontSize: 16, fontWeight: '800', lineHeight: 22, marginBottom: 6},
+  cardDesc: {fontSize: 13, lineHeight: 18, marginBottom: 12},
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  communityTag: {fontSize: 12, fontWeight: '800'},
+  quadraticBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  quadraticText: {fontSize: 10, fontWeight: '800'},
+  optionCount: {fontSize: 12, fontWeight: '600'},
+  outcomePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    flexWrap: 'wrap',
+  },
+  outcomeLabel: {fontSize: 12, fontWeight: '600'},
+  outcomeWinner: {fontSize: 12, fontWeight: '900'},
+  outcomeParticipants: {fontSize: 11},
   feedScroll: {
     flex: 1,
   },

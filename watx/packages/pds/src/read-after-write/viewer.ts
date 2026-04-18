@@ -1,10 +1,11 @@
-import { AtUri, INVALID_HANDLE } from '@atproto/syntax'
+import { AtUri, AtUriString, INVALID_HANDLE } from '@atproto/syntax'
 import { createServiceAuthHeaders } from '@atproto/xrpc-server'
 import { AccountManager } from '../account-manager/account-manager'
 import { ActorStoreReader } from '../actor-store/actor-store-reader'
 import { BskyAppView } from '../bsky-app-view'
 import { ImageUrlBuilder } from '../image/image-url-builder'
 import { ids } from '../lexicons.js'
+import { app } from '../lexicons/index.js'
 import {
   ProfileView,
   ProfileViewBasic,
@@ -42,6 +43,7 @@ import { $Typed } from '../lexicon/util'
 import { LocalRecords, RecordDescript } from './types'
 
 type CommonSignedUris = 'avatar' | 'banner' | 'feed_thumbnail' | 'feed_fullsize'
+type BlobRefLike = { ref?: { toString(): string }; cid?: string }
 
 export type LocalViewerCreator = (
   actorStoreReader: ActorStoreReader,
@@ -103,7 +105,7 @@ export class LocalViewer {
       handle: accountRes.handle ?? INVALID_HANDLE,
       displayName: profileRes?.displayName,
       avatar: profileRes?.avatar
-        ? this.getImageUrl('avatar', profileRes.avatar.ref.toString())
+        ? this.getImageUrl('avatar', blobCidString(profileRes.avatar))
         : undefined,
     }
   }
@@ -175,8 +177,8 @@ export class LocalViewer {
   ): Promise<$Typed<EmbedImagesView> | $Typed<EmbedExternalView>> {
     if (isEmbedImages(embed)) {
       const images = embed.images.map((img) => ({
-        thumb: this.getImageUrl('feed_thumbnail', img.image.ref.toString()),
-        fullsize: this.getImageUrl('feed_fullsize', img.image.ref.toString()),
+        thumb: this.getImageUrl('feed_thumbnail', blobCidString(img.image)),
+        fullsize: this.getImageUrl('feed_fullsize', blobCidString(img.image)),
         aspectRatio: img.aspectRatio,
         alt: img.alt,
       }))
@@ -193,7 +195,7 @@ export class LocalViewer {
           title,
           description,
           thumb: thumb
-            ? this.getImageUrl('feed_thumbnail', thumb.ref.toString())
+            ? this.getImageUrl('feed_thumbnail', blobCidString(thumb))
             : undefined,
         },
       }
@@ -229,11 +231,15 @@ export class LocalViewer {
     }
     const collection = new AtUri(embed.record.uri).collection
     if (collection === ids.AppBskyFeedPost) {
-      const res = await this.bskyAppView.agent.app.bsky.feed.getPosts(
-        { uris: [embed.record.uri] },
-        await this.serviceAuthHeaders(this.did, ids.AppBskyFeedGetPosts),
+      const posts = await this.bskyAppView.client.call(
+        app.bsky.feed.getPosts.main,
+        { uris: [embed.record.uri as AtUriString] },
+        {
+          ...(await this.serviceAuthHeaders(this.did, ids.AppBskyFeedGetPosts)),
+          validateResponse: this.bskyAppView.validateResponse,
+        },
       )
-      const post = res.data.posts[0]
+      const post = posts.posts[0]
       if (!post) return null
       return {
         $type: 'app.bsky.embed.record#viewRecord',
@@ -246,25 +252,33 @@ export class LocalViewer {
         indexedAt: post.indexedAt,
       }
     } else if (collection === ids.AppBskyFeedGenerator) {
-      const res = await this.bskyAppView.agent.app.bsky.feed.getFeedGenerator(
-        { feed: embed.record.uri },
-        await this.serviceAuthHeaders(
-          this.did,
-          ids.AppBskyFeedGetFeedGenerator,
-        ),
+      const feedGenerator = await this.bskyAppView.client.call(
+        app.bsky.feed.getFeedGenerator.main,
+        { feed: embed.record.uri as AtUriString },
+        {
+          ...(await this.serviceAuthHeaders(
+            this.did,
+            ids.AppBskyFeedGetFeedGenerator,
+          )),
+          validateResponse: this.bskyAppView.validateResponse,
+        },
       )
       return {
         $type: 'app.bsky.feed.defs#generatorView',
-        ...res.data.view,
+        ...feedGenerator.view,
       }
     } else if (collection === ids.AppBskyGraphList) {
-      const res = await this.bskyAppView.agent.app.bsky.graph.getList(
-        { list: embed.record.uri },
-        await this.serviceAuthHeaders(this.did, ids.AppBskyGraphGetList),
+      const list = await this.bskyAppView.client.call(
+        app.bsky.graph.getList.main,
+        { list: embed.record.uri as AtUriString },
+        {
+          ...(await this.serviceAuthHeaders(this.did, ids.AppBskyGraphGetList)),
+          validateResponse: this.bskyAppView.validateResponse,
+        },
       )
       return {
         $type: 'app.bsky.graph.defs#listView',
-        ...res.data.list,
+        ...list.list,
       }
     }
     return null
@@ -290,7 +304,7 @@ export class LocalViewer {
       ...view,
       displayName: record.displayName,
       avatar: record.avatar
-        ? this.getImageUrl('avatar', record.avatar.ref.toString())
+        ? this.getImageUrl('avatar', blobCidString(record.avatar))
         : undefined,
     }
   }
@@ -311,8 +325,15 @@ export class LocalViewer {
     return {
       ...this.updateProfileView(view, record),
       banner: record.banner
-        ? this.getImageUrl('banner', record.banner.ref.toString())
+        ? this.getImageUrl('banner', blobCidString(record.banner))
         : undefined,
     }
   }
+}
+
+const blobCidString = (blob: BlobRefLike): string => {
+  const ref = blob.ref?.toString()
+  if (ref) return ref
+  if (typeof blob.cid === 'string') return blob.cid
+  throw new TypeError('Invalid blob ref')
 }

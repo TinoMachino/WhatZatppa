@@ -6,10 +6,14 @@ import {
   RecordSchema,
   Schema,
   ValidateOptions,
-  lexParse,
+  lexParseJsonBytes,
 } from '@atproto/lex'
 import { AtUri } from '@atproto/syntax'
 import { Record as RecordEntry } from '../proto/bsky_pb'
+
+const PARSE_OPTIONS: LexParseOptions & ValidateOptions = {
+  strict: false,
+}
 
 export class HydrationMap<T> extends Map<string, T | null> implements Merges {
   merge(map: HydrationMap<T>): this {
@@ -72,13 +76,15 @@ export const parseRecord = <T extends UnknownRecord>(
   if (!includeTakedowns && entry.takenDown) {
     return undefined
   }
-  const record = parseJsonBytes<T>(recordSchema, entry.record)
   const cid = entry.cid
   const sortedAt = parseDate(entry.sortedAt) ?? new Date(0)
   const indexedAt = parseDate(entry.indexedAt) ?? new Date(0)
-  if (!record || !cid) return
+  if (!cid) return
+  if (entry.record.byteLength === 0) return
+  const record = lexParseJsonBytes(entry.record, PARSE_OPTIONS)
+  if (!recordSchema.$matches(record, PARSE_OPTIONS)) return
   return {
-    record,
+    record: record as T,
     cid,
     sortedAt,
     indexedAt,
@@ -89,21 +95,13 @@ export const parseRecord = <T extends UnknownRecord>(
 export const parseJsonBytes = <T = unknown>(
   schema: Schema<LexValue>,
   bytes: Uint8Array | undefined,
-  options: LexParseOptions & ValidateOptions = { strict: false },
+  options: LexParseOptions & ValidateOptions = PARSE_OPTIONS,
 ): T | undefined => {
   if (!bytes || bytes.byteLength === 0) return
 
-  const jsonBuffer = Buffer.from(
-    bytes.buffer,
-    bytes.byteOffset,
-    bytes.byteLength,
-  )
-  const value = lexParse(jsonBuffer.toString('utf8'), options)
-  return (
-    schema as {
-      ifMatches(input: unknown, options?: ValidateOptions): unknown
-    }
-  ).ifMatches(value, options) as T | undefined
+  const value = lexParseJsonBytes(bytes, options)
+  const result = schema.safeParse(value, options)
+  return result.success ? (result.value as T) : undefined
 }
 
 export const parseString = (str: string | undefined): string | undefined => {

@@ -23,6 +23,11 @@ export default function (server: Server, ctx: AppContext) {
   )
   server.app.bsky.feed.getTimeline({
     auth: ctx.authVerifier.standard,
+    opts: {
+      // @TODO remove after grace period has passed, behavior is non-standard.
+      // temporarily added for compat w/ previous version of xrpc-server to avoid breakage of a few specified parties.
+      
+    },
     handler: async ({ params, auth, req }) => {
       const viewer = auth.credentials.iss
       const labelers = ctx.reqLabelers(req)

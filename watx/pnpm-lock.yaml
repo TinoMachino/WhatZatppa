@@ -1917,8 +1917,8 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1
       better-sqlite3:
-        specifier: ^10.0.0
-        version: 10.0.0
+        specifier: ^12.8.0
+        version: 12.8.0
       bytes:
         specifier: ^3.1.2
         version: 3.1.2
@@ -2058,18 +2058,15 @@ importers:
       '@atproto/crypto':
         specifier: workspace:^
         version: link:../crypto
-      '@atproto/lexicon':
+      '@atproto/lex-cbor':
         specifier: workspace:^
-        version: link:../lexicon
-      '@ipld/dag-cbor':
-        specifier: ^7.0.0
-        version: 7.0.3
-      multiformats:
-        specifier: ^9.9.0
-        version: 9.9.0
-      uint8arrays:
-        specifier: 3.0.0
-        version: 3.0.0
+        version: link:../lex/lex-cbor
+      '@atproto/lex-data':
+        specifier: workspace:^
+        version: link:../lex/lex-data
+      '@atproto/syntax':
+        specifier: workspace:^
+        version: link:../syntax
       varint:
         specifier: ^6.0.0
         version: 6.0.0
@@ -10502,8 +10499,9 @@ packages:
       is-windows: 1.0.2
     dev: true
 
-  /better-sqlite3@10.0.0:
-    resolution: {integrity: sha512-rOz0JY8bt9oMgrFssP7GnvA5R3yln73y/NizzWqy3WlFth8Ux8+g4r/N9fjX97nn4X1YX6MTER2doNpTu5pqiA==}
+  /better-sqlite3@12.8.0:
+    resolution: {integrity: sha512-RxD2Vd96sQDjQr20kdP+F+dK/1OUNiVOl200vKBZY8u0vTwysfolF6Hq+3ZK2+h8My9YvZhHsF+RSGZW2VYrPQ==}
+    engines: {node: 20.x || 22.x || 23.x || 24.x || 25.x}
     requiresBuild: true
     dependencies:
       bindings: 1.5.0
@@ -16394,7 +16392,7 @@ packages:
     resolution: {integrity: sha512-Dp+A9JWxRaKuHP35H77I4kCKesDy5HUDEmScia2FyncMTOXASMyg251F5PhFoDA5uqBrDDffiLpbqnrZmNXW+g==}
     engines: {node: '>=10'}
     dependencies:
-      semver: 7.6.3
+      semver: 7.7.4
 
   /node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
@@ -17208,6 +17206,7 @@ packages:
   /prebuild-install@7.1.2:
     resolution: {integrity: sha512-UnNke3IQb6sgarcZIDU3gbMeTp/9SSU1DAIkil7PrqG1vZlBtY5msYccSKSHDqa3hNg436IXK+SNImReuA1wEQ==}
     engines: {node: '>=10'}
+    deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
     hasBin: true
     dependencies:
       detect-libc: 2.0.3
@@ -18252,7 +18251,6 @@ packages:
     resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
     engines: {node: '>=10'}
     hasBin: true
-    dev: true
 
   /send@0.18.0:
     resolution: {integrity: sha512-qqWzuOjSFOuqPjFe4NOsMLafToQQwBSOEpS+FwEt3A2V3vKubTquT3vmLTQpFgMXp8AlFWFuP1qKaJZOtPpVXg==}

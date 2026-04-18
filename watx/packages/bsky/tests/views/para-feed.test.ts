@@ -1,5 +1,5 @@
 import { request } from 'undici'
-import { AtpAgent } from '@atproto/api'
+import { AppBskyEmbedExternal, AtpAgent } from '@atproto/api'
 import { SeedClient, TestNetwork, usersSeed } from '@atproto/dev-env'
 import { ids } from '../../src/lexicon/lexicons'
 
@@ -181,6 +181,13 @@ type ParaCabildeoOutput = {
     activeDelegation?: string
     delegateHasVoted?: boolean
     delegatedVoteOption?: number
+  }
+  liveSession?: {
+    isLive: boolean
+    hostDid: string
+    activeParticipantCount: number
+    startedAt: string
+    participantPreviewDids: string[]
   }
 }
 
@@ -800,6 +807,290 @@ describe('para feed views', () => {
     expect(res.status).toBe(400)
     expect((res.body as { error?: string }).error).toBe('NotFound')
   })
+
+  it('surfaces live cabildeo metadata on cabildeos and participant profiles', async () => {
+    const cabildeo = await createCabildeoRecord(sc, alice, {
+      title: 'Live cabildeo',
+      description: 'Real-time deliberation',
+      community: 'mx-live',
+      phase: 'open',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await createLiveStatusRecord(sc, alice, {
+      uri: 'https://live.example.com/cabildeo/alice',
+    })
+    await network.processAll()
+
+    const hostPresence = await callParaProcedure<{
+      cabildeo: string
+      present: boolean
+      expiresAt?: string
+    }>(network, 'com.para.civic.putLivePresence', {
+      cabildeo: cabildeo.uri,
+      sessionId: 'alice-live-session',
+    }, alice)
+    expect(hostPresence.present).toBe(true)
+
+    const participantPresence = await callParaProcedure<{
+      cabildeo: string
+      present: boolean
+    }>(network, 'com.para.civic.putLivePresence', {
+      cabildeo: cabildeo.uri,
+      sessionId: 'dan-live-session',
+    }, dan)
+    expect(participantPresence.present).toBe(true)
+
+    const listed = await callPara<ParaListCabildeosOutput>(
+      network,
+      'com.para.civic.listCabildeos',
+      { community: 'mx-live', limit: 10 },
+      bob,
+    )
+    expect(listed.cabildeos[0]?.uri).toBe(cabildeo.uri)
+    expect(listed.cabildeos[0]?.liveSession).toEqual(
+      expect.objectContaining({
+        isLive: true,
+        hostDid: alice,
+        activeParticipantCount: 2,
+      }),
+    )
+    expect(listed.cabildeos[0]?.liveSession?.participantPreviewDids).toEqual(
+      expect.arrayContaining([alice, dan]),
+    )
+
+    const detail = await callPara<ParaGetCabildeoOutput>(
+      network,
+      'com.para.civic.getCabildeo',
+      { cabildeo: cabildeo.uri },
+      bob,
+    )
+    expect(detail.cabildeo.liveSession?.activeParticipantCount).toBe(2)
+
+    const profile = await agent.api.app.bsky.actor.getProfile(
+      { actor: dan },
+      {
+        headers: await network.serviceHeaders(
+          bob,
+          ids.AppBskyActorGetProfile,
+        ),
+      },
+    )
+    expect(profile.data.cabildeoLive).toEqual(
+      expect.objectContaining({
+        cabildeoUri: cabildeo.uri,
+        community: 'mx-live',
+        phase: 'open',
+      }),
+    )
+
+    const profiles = await agent.api.app.bsky.actor.getProfiles(
+      { actors: [dan] },
+      {
+        headers: await network.serviceHeaders(
+          bob,
+          ids.AppBskyActorGetProfiles,
+        ),
+      },
+    )
+    expect(profiles.data.profiles[0]?.cabildeoLive?.cabildeoUri).toBe(
+      cabildeo.uri,
+    )
+  })
+
+  it('boosts live cabildeos ahead of non-live cabildeos within a community', async () => {
+    const liveCabildeo = await createCabildeoRecord(sc, alice, {
+      title: 'Live-first cabildeo',
+      description: 'Should rank ahead while live',
+      community: 'mx-live-ranking',
+      phase: 'open',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    const newerNonLive = await createCabildeoRecord(sc, alice, {
+      title: 'Newer non-live cabildeo',
+      description: 'Would normally sort first',
+      community: 'mx-live-ranking',
+      phase: 'open',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await createLiveStatusRecord(sc, alice, {
+      uri: 'https://live.example.com/cabildeo/ranking',
+    })
+    await network.processAll()
+
+    await callParaProcedure(network, 'com.para.civic.putLivePresence', {
+      cabildeo: liveCabildeo.uri,
+      sessionId: 'alice-live-ranking',
+    }, alice)
+
+    const listed = await callPara<ParaListCabildeosOutput>(
+      network,
+      'com.para.civic.listCabildeos',
+      { community: 'mx-live-ranking', limit: 10 },
+      bob,
+    )
+    expect(listed.cabildeos[0]?.uri).toBe(liveCabildeo.uri)
+    expect(listed.cabildeos.map((item) => item.uri)).toContain(newerNonLive.uri)
+  })
+
+  it('expires live cabildeo presence without cleanup and respects generic live precedence', async () => {
+    jest.useFakeTimers({
+      doNotFake: [
+        'nextTick',
+        'performance',
+        'setImmediate',
+        'setInterval',
+        'setTimeout',
+      ],
+    })
+    try {
+      jest.setSystemTime(new Date('2026-04-17T12:00:00.000Z'))
+
+      const cabildeo = await createCabildeoRecord(sc, alice, {
+        title: 'Expiring live cabildeo',
+        description: 'Presence should expire',
+        community: 'mx-live-expiring',
+        phase: 'open',
+        options: [{ label: 'Yes' }, { label: 'No' }],
+      })
+      await createLiveStatusRecord(sc, alice, {
+        uri: 'https://live.example.com/cabildeo/shared',
+      })
+      await createLiveStatusRecord(sc, bob, {
+        uri: 'https://live.example.com/other-room',
+      })
+      await network.processAll()
+
+      await callParaProcedure(network, 'com.para.civic.putLivePresence', {
+        cabildeo: cabildeo.uri,
+        sessionId: 'alice-session-expiring',
+      }, alice)
+      await callParaProcedure(network, 'com.para.civic.putLivePresence', {
+        cabildeo: cabildeo.uri,
+        sessionId: 'bob-session-expiring',
+      }, bob)
+
+      const bobGenericLive = await agent.api.app.bsky.actor.getProfile(
+        { actor: bob },
+        {
+          headers: await network.serviceHeaders(
+            alice,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+      expect(bobGenericLive.data.status?.isActive).toBe(true)
+      expect(bobGenericLive.data.cabildeoLive).toBeUndefined()
+
+      await createLiveStatusRecord(sc, bob, {
+        uri: 'https://live.example.com/cabildeo/shared',
+      })
+      await network.processAll()
+
+      const bobMatchedLive = await agent.api.app.bsky.actor.getProfile(
+        { actor: bob },
+        {
+          headers: await network.serviceHeaders(
+            alice,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+      expect(bobMatchedLive.data.cabildeoLive?.cabildeoUri).toBe(cabildeo.uri)
+
+      jest.setSystemTime(new Date('2026-04-17T12:01:31.000Z'))
+
+      const listed = await callPara<ParaListCabildeosOutput>(
+        network,
+        'com.para.civic.listCabildeos',
+        { community: 'mx-live-expiring', limit: 10 },
+        alice,
+      )
+      expect(listed.cabildeos[0]?.liveSession).toBeUndefined()
+
+      const expiredProfile = await agent.api.app.bsky.actor.getProfile(
+        { actor: bob },
+        {
+          headers: await network.serviceHeaders(
+            alice,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+      expect(expiredProfile.data.cabildeoLive).toBeUndefined()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('filters blocked participants out of live preview dids', async () => {
+    const cabildeo = await createCabildeoRecord(sc, alice, {
+      title: 'Blocked preview filtering',
+      description: 'Preview should hide blocked users',
+      community: 'mx-live-blocks',
+      phase: 'open',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await createLiveStatusRecord(sc, alice, {
+      uri: 'https://live.example.com/cabildeo/blocked',
+    })
+    await network.processAll()
+
+    await callParaProcedure(network, 'com.para.civic.putLivePresence', {
+      cabildeo: cabildeo.uri,
+      sessionId: 'alice-blocked-preview',
+    }, alice)
+    await callParaProcedure(network, 'com.para.civic.putLivePresence', {
+      cabildeo: cabildeo.uri,
+      sessionId: 'bob-blocked-preview',
+    }, bob)
+    await sc.block(dan, bob)
+    await network.processAll()
+
+    const detail = await callPara<ParaGetCabildeoOutput>(
+      network,
+      'com.para.civic.getCabildeo',
+      { cabildeo: cabildeo.uri },
+      dan,
+    )
+    expect(detail.cabildeo.liveSession?.participantPreviewDids).toContain(alice)
+    expect(detail.cabildeo.liveSession?.participantPreviewDids).not.toContain(
+      bob,
+    )
+  })
+
+  it('rejects live presence for draft cabildeos', async () => {
+    const cabildeo = await createCabildeoRecord(sc, alice, {
+      title: 'Draft cabildeo',
+      description: 'Should not allow live presence',
+      community: 'mx-live-draft',
+      phase: 'draft',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await createLiveStatusRecord(sc, alice, {
+      uri: 'https://live.example.com/cabildeo/draft',
+    })
+    await network.processAll()
+
+    const url = new URL('/xrpc/com.para.civic.putLivePresence', network.bsky.url)
+    const authHeaders = await network.serviceHeaders(
+      alice,
+      'com.para.civic.putLivePresence',
+    )
+    const res = await request(url, {
+      method: 'POST',
+      headers: {
+        ...authHeaders,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        cabildeo: cabildeo.uri,
+        sessionId: 'draft-session',
+      }),
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect((await res.body.json())?.error).toBe('InvalidPhase')
+  })
 })
 
 const createParaPost = async (
@@ -1153,6 +1444,42 @@ const createCabildeoDelegationRecord = async (
   return { uri: data.uri, cid: data.cid }
 }
 
+const createLiveStatusRecord = async (
+  sc: SeedClient,
+  by: string,
+  opts: { uri: string; durationMinutes?: number },
+) => {
+  const embed: AppBskyEmbedExternal.Main = {
+    $type: 'app.bsky.embed.external',
+    external: {
+      uri: opts.uri,
+      title: 'Live room',
+      description: 'Live cabildeo room',
+    },
+  }
+
+  const { data } = await sc.agent.com.atproto.repo.putRecord(
+    {
+      repo: by,
+      collection: ids.AppBskyActorStatus,
+      rkey: 'self',
+      record: {
+        $type: ids.AppBskyActorStatus,
+        status: 'app.bsky.actor.status#live',
+        embed,
+        durationMinutes: opts.durationMinutes ?? 10,
+        createdAt: new Date().toISOString(),
+      },
+    },
+    {
+      encoding: 'application/json',
+      headers: sc.getHeaders(by),
+    },
+  )
+
+  return { uri: data.uri, cid: data.cid }
+}
+
 const callPara = async <T>(
   network: TestNetwork,
   nsid: string,
@@ -1188,4 +1515,24 @@ const callParaRaw = async (
     status: res.statusCode,
     body: await res.body.json(),
   }
+}
+
+const callParaProcedure = async <T>(
+  network: TestNetwork,
+  nsid: string,
+  body: Record<string, unknown>,
+  did: string,
+): Promise<T> => {
+  const url = new URL(`/xrpc/${nsid}`, network.bsky.url)
+  const authHeaders = await network.serviceHeaders(did, nsid)
+  const res = await request(url, {
+    method: 'POST',
+    headers: {
+      ...authHeaders,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  expect(res.statusCode).toBe(200)
+  return (await res.body.json()) as T
 }

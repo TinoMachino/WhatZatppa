@@ -22,7 +22,7 @@ import {select} from '#/alf/util/themeSelector'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {EyeSlash_Stroke2_Corner0_Rounded as Eye} from '#/components/icons/EyeSlash'
 import {Heart2_Stroke2_Corner0_Rounded as Heart} from '#/components/icons/Heart2'
-import {Repost_Stroke2_Corner2_Rounded as Repost} from '#/components/icons/Repost'
+import {CloseQuote_Stroke2_Corner1_Rounded as Quote} from '#/components/icons/Quote'
 import {Link} from '#/components/Link'
 import {MediaInsetBorder} from '#/components/MediaInsetBorder'
 import * as Hider from '#/components/moderation/Hider'
@@ -86,7 +86,7 @@ export function VideoPostCard({
     ? post.record?.text
     : ''
   const likeCount = post?.likeCount ?? 0
-  const repostCount = post?.repostCount ?? 0
+  const quoteCount = post?.quoteCount ?? 0
   const {thumbnail} = embed
   const black = getBlackColor(t)
 
@@ -233,12 +233,12 @@ export function VideoPostCard({
                       </Text>
                     </View>
                   )}
-                  {repostCount > 0 && (
+                  {quoteCount > 0 && (
                     <View style={[a.flex_row, a.align_center, a.gap_xs]}>
-                      <Repost size="sm" fill="white" />
+                      <Quote size="sm" fill="white" />
                       <Text
                         style={[a.text_sm, a.font_semi_bold, {color: 'white'}]}>
-                        {formatCount(i18n, repostCount)}
+                        {formatCount(i18n, quoteCount)}
                       </Text>
                     </View>
                   )}

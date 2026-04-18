@@ -43,15 +43,17 @@ import {
 } from '#/view/com/composer/text-input/web/EmojiPicker'
 import {List, type ListMethods} from '#/view/com/util/List'
 import {ChatDisabled} from '#/screens/Messages/components/ChatDisabled'
+import {MessageComposer} from '#/screens/Messages/components/MessageComposer'
 import {MessageInput} from '#/screens/Messages/components/MessageInput'
 import {MessageListError} from '#/screens/Messages/components/MessageListError'
 import {ChatEmptyPill} from '#/components/dms/ChatEmptyPill'
 import {MessageItem} from '#/components/dms/MessageItem'
 import {NewMessagesPill} from '#/components/dms/NewMessagesPill'
+import {SystemMessageItem} from '#/components/dms/SystemMessageItem'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {IS_NATIVE} from '#/env'
-import {IS_WEB} from '#/env'
+import {useAnalytics} from '#/analytics'
+import {IS_NATIVE, IS_WEB} from '#/env'
 import {ChatStatusInfo} from './ChatStatusInfo'
 import {MessageInputEmbed, useMessageEmbed} from './MessageInputEmbed'
 
@@ -74,6 +76,8 @@ function renderItem({item}: {item: ConvoItem}) {
     return <MessageItem item={item} />
   } else if (item.type === 'deleted-message') {
     return <Text>Deleted message</Text>
+  } else if (item.type === 'system-message') {
+    return <SystemMessageItem item={item} />
   } else if (item.type === 'error') {
     return <MessageListError item={item} />
   }
@@ -102,6 +106,7 @@ export function MessagesList({
   footer?: React.ReactNode
   hasAcceptOverride?: boolean
 }) {
+  const ax = useAnalytics()
   const convoState = useConvoActive()
   const agent = useAgent()
   const getPost = useGetPost()
@@ -224,7 +229,7 @@ export function MessagesList({
 
   const onStartReached = useCallback(() => {
     if (hasScrolled && prevContentHeight.current > layoutHeight.get()) {
-      convoState.fetchMessageHistory()
+      void convoState.fetchMessageHistory()
     }
   }, [convoState, hasScrolled, layoutHeight])
 
@@ -457,13 +462,26 @@ export function MessagesList({
           <ConversationFooter
             convoState={convoState}
             hasAcceptOverride={hasAcceptOverride}>
-            <MessageInput
-              onSendMessage={onSendMessage}
-              hasEmbed={!!embedUri}
-              setEmbed={setEmbed}
-              openEmojiPicker={onOpenEmojiPicker}>
-              <MessageInputEmbed embedUri={embedUri} setEmbed={setEmbed} />
-            </MessageInput>
+            {ax.features.enabled(ax.features.DmsNewMessageComposerEnable) ? (
+              <MessageComposer
+                onSendMessage={message => {
+                  void onSendMessage(message)
+                }}
+                hasEmbed={!!embedUri}
+                setEmbed={setEmbed}>
+                <MessageInputEmbed embedUri={embedUri} setEmbed={setEmbed} />
+              </MessageComposer>
+            ) : (
+              <MessageInput
+                onSendMessage={message => {
+                  void onSendMessage(message)
+                }}
+                hasEmbed={!!embedUri}
+                setEmbed={setEmbed}
+                openEmojiPicker={onOpenEmojiPicker}>
+                <MessageInputEmbed embedUri={embedUri} setEmbed={setEmbed} />
+              </MessageInput>
+            )}
           </ConversationFooter>
         )}
       </Animated.View>

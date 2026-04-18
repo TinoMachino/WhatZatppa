@@ -50,6 +50,16 @@ export interface Multihash<THashCode extends number = number> {
   code: THashCode
 
   /**
+   * Byte length of the digest bytes.
+   */
+  size: number
+
+  /**
+   * Encoded multihash bytes.
+   */
+  bytes: Uint8Array
+
+  /**
    * Raw digest bytes.
    */
   digest: Uint8Array
@@ -176,7 +186,7 @@ export interface Cid<
   TVersion extends 0 | 1 = 0 | 1,
   TCodec extends number = number,
   THashCode extends number = number,
-> {
+> extends CID {
   // @NOTE This interface is compatible with multiformats' CID implementation
   // which we are using under the hood.
 

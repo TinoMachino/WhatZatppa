@@ -251,6 +251,7 @@ function Slider({x, width}: {x: number; width: number}) {
 
   return (
     <Animated.View
+      pointerEvents="none"
       layout={native(LinearTransition.easing(Easing.out(Easing.exp)))}
       style={[
         a.absolute,

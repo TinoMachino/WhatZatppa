@@ -8,6 +8,7 @@ const $nsid = 'chat.bsky.convo.updateAllRead'
 
 export { $nsid }
 
+/** Sets conversations from a user as read to the latest message, with filters. */
 const main = l.procedure(
   $nsid,
   l.params(),

@@ -92,6 +92,18 @@ const LEXICONS = [
       },
     },
   },
+  {
+    lexicon: 1,
+    id: 'io.example.deepJsonTest',
+    defs: {
+      main: {
+        type: 'query',
+        output: {
+          encoding: 'application/json',
+        },
+      },
+    },
+  },
 ] as const satisfies LexiconDoc[]
 
 const handlers = {
@@ -116,6 +128,18 @@ const handlers = {
     return {
       encoding: 'application/json',
       body: { cid: cid.toString() },
+    }
+  },
+  'io.example.deepJsonTest': () => {
+    let nested: { level: number; nested?: unknown } = { level: 0 }
+    let current = nested
+    for (let i = 1; i <= 5000; i++) {
+      current.nested = { level: i }
+      current = current.nested as { level: number; nested?: unknown }
+    }
+    return {
+      encoding: 'application/json',
+      body: nested,
     }
   },
 }
@@ -277,6 +301,25 @@ for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
         )
       } finally {
         spy.mockRestore()
+      }
+    })
+
+    test('serializes deeply nested JSON responses', async () => {
+      const response = await fetch(`${url}/xrpc/io.example.deepJsonTest`)
+      expect(response.status).toBe(200)
+
+      const parsed = (await response.json()) as {
+        level: number
+        nested?: { level: number; nested?: unknown }
+      }
+
+      let check = parsed
+      for (let i = 0; i <= 5000; i++) {
+        expect(check.level).toBe(i)
+        if (i < 5000) {
+          expect(check.nested).toBeDefined()
+          check = check.nested!
+        }
       }
     })
 

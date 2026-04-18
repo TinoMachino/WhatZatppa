@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.muteConvo'
 
 export { $nsid }
 
+/** Mutes a conversation, preventing notifications related to it. */
 const main = l.procedure(
   $nsid,
   l.params(),
@@ -16,6 +17,7 @@ const main = l.procedure(
   l.jsonPayload({
     convo: l.ref<ConvoDefs.ConvoView>((() => ConvoDefs.convoView) as any),
   }),
+  ['InvalidConvo'],
 )
 export { main }
 

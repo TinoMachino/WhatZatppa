@@ -8,13 +8,18 @@ import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {Text} from '#/components/Typography'
+import {useNavigation} from '@react-navigation/native'
+import {type NavigationProp} from '#/lib/routes/types'
+import {useComposerControls} from '#/state/shell/composer'
 
 export function PostTypeBtn({
   postType,
   setPostType,
+  isReply,
 }: {
   postType: PostType | null
   setPostType: (type: PostType | null) => void
+  isReply?: boolean
 }) {
   const control = Dialog.useDialogControl()
   const {_} = useLingui()
@@ -110,6 +115,7 @@ export function PostTypeBtn({
           postType={postType}
           setPostType={setPostType}
           control={control}
+          isReply={isReply}
         />
       </Dialog.Outer>
     </>
@@ -120,15 +126,26 @@ function DialogInner({
   postType,
   setPostType,
   control,
+  isReply,
 }: {
   postType: PostType | null
   setPostType: (type: PostType | null) => void
   control: Dialog.DialogOuterProps['control']
+  isReply?: boolean
 }) {
   const {_} = useLingui()
   const t = useTheme()
+  const navigation = useNavigation<NavigationProp>()
+  const {closeComposer} = useComposerControls()
 
   const handleSelect = (pt: PostType) => {
+    if (pt.id === 'policy') {
+      control.close()
+      closeComposer()
+      navigation.navigate('CreateCabildeo')
+      return
+    }
+
     if (pt.id === 'none') {
       setPostType(null)
     } else {
@@ -147,27 +164,32 @@ function DialogInner({
         </Text>
 
         <View style={[a.gap_sm]}>
-          {Object.values(POST_TYPES).map(pt => (
-            <TouchableOpacity
-              key={pt.id}
-              accessibilityRole="radio"
-              accessibilityState={{
-                checked:
-                  pt.id === 'none' ? postType === null : postType?.id === pt.id,
-              }}
-              onPress={() => handleSelect(pt)}
-              style={[
-                a.flex_row,
-                a.align_center,
-                a.gap_md,
-                a.p_md,
-                a.rounded_sm,
-                (pt.id === 'none' ? postType === null : postType?.id === pt.id)
-                  ? t.atoms.bg_contrast_50
-                  : t.atoms.bg_contrast_25,
-              ]}>
-              {/* Radio Circle */}
-              <View
+          {Object.values(POST_TYPES).map(pt => {
+            const isDisabled = pt.id === 'policy' && isReply
+            return (
+              <TouchableOpacity
+                key={pt.id}
+                disabled={isDisabled}
+                accessibilityRole="radio"
+                accessibilityState={{
+                  disabled: isDisabled,
+                  checked:
+                    pt.id === 'none' ? postType === null : postType?.id === pt.id,
+                }}
+                onPress={() => handleSelect(pt)}
+                style={[
+                  a.flex_row,
+                  a.align_center,
+                  a.gap_md,
+                  a.p_md,
+                  a.rounded_sm,
+                  (pt.id === 'none' ? postType === null : postType?.id === pt.id)
+                    ? t.atoms.bg_contrast_50
+                    : t.atoms.bg_contrast_25,
+                  isDisabled && {opacity: 0.5},
+                ]}>
+                {/* Radio Circle */}
+                <View
                 style={[
                   {
                     width: 20,

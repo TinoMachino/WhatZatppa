@@ -17,6 +17,7 @@ import {
   ScrollView,
   type StyleProp,
   StyleSheet,
+  TextInput,
   View,
   type ViewStyle,
 } from 'react-native'
@@ -753,15 +754,21 @@ export const ComposePost = ({
 
   const canPost =
     !missingAltError &&
-    thread.posts.every(
-      post =>
+    thread.posts.every((post, index) => {
+      const isPolicy = post.postType?.id === 'policy'
+      const hasTitle = post.title.trim().length > 0
+      const isReply = !!replyTo || index > 0
+      return (
         post.shortenedGraphemeLength <= MAX_GRAPHEME_LENGTH &&
         !isEmptyPost(post) &&
+        !(isPolicy && !hasTitle) &&
+        !(isPolicy && isReply) &&
         !(
           post.embed.media?.type === 'video' &&
           post.embed.media.video.status === 'error'
-        ),
-    )
+        )
+      )
+    })
 
 
   const isComposerEmpty = useMemo(() => {
@@ -1414,37 +1421,56 @@ let ComposerPost = React.memo(function ComposerPost({
           type={currentProfile?.associated?.labeler ? 'labeler' : 'user'}
           style={[a.mt_xs]}
         />
-        <ComposerTextInput
-          ref={textInput}
-          style={[a.pt_xs]}
-          richtext={richtext}
-          placeholder={selectTextInputPlaceholder}
-          autoFocus={isLastPost}
-          webForceMinHeight={forceMinHeight}
-          // To avoid overlap with the close button:
-          hasRightPadding={isPartOfThread}
-          isActive={isActive}
-          setRichText={(rt: RichText) => {
-            dispatchPost({ type: 'update_richtext', richtext: rt })
-          }}
-          onFocus={() => {
-            dispatch({
-              type: 'focus_post',
-              postId: post.id,
-            })
-          }}
-          onPhotoPasted={onPhotoPasted}
-          onNewLink={onNewLink}
-          onError={onError}
-          onPressPublish={onPublish}
-          accessible={true}
-          accessibilityLabel={_(msg`Write post`)}
-          accessibilityHint={_(
-            msg`Compose posts up to ${plural(MAX_GRAPHEME_LENGTH || 0, {
-              other: '# characters',
-            })} in length`,
+        <View style={[a.flex_1, a.pl_sm]}>
+          {post.postType?.id === 'policy' && (
+            <TextInput
+              style={[
+                a.text_lg,
+                a.font_bold,
+                a.pb_xs,
+                {color: t.atoms.text.color},
+                web({outlineStyle: 'none'}),
+              ]}
+              placeholder={_(msg`Policy Title (Proposal)`)}
+              placeholderTextColor={t.palette.contrast_500}
+              value={post.title}
+              onChangeText={text => dispatchPost({type: 'update_title', title: text})}
+              accessible={true}
+              accessibilityLabel={_(msg`Policy title`)}
+            />
           )}
-        />
+          <ComposerTextInput
+            ref={textInput}
+            style={[a.pt_xs]}
+            richtext={richtext}
+            placeholder={selectTextInputPlaceholder}
+            autoFocus={isLastPost}
+            webForceMinHeight={forceMinHeight}
+            // To avoid overlap with the close button:
+            hasRightPadding={isPartOfThread}
+            isActive={isActive}
+            setRichText={(rt: RichText) => {
+              dispatchPost({type: 'update_richtext', richtext: rt})
+            }}
+            onFocus={() => {
+              dispatch({
+                type: 'focus_post',
+                postId: post.id,
+              })
+            }}
+            onPhotoPasted={onPhotoPasted}
+            onNewLink={onNewLink}
+            onError={onError}
+            onPressPublish={onPublish}
+            accessible={true}
+            accessibilityLabel={_(msg`Write post`)}
+            accessibilityHint={_(
+              msg`Compose posts up to ${plural(MAX_GRAPHEME_LENGTH || 0, {
+                other: '# characters',
+              })} in length`,
+            )}
+          />
+        </View>
       </View>
 
       {canRemovePost && isActive && (
@@ -1902,6 +1928,9 @@ function ComposerPills({
           ) : null}
 
           {/* Advanced Flair & Verification Buttons (Split + Post Type) */}
+          {/* Post Type (Meme, RAQ, etc.) */}
+          <PostTypeBtn postType={postType} setPostType={setPostType} isReply={isReply} />
+
           {!isReply && (
             <>
               {/* Private / Public Toggle */}
@@ -1958,8 +1987,7 @@ function ComposerPills({
                 </View>
               </Pressable>
 
-              {/* Post Type (Meme, RAQ, etc.) */}
-              <PostTypeBtn postType={postType} setPostType={setPostType} />
+
 
               {/* official status toggle */}
               <Pressable

@@ -279,6 +279,45 @@ export function CommunitiesScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* ─── Propose a Community Entry Point ─── */}
+          <View style={[styles.section, {marginTop: 0}]}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('StarterPackWizard', {isCommunitySeed: true})}
+              style={{
+                borderRadius: 16,
+                padding: 18,
+                marginHorizontal: 16,
+                backgroundColor: '#34C759' + '12',
+                borderWidth: 1,
+                borderColor: '#34C759' + '30',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}>
+              <Text style={{fontSize: 28}}>🏛️</Text>
+              <View style={{flex: 1}}>
+                <Text
+                  style={[
+                    {fontSize: 16, fontWeight: '900'},
+                    t.atoms.text,
+                  ]}>
+                  Proponer una Comunidad
+                </Text>
+                <Text
+                  style={[
+                    {fontSize: 12, marginTop: 2},
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  Crea un Starter Pack con 9 miembros para desbloquear · Aforo
+                </Text>
+              </View>
+              <Text style={[{fontSize: 18}, t.atoms.text_contrast_medium]}>
+                ›
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={[styles.section, {marginTop: 0}]}>
             <View style={[styles.sectionHeader, {marginBottom: 8}]}>
               <Text style={[styles.sectionTitle, pal.text]}>

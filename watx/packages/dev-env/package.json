@@ -16,10 +16,11 @@
   "types": "dist/index.d.ts",
   "bin": "dist/bin.js",
   "scripts": {
+    "ensure:native": "node ../../scripts/ensure-pds-native-addon.js",
     "build": "tsc --build tsconfig.build.json",
-    "start": "../dev-infra/with-test-redis-and-db.sh node --enable-source-maps dist/bin.js",
-    "start:persistent": "../dev-infra/with-redis-and-db.sh node --enable-source-maps dist/bin.js",
-    "dev": "../dev-infra/with-test-redis-and-db.sh node --enable-source-maps --watch dist/bin.js"
+    "start": "pnpm run ensure:native && ../dev-infra/with-test-redis-and-db.sh node --enable-source-maps dist/bin.js",
+    "start:persistent": "pnpm run ensure:native && ../dev-infra/with-redis-and-db.sh node --enable-source-maps dist/bin.js",
+    "dev": "pnpm run ensure:native && ../dev-infra/with-test-redis-and-db.sh node --enable-source-maps --watch dist/bin.js"
   },
   "engines": {
     "node": ">=18.7.0"

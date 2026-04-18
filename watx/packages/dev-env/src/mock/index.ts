@@ -166,16 +166,6 @@ export async function generateMockSetup(env: TestNetwork) {
       },
     )
     posts.push(post)
-    if (rand(10) === 0) {
-      const reposter = picka(userAgents)
-      await reposter.app.bsky.feed.repost.create(
-        { repo: reposter.assertDid },
-        {
-          subject: picka(posts),
-          createdAt: date.next().value,
-        },
-      )
-    }
     if (rand(6) === 0) {
       const reporter = picka(userAgents)
       await reporter.com.atproto.moderation.createReport({

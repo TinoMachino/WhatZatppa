@@ -498,6 +498,8 @@ message ActorInfo {
   optional AgeAssuranceStatus age_assurance_status = 19;
   reserved 20; // DO NOT REMOVE - see dataplane repo
   Record germ_record = 21;
+  optional ParaCabildeoLive cabildeo_live = 22;
+  string allow_group_chat_invites_from = 23;
 }
 
 message AgeAssuranceStatus {
@@ -1228,6 +1230,52 @@ message GetParaCommunityGovernanceResponse {
   repeated ParaCommunityGovernanceHistoryEntry edit_history = 8;
 }
 
+message GetParaCommunityBoardRequest {
+  string community_id = 1;
+  string uri = 2;
+  string viewer_did = 3;
+}
+
+message ParaCommunityBoardView {
+  string uri = 1;
+  string cid = 2;
+  string creator_did = 3;
+  string creator_handle = 4;
+  string creator_display_name = 5;
+  string community_id = 6;
+  string slug = 7;
+  string name = 8;
+  string description = 9;
+  string quadrant = 10;
+  string delegates_chat_id = 11;
+  string subdelegates_chat_id = 12;
+  int32 member_count = 13;
+  string viewer_membership_state = 14;
+  repeated string viewer_roles = 15;
+  string created_at = 16;
+}
+
+message ParaCommunityGovernanceSummary {
+  int32 moderator_count = 1;
+  int32 official_count = 2;
+  int32 deputy_role_count = 3;
+  string last_published_at = 4;
+}
+
+message GetParaCommunityBoardResponse {
+  ParaCommunityBoardView board = 1;
+  ParaCommunityGovernanceSummary governance_summary = 2;
+}
+
+message GetParaCommunityBoardsRequest {
+  string viewer_did = 1;
+  int32 limit = 2;
+}
+
+message GetParaCommunityBoardsResponse {
+  repeated ParaCommunityBoardView boards = 1;
+}
+
 // - Returns indexed Cabildeos and aggregate summaries, paginated
 //     - `com.para.civic.listCabildeos`
 message GetParaCabildeosRequest {
@@ -1284,6 +1332,22 @@ message ParaCabildeoViewerContext {
   bool delegate_vote_dismissed = 8;
 }
 
+message ParaCabildeoLiveSession {
+  bool is_live = 1;
+  string host_did = 2;
+  int32 active_participant_count = 3;
+  string started_at = 4;
+  repeated string participant_preview_dids = 5;
+}
+
+message ParaCabildeoLive {
+  string cabildeo_uri = 1;
+  string community = 2;
+  string phase = 3;
+  string expires_at = 4;
+  string live_uri = 5;
+}
+
 message ParaCabildeoView {
   string uri = 1;
   string cid = 2;
@@ -1306,6 +1370,7 @@ message ParaCabildeoView {
   ParaCabildeoVoteTotals vote_totals = 19;
   optional ParaCabildeoOutcomeSummary outcome_summary = 20;
   optional ParaCabildeoViewerContext viewer_context = 21;
+  optional ParaCabildeoLiveSession live_session = 22;
 }
 
 message GetParaCabildeosResponse {
@@ -1349,6 +1414,20 @@ message GetParaCabildeoPositionsRequest {
 message GetParaCabildeoPositionsResponse {
   repeated ParaCabildeoPositionView positions = 1;
   string cursor = 2;
+}
+
+message PutParaCabildeoLivePresenceRequest {
+  string actor_did = 1;
+  string cabildeo_uri = 2;
+  string session_id = 3;
+  bool present = 4;
+  string host_live_uri = 5;
+}
+
+message PutParaCabildeoLivePresenceResponse {
+  string cabildeo_uri = 1;
+  bool present = 2;
+  string expires_at = 3;
 }
 
 // - Returns indexed public highlights, paginated
@@ -1929,9 +2008,12 @@ service Service {
   rpc GetParaPostMeta(GetParaPostMetaRequest) returns (GetParaPostMetaResponse);
   rpc GetParaProfileStats(GetParaProfileStatsRequest) returns (GetParaProfileStatsResponse);
   rpc GetParaCommunityGovernance(GetParaCommunityGovernanceRequest) returns (GetParaCommunityGovernanceResponse);
+  rpc GetParaCommunityBoard(GetParaCommunityBoardRequest) returns (GetParaCommunityBoardResponse);
+  rpc GetParaCommunityBoards(GetParaCommunityBoardsRequest) returns (GetParaCommunityBoardsResponse);
   rpc GetParaCabildeos(GetParaCabildeosRequest) returns (GetParaCabildeosResponse);
   rpc GetParaCabildeo(GetParaCabildeoRequest) returns (GetParaCabildeoResponse);
   rpc GetParaCabildeoPositions(GetParaCabildeoPositionsRequest) returns (GetParaCabildeoPositionsResponse);
+  rpc PutParaCabildeoLivePresence(PutParaCabildeoLivePresenceRequest) returns (PutParaCabildeoLivePresenceResponse);
   rpc GetParaHighlights(GetParaHighlightsRequest) returns (GetParaHighlightsResponse);
   rpc GetParaHighlight(GetParaHighlightRequest) returns (GetParaHighlightResponse);
   rpc GetTimeline(GetTimelineRequest) returns (GetTimelineResponse);

@@ -19,10 +19,7 @@ import {logger} from '#/logger'
 import {type Shadow} from '#/state/cache/types'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
 import {useHighlightMode, useHighlights} from '#/state/highlights'
-import {
-  usePostLikeMutationQueue,
-  usePostQuoteMutationQueue,
-} from '#/state/queries/post'
+import {usePostLikeMutationQueue} from '#/state/queries/post'
 import {useRequireAuth} from '#/state/session'
 import {
   ProgressGuideAction,
@@ -81,12 +78,6 @@ let PostControls = ({
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
-    post,
-    viaQuote,
-    feedDescriptor,
-    logContext,
-  )
-  const [queueQuote, queueUnquote] = usePostQuoteMutationQueue(
     post,
     viaQuote,
     feedDescriptor,
@@ -192,33 +183,6 @@ let PostControls = ({
             throw e
           }
         }
-      }
-    }
-  }
-
-  const onRepost = async () => {
-    if (isBlocked) {
-      Toast.show(_(msg`Cannot interact with a blocked user`), {
-        type: 'warning',
-      })
-      return
-    }
-
-    try {
-      if (!post.viewer?.repost) {
-        sendInteraction({
-          item: post.uri,
-          event: 'app.bsky.feed.defs#interactionRepost',
-          feedContext,
-          reqId,
-        })
-        await queueQuote()
-      } else {
-        await queueUnquote()
-      }
-    } catch (e: any) {
-      if (e?.name !== 'AbortError') {
-        throw e
       }
     }
   }
@@ -375,9 +339,7 @@ let PostControls = ({
             {marginRight: Platform.OS === 'web' ? 102 : 24},
           ]}>
           <QuoteButton
-            isReposted={!!post.viewer?.repost}
-            repostCount={(post.repostCount ?? 0) + (post.quoteCount ?? 0)}
-            onRepost={onRepost}
+            quoteCount={post.quoteCount ?? 0}
             onQuote={onQuote}
             onHighlight={onHighlight}
             onRemoveAllHighlights={onRemoveAllHighlights}

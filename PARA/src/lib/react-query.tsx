@@ -139,7 +139,7 @@ const dehydrateOptions: PersistQueryClientProviderProps['persistOptions']['dehyd
     shouldDehydrateMutation: (_: any) => false,
     shouldDehydrateQuery: query => {
       const root = String(query.queryKey[0])
-      return root === PERSISTED_QUERY_ROOT
+      return root === PERSISTED_QUERY_ROOT && query.state.status === 'success'
     },
   }
 
@@ -186,12 +186,14 @@ function QueryProviderInner({
     return {
       persister: asyncPersister,
       dehydrateOptions,
-      buster: env.APP_VERSION,
+      buster: `${env.APP_VERSION}:persisted-success-only-v1`,
     } satisfies Omit<PersistQueryClientOptions, 'queryClient'>
   })
   useEffect(() => {
     if (IS_WEB) {
-      window.__TANSTACK_QUERY_CLIENT__ = queryClient
+      // WARNING: leaving this enabled on newer TanStack Query builds can cause
+      // the browser integration to OOM, so keep the extension hook disabled.
+      // window.__TANSTACK_QUERY_CLIENT__ = queryClient
     }
   }, [queryClient])
   return (

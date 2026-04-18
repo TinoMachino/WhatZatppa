@@ -6,10 +6,10 @@ import cors from 'cors'
 import { Etcd3 } from 'etcd3'
 import express from 'express'
 import { HttpTerminator, createHttpTerminator } from 'http-terminator'
-import { AtpAgent } from '@atproto/api'
 import { DAY, SECOND } from '@atproto/common'
 import { Keypair } from '@atproto/crypto'
 import { IdResolver } from '@atproto/identity'
+import { Client } from '@atproto/lex'
 import API, { blobResolver, external, health, sitemap, wellKnown } from './api'
 import { createBlobDispatcher } from './api/blob-dispatcher'
 import { AuthVerifier, createPublicKeyObject } from './auth-verifier'
@@ -83,29 +83,27 @@ export class BskyAppView {
         `${config.publicUrl}/vid/%s/%s/thumbnail.jpg`,
     })
 
-    const searchAgent = config.searchUrl
-      ? new AtpAgent({ service: config.searchUrl })
+    const searchClient = config.searchUrl
+      ? new Client({ service: config.searchUrl })
       : undefined
 
-    const suggestionsAgent = config.suggestionsUrl
-      ? new AtpAgent({ service: config.suggestionsUrl })
+    const suggestionsClient = config.suggestionsUrl
+      ? new Client({
+          service: config.suggestionsUrl,
+          headers: config.suggestionsApiKey
+            ? { authorization: `Bearer ${config.suggestionsApiKey}` }
+            : undefined,
+        })
       : undefined
-    if (suggestionsAgent && config.suggestionsApiKey) {
-      suggestionsAgent.api.setHeader(
-        'authorization',
-        `Bearer ${config.suggestionsApiKey}`,
-      )
-    }
 
-    const topicsAgent = config.topicsUrl
-      ? new AtpAgent({ service: config.topicsUrl })
+    const topicsClient = config.topicsUrl
+      ? new Client({
+          service: config.topicsUrl,
+          headers: config.topicsApiKey
+            ? { authorization: `Bearer ${config.topicsApiKey}` }
+            : undefined,
+        })
       : undefined
-    if (topicsAgent && config.topicsApiKey) {
-      topicsAgent.api.setHeader(
-        'authorization',
-        `Bearer ${config.topicsApiKey}`,
-      )
-    }
 
     const etcd = config.etcdHosts.length
       ? new Etcd3({ hosts: config.etcdHosts })
@@ -199,9 +197,9 @@ export class BskyAppView {
       etcd,
       dataplane,
       dataplaneHostList,
-      searchAgent,
-      suggestionsAgent,
-      topicsAgent,
+      searchClient,
+      suggestionsClient,
+      topicsClient,
       hydrator,
       views,
       signingKey,

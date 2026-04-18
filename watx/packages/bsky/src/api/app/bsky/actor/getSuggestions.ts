@@ -1,5 +1,5 @@
-import { AtpAgent } from '@atproto/api'
 import { mapDefined, noUndefinedVals } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { HeadersMap } from '@atproto/xrpc'
 import { AppContext } from '../../../../context'
 import { DataPlaneClient } from '../../../../data-plane'
@@ -11,6 +11,7 @@ import {
 import { parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/actor/getSuggestions'
+import { app } from '../../../../lexicons/index.js'
 import { createPipeline } from '../../../../pipeline'
 import { Views } from '../../../../views'
 import { resHeaders } from '../../../util'
@@ -39,7 +40,7 @@ export default function (server: Server, ctx: AppContext) {
         ctx,
       )
       const suggestionsResHeaders = noUndefinedVals({
-        'content-language': resultHeaders?.['content-language'],
+        'content-language': resultHeaders?.get('content-language') ?? undefined,
       })
       return {
         encoding: 'application/json',
@@ -59,21 +60,23 @@ const skeleton = async (input: {
 }): Promise<Skeleton> => {
   const { ctx, params } = input
   const viewer = params.hydrateCtx.viewer
-  if (ctx.suggestionsAgent) {
-    const res =
-      await ctx.suggestionsAgent.api.app.bsky.unspecced.getSuggestionsSkeleton(
-        {
+  if (ctx.suggestionsClient) {
+    const res = await ctx.suggestionsClient.xrpc(
+      app.bsky.unspecced.getSuggestionsSkeleton,
+      {
+        headers: params.headers,
+        params: {
           viewer: viewer ?? undefined,
           limit: params.limit,
           cursor: params.cursor,
-        },
-        { headers: params.headers },
-      )
+        } as app.bsky.unspecced.getSuggestionsSkeleton.$Params,
+      },
+    )
     return {
-      dids: res.data.actors.map((a) => a.did),
-      cursor: res.data.cursor,
-      recId: res.data.recId,
-      recIdStr: res.data.recIdStr,
+      dids: res.body.actors.map((a) => a.did),
+      cursor: res.body.cursor,
+      recId: res.body.recId,
+      recIdStr: res.body.recIdStr,
       resHeaders: res.headers,
     }
   } else {
@@ -139,7 +142,7 @@ const presentation = (input: {
 }
 
 type Context = {
-  suggestionsAgent: AtpAgent | undefined
+  suggestionsClient: Client | undefined
   dataplane: DataPlaneClient
   hydrator: Hydrator
   views: Views
@@ -155,5 +158,5 @@ type Skeleton = {
   cursor?: string
   recId?: number
   recIdStr?: string
-  resHeaders?: HeadersMap
+  resHeaders?: Headers
 }

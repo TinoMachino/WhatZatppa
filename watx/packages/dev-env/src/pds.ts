@@ -42,6 +42,8 @@ export class TestPds {
       recoveryDidKey: recoveryKey,
       adminPassword: ADMIN_PASSWORD,
       jwtSecret: JWT_SECRET,
+      emailSmtpUrl: process.env.PDS_EMAIL_SMTP_URL,
+      emailFromAddress: process.env.PDS_EMAIL_FROM_ADDRESS,
       // @NOTE ".example" will not actually work and is only used to display
       // multiple domains in the sing-up UI
       serviceHandleDomains: ['.test', '.example'],

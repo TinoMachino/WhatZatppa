@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.listConvos'
 
 export { $nsid }
 
+/** Returns a page of conversations (direct or group) for the user. */
 const main = l.query(
   $nsid,
   l.params({
@@ -18,6 +19,7 @@ const main = l.query(
     cursor: l.optional(l.string()),
     readState: l.optional(l.string<{ knownValues: ['unread'] }>()),
     status: l.optional(l.string<{ knownValues: ['request', 'accepted'] }>()),
+    kind: l.optional(l.string<{ knownValues: ['direct', 'group'] }>()),
   }),
   l.jsonPayload({
     cursor: l.optional(l.string()),

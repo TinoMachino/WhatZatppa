@@ -117,6 +117,7 @@ function Inner(props: ReportDialogProps) {
   const t = useTheme()
   const {_} = useLingui()
   const ref = useRef<ScrollView>(null)
+  const {control, onAfterSubmit, subject} = props
   const {
     data: allLabelers,
     isLoading: isLabelerLoading,
@@ -124,7 +125,7 @@ function Inner(props: ReportDialogProps) {
     refetch: refetchLabelers,
   } = useMyLabelersQuery({excludeNonConfigurableLabelers: true})
   const isLoading = useDelayedLoading(500, isLabelerLoading)
-  const copy = useCopyForSubject(props.subject)
+  const copy = useCopyForSubject(subject)
   const {categories, getCategory} = useReportOptions()
   const [state, dispatch] = useReducer(reducer, initialState)
 
@@ -140,9 +141,7 @@ function Inner(props: ReportDialogProps) {
     ? BSKY_LABELER_ONLY_REPORT_REASONS.has(state.selectedOption.reason)
     : false
   // some subjects ONLY go to PARA
-  const isBskyOnlySubject = BSKY_LABELER_ONLY_SUBJECT_TYPES.has(
-    props.subject.type,
-  )
+  const isBskyOnlySubject = BSKY_LABELER_ONLY_SUBJECT_TYPES.has(subject.type)
 
   /**
    * Labelers that support this `subject` and its NSID collection
@@ -153,9 +152,9 @@ function Inner(props: ReportDialogProps) {
       .filter(l => {
         const subjectTypes: string[] | undefined = l.subjectTypes
         if (subjectTypes === undefined) return true
-        if (props.subject.type === 'account') {
+        if (subject.type === 'account') {
           return subjectTypes.includes('account')
-        } else if (props.subject.type === 'convoMessage') {
+        } else if (subject.type === 'convoMessage') {
           return subjectTypes.includes('chat')
         } else {
           return subjectTypes.includes('record')
@@ -165,8 +164,8 @@ function Inner(props: ReportDialogProps) {
         const collections: string[] | undefined = l.subjectCollections
         if (collections === undefined) return true
         // all chat collections accepted, since only PARA handles chats
-        if (props.subject.type === 'convoMessage') return true
-        return collections.includes(props.subject.nsid)
+        if (subject.type === 'convoMessage') return true
+        return collections.includes(subject.nsid)
       })
       .filter(l => {
         if (!state.selectedOption) return false
@@ -185,7 +184,7 @@ function Inner(props: ReportDialogProps) {
         )
       })
   }, [
-    props,
+    subject,
     allLabelers,
     state.selectedOption,
     isBskyOnlyReason,
@@ -214,7 +213,7 @@ function Inner(props: ReportDialogProps) {
       await wait(
         1e3,
         submitReport({
-          subject: props.subject,
+          subject,
           state,
         }),
       )
@@ -226,8 +225,8 @@ function Inner(props: ReportDialogProps) {
       })
       // give time for user feedback
       setTimeout(() => {
-        props.control.close(() => {
-          props.onAfterSubmit?.()
+        control.close(() => {
+          onAfterSubmit?.()
         })
       }, 1e3)
     } catch (e: any) {
@@ -242,11 +241,23 @@ function Inner(props: ReportDialogProps) {
     } finally {
       setPending(false)
     }
-  }, [_, submitReport, state, dispatch, props, setPending, setSuccess])
+  }, [
+    _,
+    ax,
+    control,
+    submitReport,
+    state,
+    dispatch,
+    logger,
+    onAfterSubmit,
+    setPending,
+    setSuccess,
+    subject,
+  ])
 
   useCallOnce(() => {
     ax.metric('reportDialog:open', {
-      subjectType: props.subject.type,
+      subjectType: subject.type,
     })
   })()
 

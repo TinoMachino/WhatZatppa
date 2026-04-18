@@ -34,6 +34,8 @@ import * as ListBlock from './plugins/list-block'
 import * as ListItem from './plugins/list-item'
 import * as NotifDeclaration from './plugins/notif-declaration'
 import * as ParaPost from './plugins/para-post'
+import * as ParaCommunityBoard from './plugins/para-community-board'
+import * as ParaCommunityMembership from './plugins/para-community-membership'
 import * as ParaPostMeta from './plugins/para-post-meta'
 import * as ParaStatus from './plugins/para-status'
 import * as Post from './plugins/post'
@@ -68,6 +70,8 @@ export class IndexingService {
     verification: Verification.PluginType
     status: Status.PluginType
     paraPost: ParaPost.PluginType
+    paraCommunityBoard: ParaCommunityBoard.PluginType
+    paraCommunityMembership: ParaCommunityMembership.PluginType
     paraPostMeta: ParaPostMeta.PluginType
     paraStatus: ParaStatus.PluginType
     cabildeo: Cabildeo.PluginType
@@ -103,6 +107,14 @@ export class IndexingService {
       verification: Verification.makePlugin(this.db, this.background),
       status: Status.makePlugin(this.db, this.background),
       paraPost: ParaPost.makePlugin(this.db, this.background),
+      paraCommunityBoard: ParaCommunityBoard.makePlugin(
+        this.db,
+        this.background,
+      ),
+      paraCommunityMembership: ParaCommunityMembership.makePlugin(
+        this.db,
+        this.background,
+      ),
       paraPostMeta: ParaPostMeta.makePlugin(this.db, this.background),
       paraStatus: ParaStatus.makePlugin(this.db, this.background),
       cabildeo: Cabildeo.makePlugin(this.db, this.background),
@@ -388,6 +400,14 @@ export class IndexingService {
       .execute()
     await this.db.db
       .deleteFrom('post_gate')
+      .where('creator', '=', did)
+      .execute()
+    await this.db.db
+      .deleteFrom('para_community_membership')
+      .where('creator', '=', did)
+      .execute()
+    await this.db.db
+      .deleteFrom('para_community_board')
       .where('creator', '=', did)
       .execute()
     await this.db.db

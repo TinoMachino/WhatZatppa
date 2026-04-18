@@ -52,6 +52,7 @@ import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {VotingButton} from '#/components/VotingButton'
 import * as bsky from '#/types/bsky'
+import {Text} from '#/components/Typography'
 import { PostFeedReason } from './PostFeedReason'
 
 interface FeedItemProps {
@@ -485,6 +486,17 @@ let PostContent = ({
         style={[a.pb_xs]}
         additionalCauses={additionalPostAlerts}
       />
+      {(post.record as any).title ? (
+        <Text
+          style={[
+            a.text_lg,
+            a.font_bold,
+            a.pb_2xs,
+            {color: t.atoms.text.color, lineHeight: 1.2},
+          ]}>
+          {(post.record as any).title}
+        </Text>
+      ) : null}
       {richText.text ? (
         <View style={[a.mb_2xs]}>
           <RichText

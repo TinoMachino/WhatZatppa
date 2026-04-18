@@ -12,6 +12,11 @@ export { $nsid }
 type Main = {
   $type: 'chat.bsky.actor.declaration'
   allowIncoming: 'all' | 'none' | 'following' | l.UnknownString
+
+  /**
+   * [NOTE: This is under active development and should be considered unstable while this note is here]. Declaration about group chat invitation preferences for the record owner.
+   */
+  allowGroupInvites?: 'all' | 'none' | 'following' | l.UnknownString
 }
 
 export type { Main }
@@ -22,6 +27,9 @@ const main = l.record<'literal:self', Main>(
   $nsid,
   l.object({
     allowIncoming: l.string<{ knownValues: ['all', 'none', 'following'] }>(),
+    allowGroupInvites: l.optional(
+      l.string<{ knownValues: ['all', 'none', 'following'] }>(),
+    ),
   }),
 )
 

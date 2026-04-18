@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.getConvoForMembers'
 
 export { $nsid }
 
+/** Get or create a 1-1 conversation for the given members. Always returns the same direct (non-group) conversation. To create a group conversation, use createGroup. */
 const main = l.query(
   $nsid,
   l.params({
@@ -20,6 +21,13 @@ const main = l.query(
   l.jsonPayload({
     convo: l.ref<ConvoDefs.ConvoView>((() => ConvoDefs.convoView) as any),
   }),
+  [
+    'AccountSuspended',
+    'BlockedActor',
+    'MessagesDisabled',
+    'NotFollowedBySender',
+    'RecipientNotFound',
+  ],
 )
 export { main }
 

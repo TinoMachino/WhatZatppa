@@ -1,5 +1,5 @@
 import assert from 'node:assert'
-import { AtUri } from '@atproto/syntax'
+import { AtUri, AtUriString } from '@atproto/syntax'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
@@ -13,6 +13,7 @@ import {
 } from '../../../../lexicon/types/app/bsky/feed/getPostThread'
 import { Record as PostRecord } from '../../../../lexicon/types/app/bsky/feed/post'
 import { $Typed } from '../../../../lexicon/util'
+import { app } from '../../../../lexicons/index.js'
 import {
   PipethroughUpstreamError,
   computeProxyTo,
@@ -38,6 +39,11 @@ export default function (server: Server, ctx: AppContext) {
         permissions.assertRpc({ aud, lxm })
       },
     }),
+    opts: {
+      // @TODO remove after grace period has passed, behavior is non-standard.
+      // temporarily added for compat w/ previous version of xrpc-server to avoid breakage of a few specified parties.
+      
+    },
     handler: async (reqCtx) => {
       try {
         return await pipethroughReadAfterWrite(ctx, reqCtx, getPostThreadMunge)
@@ -204,12 +210,22 @@ const readAfterWriteNotFound = async (
   if (highestParent) {
     try {
       assert(ctx.bskyAppView)
-      const parentsRes =
-        await ctx.bskyAppView.agent.app.bsky.feed.getPostThread(
-          { uri: highestParent, parentHeight: params.parentHeight, depth: 0 },
-          await ctx.appviewAuthHeaders(requester, ids.AppBskyFeedGetPostThread),
-        )
-      thread.parent = parentsRes.data.thread
+      const parents = await ctx.bskyAppView.client.call(
+        app.bsky.feed.getPostThread.main,
+        {
+          uri: highestParent as AtUriString,
+          parentHeight: params.parentHeight,
+          depth: 0,
+        },
+        {
+          ...(await ctx.appviewAuthHeaders(
+            requester,
+            ids.AppBskyFeedGetPostThread,
+          )),
+          validateResponse: ctx.bskyAppView.validateResponse,
+        },
+      )
+      thread.parent = parents.thread
     } catch (err) {
       // do nothing
     }

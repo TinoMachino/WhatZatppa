@@ -16,6 +16,11 @@ export type ConvoParams = {
   }
 }
 
+export type ConvoTimelineMessage =
+  | ChatBskyConvoDefs.MessageView
+  | ChatBskyConvoDefs.DeletedMessageView
+  | ChatBskyConvoDefs.SystemMessageView
+
 export enum ConvoStatus {
   Uninitialized = 'uninitialized',
   Initializing = 'initializing',
@@ -86,27 +91,15 @@ export type ConvoItem =
       type: 'message'
       key: string
       message: ChatBskyConvoDefs.MessageView
-      nextMessage:
-        | ChatBskyConvoDefs.MessageView
-        | ChatBskyConvoDefs.DeletedMessageView
-        | null
-      prevMessage:
-        | ChatBskyConvoDefs.MessageView
-        | ChatBskyConvoDefs.DeletedMessageView
-        | null
+      nextMessage: ConvoTimelineMessage | null
+      prevMessage: ConvoTimelineMessage | null
     }
   | {
       type: 'pending-message'
       key: string
       message: ChatBskyConvoDefs.MessageView
-      nextMessage:
-        | ChatBskyConvoDefs.MessageView
-        | ChatBskyConvoDefs.DeletedMessageView
-        | null
-      prevMessage:
-        | ChatBskyConvoDefs.MessageView
-        | ChatBskyConvoDefs.DeletedMessageView
-        | null
+      nextMessage: ConvoTimelineMessage | null
+      prevMessage: ConvoTimelineMessage | null
       failed: boolean
       /**
        * Retry sending the message. If present, the message is in a failed state.
@@ -117,14 +110,15 @@ export type ConvoItem =
       type: 'deleted-message'
       key: string
       message: ChatBskyConvoDefs.DeletedMessageView
-      nextMessage:
-        | ChatBskyConvoDefs.MessageView
-        | ChatBskyConvoDefs.DeletedMessageView
-        | null
-      prevMessage:
-        | ChatBskyConvoDefs.MessageView
-        | ChatBskyConvoDefs.DeletedMessageView
-        | null
+      nextMessage: ConvoTimelineMessage | null
+      prevMessage: ConvoTimelineMessage | null
+    }
+  | {
+      type: 'system-message'
+      key: string
+      message: ChatBskyConvoDefs.SystemMessageView
+      nextMessage: ConvoTimelineMessage | null
+      prevMessage: ConvoTimelineMessage | null
     }
   | {
       type: 'error'

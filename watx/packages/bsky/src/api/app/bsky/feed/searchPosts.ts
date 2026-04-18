@@ -1,5 +1,5 @@
-import { AtpAgent } from '@atproto/api'
 import { mapDefined } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { ServerConfig } from '../../../../config'
 import { AppContext } from '../../../../context'
 import { DataPlaneClient } from '../../../../data-plane'
@@ -11,6 +11,7 @@ import { HydrateCtx, Hydrator } from '../../../../hydration/hydrator'
 import { parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/feed/searchPosts'
+import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
   PresentationFnInput,
@@ -32,18 +33,19 @@ export default function (server: Server, ctx: AppContext) {
   server.app.bsky.feed.searchPosts({
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
-      const { viewer, isModService } = ctx.authVerifier.parseCreds(auth)
+      const { viewer, isModService, skipViewerBlocks } =
+        ctx.authVerifier.parseCreds(auth)
 
       const labelers = ctx.reqLabelers(req)
       const hydrateCtx = await ctx.hydrator.createContext({
         labelers,
         viewer,
-        featureGatesMap: ctx.featureGatesClient.checkGates(
-          ['search:filtering_exploration:enable'],
-          {
+        skipViewerBlocks,
+        features: ctx.featureGatesClient.scope(
+          ctx.featureGatesClient.parseUserContextFromHandler({
             viewer,
             req,
-          },
+          }),
         ),
       })
       const results = await searchPosts(
@@ -65,10 +67,10 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
     author: params.author,
   })
 
-  if (ctx.searchAgent) {
-    // @NOTE cursors won't change on appview swap
-    const { data: res } =
-      await ctx.searchAgent.api.app.bsky.unspecced.searchPostsSkeleton({
+  if (ctx.searchClient) {
+    const res = await ctx.searchClient.call(
+      app.bsky.unspecced.searchPostsSkeleton,
+      {
         q: params.q,
         cursor: params.cursor,
         limit: params.limit,
@@ -82,7 +84,8 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
         until: params.until,
         url: params.url,
         viewer: params.hydrateCtx.viewer ?? undefined,
-      })
+      } as app.bsky.unspecced.searchPostsSkeleton.$Params,
+    )
     return {
       posts: res.posts.map(({ uri }) => uri),
       cursor: parseString(res.cursor),
@@ -111,8 +114,8 @@ const hydration = async (
     params.hydrateCtx,
     undefined,
     {
-      processDynamicTagsForView: params.hydrateCtx.featureGatesMap.get(
-        'search:filtering_exploration:enable',
+      processDynamicTagsForView: params.hydrateCtx.features.checkGate(
+        params.hydrateCtx.features.Gate.SearchFilteringExplorationEnable,
       )
         ? 'search'
         : undefined,
@@ -141,8 +144,8 @@ const noBlocksOrTagged = (inputs: RulesFnInput<Context, Params, Skeleton>) => {
 
     let tagged = false
     if (
-      params.hydrateCtx.featureGatesMap.get(
-        'search:filtering_exploration:enable',
+      params.hydrateCtx.features.checkGate(
+        params.hydrateCtx.features.Gate.SearchFilteringExplorationEnable,
       )
     ) {
       tagged = post.tags.has(ctx.cfg.visibilityTagHide)
@@ -180,7 +183,7 @@ type Context = {
   dataplane: DataPlaneClient
   hydrator: Hydrator
   views: Views
-  searchAgent?: AtpAgent
+  searchClient?: Client
 }
 
 type Params = QueryParams & {

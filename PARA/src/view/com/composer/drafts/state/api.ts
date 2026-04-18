@@ -7,6 +7,7 @@ import {nanoid} from 'nanoid/non-secure'
 import {resolveLink} from '#/lib/api/resolve'
 import {getImageDim} from '#/lib/media/manip'
 import {mimeToExt} from '#/lib/media/video/util'
+import {shortenLinks} from '#/lib/strings/rich-text-manip'
 import {type ComposerImage} from '#/state/gallery'
 import {type Gif} from '#/state/queries/tenor'
 import {threadgateAllowUISettingToAllowRecordValue} from '#/state/queries/threadgate/util'
@@ -587,7 +588,7 @@ export async function draftToComposerPosts(
       return {
         id: `draft-post-${index}`,
         richtext,
-        shortenedGraphemeLength: richtext.graphemeLength,
+        shortenedGraphemeLength: shortenLinks(richtext).graphemeLength,
         labels,
         flairs: [],
         postType: null,

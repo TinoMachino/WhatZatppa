@@ -2,8 +2,10 @@ import {
   OAuthIssuerIdentifier,
   isOAuthClientIdLoopback,
 } from '@atproto/oauth-types'
+import { ClientId } from '../client/client-id.js'
 import { Client } from '../client/client.js'
 import { DeviceId } from '../device/device-id.js'
+import { InvalidCredentialsError } from '../errors/invalid-credentials-error.js'
 import { InvalidRequestError } from '../errors/invalid-request-error.js'
 import { HCaptchaClient, HcaptchaVerifyResult } from '../lib/hcaptcha.js'
 import { constantTime } from '../lib/util/time.js'
@@ -159,26 +161,55 @@ export class AccountManager {
     deviceId: DeviceId,
     deviceMetadata: RequestMetadata,
     data: SignInData,
+    clientId?: ClientId,
   ): Promise<Account> {
     try {
       await this.hooks.onSignInAttempt?.call(null, {
         data,
         deviceId,
         deviceMetadata,
+        clientId,
       })
 
-      const account = await constantTime(
-        TIMING_ATTACK_MITIGATION_DELAY,
-        async () => {
-          return this.store.authenticateAccount(data)
-        },
-      )
+      let account: Account
+      try {
+        account = await constantTime(
+          TIMING_ATTACK_MITIGATION_DELAY,
+          async () => {
+            return this.store.authenticateAccount(data)
+          },
+        )
+      } catch (err) {
+        if (err instanceof InvalidRequestError) {
+          const isCredentialsError = err instanceof InvalidCredentialsError
+          const sub = isCredentialsError ? err.sub ?? null : null
+
+          try {
+            await this.hooks.onSignInFailed?.call(null, {
+              data,
+              error: err,
+              sub,
+              deviceId,
+              deviceMetadata,
+              clientId,
+            })
+          } catch {
+            // noop
+          }
+
+          if (isCredentialsError) {
+            throw new InvalidRequestError(err.error_description)
+          }
+        }
+        throw err
+      }
 
       await this.hooks.onSignedIn?.call(null, {
         data,
         account,
         deviceId,
         deviceMetadata,
+        clientId,
       })
 
       return account

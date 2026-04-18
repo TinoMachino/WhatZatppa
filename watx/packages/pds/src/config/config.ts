@@ -340,6 +340,7 @@ export const envToCfg = (env: ServerEnvironment): ServerConfig => {
     moderationEmail: moderationEmailCfg,
     subscription: subscriptionCfg,
     bskyAppView: bskyAppViewCfg,
+    communityCreatorDids: env.paraCommunityCreatorDids ?? [],
     modService: modServiceCfg,
     reportService: reportServiceCfg,
     redis: redisCfg,
@@ -364,6 +365,7 @@ export type ServerConfig = {
   moderationEmail: EmailConfig | null
   subscription: SubscriptionConfig
   bskyAppView: BksyAppViewConfig | null
+  communityCreatorDids: string[]
   modService: ModServiceConfig | null
   reportService: ReportServiceConfig | null
   redis: RedisScratchConfig | null

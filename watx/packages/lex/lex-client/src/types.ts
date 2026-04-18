@@ -58,6 +58,13 @@ export type CallOptions = {
    * @default true
    */
   validateResponse?: boolean
+
+  /**
+   * Whether to strictly parse JSON response bodies as Lex values.
+   *
+   * @default true
+   */
+  strictResponseProcessing?: boolean
 }
 
 /**

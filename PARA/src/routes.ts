@@ -90,6 +90,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Base: '/base',
   MyBase: '/my-base',
   Communities: '/communities',
+  CreateCommunity: '/communities/create',
   CabildeoList: '/communities/cabildeos',
   CabildeoDetail: '/communities/cabildeos/:cabildeoUri',
   DelegateVote: '/communities/cabildeos/:cabildeoUri/delegate-vote',

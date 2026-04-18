@@ -86,12 +86,6 @@ let PostControls = ({
     feedDescriptor,
     logContext,
   )
-  const [queueQuote, queueUnquote] = usePostQuoteMutationQueue(
-    post,
-    viaQuote,
-    feedDescriptor,
-    logContext,
-  )
   const requireAuth = useRequireAuth()
   const { sendInteraction } = useFeedFeedbackContext()
   const { captureAction } = useProgressGuideControls()
@@ -194,34 +188,6 @@ let PostControls = ({
             throw e
           }
         }
-      }
-    }
-  }
-
-  const onRepost = async () => {
-    if (isBlocked) {
-      Toast.show(
-        _(msg`Cannot interact with a blocked user`),
-        'exclamation-circle',
-      )
-      return
-    }
-
-    try {
-      if (!post.viewer?.repost) {
-        sendInteraction({
-          item: post.uri,
-          event: 'app.bsky.feed.defs#interactionRepost',
-          feedContext,
-          reqId,
-        })
-        await queueQuote()
-      } else {
-        await queueUnquote()
-      }
-    } catch (e: any) {
-      if (e?.name !== 'AbortError') {
-        throw e
       }
     }
   }
@@ -380,9 +346,7 @@ let PostControls = ({
             { marginRight: Platform.OS === 'web' ? 102 : 24 },
           ]}>
           <QuoteButton
-            isReposted={!!post.viewer?.repost}
-            repostCount={(post.repostCount ?? 0) + (post.quoteCount ?? 0)}
-            onRepost={onRepost}
+            quoteCount={post.quoteCount ?? 0}
             onQuote={onQuote}
             onHighlight={onHighlight}
             onRemoveAllHighlights={onRemoveAllHighlights}

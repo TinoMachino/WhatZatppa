@@ -38,6 +38,7 @@ import {PostControls} from '#/components/PostControls'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import * as bsky from '#/types/bsky'
+import {Text} from '#/components/Typography'
 
 export function Post({
   post,
@@ -201,6 +202,17 @@ function PostInner({
               modui={moderation.ui('contentView')}
               style={[a.pb_xs]}
             />
+            {(record as any).title ? (
+              <Text
+                style={[
+                  a.text_lg,
+                  a.font_bold,
+                  a.pb_2xs,
+                  {color: t.atoms.text.color, lineHeight: 1.2},
+                ]}>
+                {(record as any).title}
+              </Text>
+            ) : null}
             {richText.text ? (
               <View>
                 <RichText

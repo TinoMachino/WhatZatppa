@@ -8,11 +8,13 @@ const $nsid = 'chat.bsky.convo.acceptConvo'
 
 export { $nsid }
 
+/** Marks a conversation as accepted, so it is shown in the list of accepted convos instead on the request convos. */
 const main = l.procedure(
   $nsid,
   l.params(),
   l.jsonPayload({ convoId: l.string() }),
   l.jsonPayload({ rev: l.optional(l.string()) }),
+  ['InvalidConvo'],
 )
 export { main }
 

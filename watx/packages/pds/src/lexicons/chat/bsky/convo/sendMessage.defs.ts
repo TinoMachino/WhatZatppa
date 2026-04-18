@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.sendMessage'
 
 export { $nsid }
 
+/** Sends a message to a conversation. */
 const main = l.procedure(
   $nsid,
   l.params(),
@@ -22,6 +23,7 @@ const main = l.procedure(
     'application/json',
     l.ref<ConvoDefs.MessageView>((() => ConvoDefs.messageView) as any),
   ),
+  ['ConvoLocked', 'InvalidConvo'],
 )
 export { main }
 

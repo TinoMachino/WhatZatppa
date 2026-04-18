@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useState} from 'react'
 import {type AppBskyActorDefs, type AppBskyNotificationDefs} from '@atproto/api'
 import {type QueryClient} from '@tanstack/react-query'
-import EventEmitter from 'eventemitter3'
+import {EventEmitter} from 'eventemitter3'
 
 import {batchedUpdates} from '#/lib/batchedUpdates'
 import {findAllProfilesInQueryData as findAllProfilesInActivitySubscriptionsQueryData} from '#/state/queries/activity-subscriptions'
@@ -25,6 +25,9 @@ import {findAllProfilesInQueryData as findAllProfilesInProfileQueryData} from '#
 import {findAllProfilesInQueryData as findAllProfilesInProfileFollowersQueryData} from '#/state/queries/profile-followers'
 import {findAllProfilesInQueryData as findAllProfilesInProfileFollowsQueryData} from '#/state/queries/profile-follows'
 import {findAllProfilesInQueryData as findAllProfilesInSuggestedFollowsQueryData} from '#/state/queries/suggested-follows'
+import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForDiscoverQueryData} from '#/state/queries/trending/useGetSuggestedUsersForDiscoverQuery'
+import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForExploreQueryData} from '#/state/queries/trending/useGetSuggestedUsersForExploreQuery'
+import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersForSeeMoreQueryData} from '#/state/queries/trending/useGetSuggestedUsersForSeeMoreQuery'
 import {findAllProfilesInQueryData as findAllProfilesInSuggestedUsersQueryData} from '#/state/queries/trending/useGetSuggestedUsersQuery'
 import {findAllProfilesInQueryData as findAllProfilesInPostThreadV2QueryData} from '#/state/queries/usePostThread/queryCache'
 import type * as bsky from '#/types/bsky'
@@ -121,34 +124,22 @@ export function useMaybeProfileShadow<
  * The use case here is intended for removing a post from a feed after you mute the author
  */
 export function usePostAuthorShadowFilter(data?: FeedPage[]) {
-  const [trackedDids, setTrackedDids] = useState<string[]>(
+  const trackedDids = useMemo(
     () =>
-      data?.flatMap(page =>
-        page.slices.flatMap(slice =>
-          slice.items.map(item => item.post.author.did),
+      Array.from(
+        new Set(
+          data?.flatMap(page =>
+            page.slices.flatMap(slice =>
+              slice.items.map(item => item.post.author.did),
+            ),
+          ) ?? [],
         ),
-      ) ?? [],
+      ),
+    [data],
   )
   const [authors, setAuthors] = useState(
     new Map<string, {muted: boolean; blocked: boolean}>(),
   )
-
-  const [prevData, setPrevData] = useState(data)
-  if (data !== prevData) {
-    const newAuthors = new Set(trackedDids)
-    let hasNew = false
-    for (const slice of data?.flatMap(page => page.slices) ?? []) {
-      for (const item of slice.items) {
-        const author = item.post.author
-        if (!newAuthors.has(author.did)) {
-          hasNew = true
-          newAuthors.add(author.did)
-        }
-      }
-    }
-    if (hasNew) setTrackedDids([...newAuthors])
-    setPrevData(data)
-  }
 
   useEffect(() => {
     const unsubs: Array<() => void> = []
@@ -247,6 +238,9 @@ function* findProfilesInCache(
   yield* findAllProfilesInProfileQueryData(queryClient, did)
   yield* findAllProfilesInProfileFollowersQueryData(queryClient, did)
   yield* findAllProfilesInProfileFollowsQueryData(queryClient, did)
+  yield* findAllProfilesInSuggestedUsersForDiscoverQueryData(queryClient, did)
+  yield* findAllProfilesInSuggestedUsersForExploreQueryData(queryClient, did)
+  yield* findAllProfilesInSuggestedUsersForSeeMoreQueryData(queryClient, did)
   yield* findAllProfilesInSuggestedUsersQueryData(queryClient, did)
   yield* findAllProfilesInSuggestedFollowsQueryData(queryClient, did)
   yield* findAllProfilesInActorSearchQueryData(queryClient, did)

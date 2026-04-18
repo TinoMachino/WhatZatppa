@@ -2,7 +2,7 @@ import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.admin.sendEmail({
@@ -22,17 +22,20 @@ export default function (server: Server, ctx: AppContext) {
         throw new InvalidRequestError('Recipient not found')
       }
 
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.admin.sendEmail(
-            input.body,
-            await ctx.entrywayAuthHeaders(
-              req,
-              recipientDid,
-              ids.ComAtprotoAdminSendEmail,
-            ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.admin.sendEmail.main,
+          input.body as com.atproto.admin.sendEmail.$InputBody,
+          await ctx.entrywayAuthHeaders(
+            req,
+            recipientDid,
+            ids.ComAtprotoAdminSendEmail,
           ),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       if (!account.email) {

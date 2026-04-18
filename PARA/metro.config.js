@@ -15,6 +15,9 @@ if (process.env.BSKY_PROFILE) {
 }
 
 cfg.resolver.assetExts = [...cfg.resolver.assetExts, 'woff2']
+// Watchman is blocked from this Desktop workspace on some macOS setups.
+// Fall back to Metro's Node crawler so `expo start` stays usable.
+cfg.resolver.useWatchman = false
 
 // Enabled by default in RN 0.79+, but this breaks Lingui + others
 cfg.resolver.unstable_enablePackageExports = false

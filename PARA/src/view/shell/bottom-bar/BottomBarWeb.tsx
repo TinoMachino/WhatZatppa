@@ -310,10 +310,19 @@ const NavItem: React.FC<{
               other: '# unread items',
             })}`,
           )}>
-          <Text style={styles.notificationCountLabel}>{notificationCount}</Text>
+          <Text
+            style={styles.notificationCountLabel}
+            maxFontSizeMultiplier={1.5}>
+            {notificationCount}
+          </Text>
         </View>
       ) : hasNew ? (
-        <View style={styles.hasNewBadge} />
+        <View
+          style={[
+            styles.hasNewBadge,
+            {backgroundColor: t.palette.primary_500},
+          ]}
+        />
       ) : null}
     </Link>
   )

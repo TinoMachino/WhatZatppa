@@ -3,7 +3,7 @@ import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.requestEmailUpdate({
@@ -35,17 +35,20 @@ export default function (server: Server, ctx: AppContext) {
         throw new InvalidRequestError('account not found')
       }
 
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.server.requestEmailUpdate(
-            undefined,
-            await ctx.entrywayAuthHeaders(
-              req,
-              auth.credentials.did,
-              ids.ComAtprotoServerRequestEmailUpdate,
-            ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.server.requestEmailUpdate.main,
+          undefined,
+          await ctx.entrywayAuthHeaders(
+            req,
+            auth.credentials.did,
+            ids.ComAtprotoServerRequestEmailUpdate,
           ),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       if (!account.email) {

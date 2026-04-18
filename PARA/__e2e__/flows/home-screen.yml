@@ -39,12 +39,13 @@ appId: xyz.blueskyweb.app
     id: "likeBtn"
 
 - tapOn:
-    label: "Can repost posts"
-    id: "repostBtn"
-- tapOn: "Repost"
+    label: "Can quote posts"
+    id: "highlightBtn"
 - tapOn:
-    id: "repostBtn"
-- tapOn: "Remove repost"
+    id: "quoteBtn"
+- inputText: "Quoted from home screen"
+- tapOn:
+    id: "composerPublishBtn"
 
 - tapOn:
     label: "Can delete posts"

@@ -80,7 +80,7 @@ export default function RAQScreen() {
         ...prev,
         [questionId]: voteValue,
       }
-      persisted.write('raqAnswers', next)
+      void persisted.write('raqAnswers', next)
       return next
     })
   }, [])
@@ -141,7 +141,7 @@ export default function RAQScreen() {
     })
 
     console.log('FINAL RESULTS:', JSON.stringify(results, null, 2))
-    persisted.write('raqResults', results)
+    void persisted.write('raqResults', results)
     // @ts-ignore
     navigation.navigate('RAQResults', {results})
   }
@@ -228,7 +228,7 @@ export default function RAQScreen() {
         </Layout.Header.Content>
       </Layout.Header.Outer>
 
-      <View style={[styles.container, t.atoms.bg]}>
+      <Layout.Center style={[styles.container, t.atoms.bg]}>
         <View style={[styles.header, t.atoms.bg, t.atoms.border_contrast_low]}>
           <Text style={[styles.headerSubtitle, t.atoms.text_contrast_medium]}>
             <Trans>Drag left to disagree (-3), right to agree (+3).</Trans>
@@ -243,28 +243,14 @@ export default function RAQScreen() {
           stickySectionHeadersEnabled={true}
           contentContainerStyle={[
             styles.listContent,
-            {paddingBottom: insets.bottom + 20},
+            {paddingBottom: insets.bottom + 132},
           ]}
           initialNumToRender={15}
           maxToRenderPerBatch={10}
           windowSize={11}
-          removeClippedSubviews={true}
+          removeClippedSubviews={false} // Disable on web manually if needed, or false generally due to SectionList issues
           extraData={answers}
-          ListFooterComponent={
-            <View style={[styles.footer, t.atoms.bg]}>
-              <Button
-                label={_(msg`See Results`)}
-                onPress={calculateResults}
-                size="large"
-                variant="solid"
-                color="primary"
-                style={styles.calculateButton}>
-                <ButtonText>
-                  <Trans>See Results</Trans>
-                </ButtonText>
-              </Button>
-            </View>
-          }
+          ListFooterComponent={<View style={styles.footerSpacer} />}
         />
 
         <View
@@ -286,7 +272,7 @@ export default function RAQScreen() {
             </ButtonText>
           </Button>
         </View>
-      </View>
+      </Layout.Center>
     </Layout.Screen>
   )
 }
@@ -347,8 +333,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  footer: {
-    padding: 30,
+  footerSpacer: {
+    height: 12,
   },
   stickyFooter: {
     padding: 16,

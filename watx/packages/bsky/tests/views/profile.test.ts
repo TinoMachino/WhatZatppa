@@ -4,6 +4,7 @@ import { Timestamp } from '@bufbuild/protobuf'
 import {
   AppBskyEmbedExternal,
   AtpAgent,
+  ChatBskyActorDeclaration,
   ComGermnetworkDeclaration,
 } from '@atproto/api'
 import { HOUR, MINUTE } from '@atproto/common'
@@ -369,6 +370,60 @@ describe('pds profile views', () => {
       expect(forSnapshot(data.status)).toMatchSnapshot()
     })
 
+    it('hydrates labels onto the status view', async () => {
+      await sc.agent.com.atproto.repo.putRecord(
+        {
+          repo: alice,
+          collection: ids.AppBskyActorStatus,
+          rkey: 'self',
+          record: {
+            status: 'app.bsky.actor.status#live',
+            embed,
+            durationMinutes: 10,
+            createdAt: new Date().toISOString(),
+          },
+        },
+        {
+          headers: sc.getHeaders(alice),
+          encoding: 'application/json',
+        },
+      )
+      const statusUri = `at://${alice}/${ids.AppBskyActorStatus}/self`
+      const labelerDid = network.bsky.ctx.cfg.labelsFromIssuerDids[0]
+      await network.bsky.db.db
+        .insertInto('label')
+        .values({
+          uri: statusUri,
+          cid: '',
+          val: 'misleading',
+          cts: new Date().toISOString(),
+          exp: null,
+          neg: false,
+          src: labelerDid,
+        })
+        .execute()
+      await network.processAll()
+
+      const { data } = await agent.api.app.bsky.actor.getProfile(
+        { actor: alice },
+        {
+          headers: await network.serviceHeaders(
+            bob,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+
+      expect(data.status?.labels).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            src: labelerDid,
+            val: 'misleading',
+          }),
+        ]),
+      )
+    })
+
     it('limits the minimum duration', async () => {
       await sc.agent.com.atproto.repo.putRecord(
         {
@@ -553,6 +608,87 @@ describe('pds profile views', () => {
         )
 
         expect(forSnapshot(data.status)).toBeUndefined()
+      })
+    })
+  })
+
+  describe('chat', () => {
+    it('omits chat if no declaration exists', async () => {
+      const { data } = await agent.api.app.bsky.actor.getProfile(
+        { actor: alice },
+        {
+          headers: await network.serviceHeaders(
+            alice,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+      expect(data.associated?.chat).toBeUndefined()
+    })
+
+    it('returns allowIncoming when only that field is set', async () => {
+      await sc.agent.com.atproto.repo.putRecord(
+        {
+          repo: dan,
+          collection: ids.ChatBskyActorDeclaration,
+          rkey: 'self',
+          record: {
+            $type: ids.ChatBskyActorDeclaration,
+            allowIncoming: 'none',
+          } satisfies ChatBskyActorDeclaration.Main,
+        },
+        {
+          headers: sc.getHeaders(dan),
+          encoding: 'application/json',
+        },
+      )
+      await network.processAll()
+
+      const { data } = await agent.api.app.bsky.actor.getProfile(
+        { actor: dan },
+        {
+          headers: await network.serviceHeaders(
+            alice,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+      expect(data.associated?.chat).toEqual({
+        allowIncoming: 'none',
+      })
+    })
+
+    it('returns both allowIncoming and allowGroupInvites when both are set', async () => {
+      await sc.agent.com.atproto.repo.putRecord(
+        {
+          repo: eve,
+          collection: ids.ChatBskyActorDeclaration,
+          rkey: 'self',
+          record: {
+            $type: ids.ChatBskyActorDeclaration,
+            allowIncoming: 'following',
+            allowGroupInvites: 'all',
+          } satisfies ChatBskyActorDeclaration.Main,
+        },
+        {
+          headers: sc.getHeaders(eve),
+          encoding: 'application/json',
+        },
+      )
+      await network.processAll()
+
+      const { data } = await agent.api.app.bsky.actor.getProfile(
+        { actor: eve },
+        {
+          headers: await network.serviceHeaders(
+            alice,
+            ids.AppBskyActorGetProfile,
+          ),
+        },
+      )
+      expect(data.associated?.chat).toEqual({
+        allowIncoming: 'following',
+        allowGroupInvites: 'all',
       })
     })
   })

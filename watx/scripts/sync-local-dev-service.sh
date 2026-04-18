@@ -56,6 +56,8 @@ upsert_env_var() {
 LOCAL_IP="$(detect_local_ip)"
 PDS_URL="http://${LOCAL_IP}:2583"
 APPVIEW_URL="http://${LOCAL_IP}:2584"
+LOCAL_APPVIEW_DID="did:plc:dw4kbjf5mn7nhenabiqpkyh3"
+LOCAL_CHAT_DID="did:plc:ztgydimgwegx72nfqbfgurrb"
 
 upsert_env_var "$WATX_ENV_LOCAL" "DEV_ENV_PDS_HOSTNAME" "$LOCAL_IP"
 upsert_env_var "$WATX_ENV_LOCAL" "DEV_ENV_BSKY_PUBLIC_URL" "$APPVIEW_URL"
@@ -63,5 +65,8 @@ upsert_env_var "$WATX_ENV_LOCAL" "DEV_ENV_BSKY_PUBLIC_URL" "$APPVIEW_URL"
 upsert_env_var "$PARA_ENV" "EXPO_PUBLIC_USE_LOCAL_DEV_SERVICE" "1"
 upsert_env_var "$PARA_ENV" "EXPO_PUBLIC_LOCAL_DEV_IP" "$LOCAL_IP"
 upsert_env_var "$PARA_ENV" "EXPO_PUBLIC_LOCAL_DEV_SERVICE" "$PDS_URL"
+upsert_env_var "$PARA_ENV" "EXPO_PUBLIC_DEFAULT_SERVICE" "$PDS_URL"
+upsert_env_var "$PARA_ENV" "EXPO_PUBLIC_LOCAL_BSKY_PROXY_DID" "$LOCAL_APPVIEW_DID"
+upsert_env_var "$PARA_ENV" "EXPO_PUBLIC_LOCAL_CHAT_PROXY_DID" "$LOCAL_CHAT_DID"
 
 printf 'Synced local dev service IP: %s\n' "$LOCAL_IP"

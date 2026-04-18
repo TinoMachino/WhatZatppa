@@ -3,6 +3,7 @@ import { AtUri } from '@atproto/syntax'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { com } from '../../../../lexicons/index.js'
 import { computeProxyTo, pipethrough } from '../../../../pipethrough'
 
 export default function (server: Server, ctx: AppContext) {
@@ -22,11 +23,15 @@ export default function (server: Server, ctx: AppContext) {
       const requester = auth.credentials.did
 
       const feedUrl = new AtUri(params.feed)
-      const { data } = await bskyAppView.agent.com.atproto.repo.getRecord({
-        repo: feedUrl.hostname,
-        collection: feedUrl.collection,
-        rkey: feedUrl.rkey,
-      })
+      const data = await bskyAppView.client.call(
+        com.atproto.repo.getRecord.main,
+        {
+          repo: feedUrl.host,
+          collection: feedUrl.collectionSafe,
+          rkey: feedUrl.rkeySafe,
+        },
+        { validateResponse: bskyAppView.validateResponse },
+      )
       const feedDid = data.value['did']
       if (typeof feedDid !== 'string') {
         throw new InvalidRequestError(

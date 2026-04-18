@@ -24,13 +24,20 @@ export default function (server: Server, ctx: AppContext) {
         )
       },
     }),
+    opts: {
+      // @TODO remove after grace period has passed, behavior is non-standard.
+      // temporarily added for compat w/ previous version of xrpc-server to avoid breakage of a few specified parties.
+      
+    },
     handler: async ({ auth, params, req }) => {
-      const { viewer, includeTakedowns } = ctx.authVerifier.parseCreds(auth)
+      const { viewer, includeTakedowns, skipViewerBlocks } =
+        ctx.authVerifier.parseCreds(auth)
       const labelers = ctx.reqLabelers(req)
       const hydrateCtx = await ctx.hydrator.createContext({
         viewer,
         labelers,
         includeTakedowns,
+        skipViewerBlocks,
       })
 
       const result = await getProfile({ ...params, hydrateCtx }, ctx)

@@ -1,6 +1,10 @@
 import {
   Fragment,
   memo,
+  type MutableRefObject,
+  type ReactNode,
+  type Ref,
+  type RefObject,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -52,7 +56,7 @@ import {
   type AppBskyUnspeccedGetPostThreadV2,
   AtUri,
   type BskyAgent,
-  type RichText,
+  RichText,
 } from '@atproto/api'
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome'
 import {msg, plural} from '@lingui/core/macro'
@@ -192,6 +196,7 @@ import {
   type VideoState,
 } from './state/video'
 import {PostTypeBtn} from './tags/PostTypeBtn'
+import {syncComposerSpecialPostTypeText} from './text-input/civic-autocomplete'
 import {type TextInputRef} from './text-input/TextInput.types'
 import {getVideoMetadata} from './videos/pickVideo'
 import {clearThumbnailCache} from './videos/VideoTranscodeBackdrop'
@@ -352,6 +357,11 @@ export const ComposePost = ({
   )
   const setPostType = useCallback(
     (value: PostType | null) => {
+      const nextText = syncComposerSpecialPostTypeText(
+        classificationPost.richtext.text,
+        value,
+      )
+
       composerDispatch({
         type: 'update_post',
         postId: classificationPost.id,
@@ -360,8 +370,21 @@ export const ComposePost = ({
           postType: value,
         },
       })
+
+      if (nextText !== classificationPost.richtext.text) {
+        const nextRichText = new RichText({text: nextText})
+        nextRichText.detectFacetsWithoutResolution()
+        composerDispatch({
+          type: 'update_post',
+          postId: classificationPost.id,
+          postAction: {
+            type: 'update_richtext',
+            richtext: nextRichText,
+          },
+        })
+      }
     },
-    [classificationPost.id],
+    [classificationPost.id, classificationPost.richtext.text],
   )
 
   const selectVideo = useCallback(
@@ -808,12 +831,35 @@ export const ComposePost = ({
     try {
       logger.info(`composer: posting...`)
 
+      const normalizedThread = {
+        ...thread,
+        posts: thread.posts.map((post, index) => {
+          if (index !== 0) return post
+
+          const normalizedText = syncComposerSpecialPostTypeText(
+            post.richtext.text,
+            classificationPost.postType,
+          )
+          if (normalizedText === post.richtext.text) {
+            return post
+          }
+
+          const normalizedRichText = new RichText({text: normalizedText})
+          normalizedRichText.detectFacetsWithoutResolution()
+
+          return {
+            ...post,
+            richtext: normalizedRichText,
+          }
+        }),
+      }
+
       postUri = (
         await apilib.post(
           agent,
           queryClient,
           {
-            thread,
+            thread: normalizedThread,
             replyTo: replyTo?.uri,
             onStateChange: setPublishingStage,
             langs: currentLanguages,
@@ -889,10 +935,10 @@ export const ComposePost = ({
               const res = await agent.app.bsky.unspecced.getPostThreadV2({
                 anchor: postUri!,
                 above: false,
-                below: thread.posts.length - 1,
+                below: normalizedThread.posts.length - 1,
                 branchingFactor: 1,
               })
-              if (res.data.thread.length !== thread.posts.length) {
+              if (res.data.thread.length !== normalizedThread.posts.length) {
                 throw new Error(`composer: app view is not ready`)
               }
               if (
@@ -1247,6 +1293,11 @@ export const ComposePost = ({
                   post={post}
                   dispatch={composerDispatch}
                   textInput={post.id === activePost.id ? textInput : null}
+                  classificationPostId={classificationPost.id}
+                  selectedFlairs={selectedFlairs}
+                  postType={postType}
+                  setSelectedFlairs={setSelectedFlairs}
+                  setPostType={setPostType}
                   isFirstPost={index === 0}
                   isLastPost={index === thread.posts.length - 1}
                   isPartOfThread={thread.posts.length > 1}
@@ -1328,6 +1379,11 @@ let ComposerPost = memo(function ComposerPost({
   post,
   dispatch,
   textInput,
+  classificationPostId,
+  selectedFlairs,
+  postType,
+  setSelectedFlairs,
+  setPostType,
   isActive,
   isReply,
   isFirstPost,
@@ -1343,6 +1399,11 @@ let ComposerPost = memo(function ComposerPost({
   post: PostDraft
   dispatch: (action: ComposerAction) => void
   textInput: Ref<TextInputRef>
+  classificationPostId: string
+  selectedFlairs: ComposerFlair[]
+  postType: PostType | null
+  setSelectedFlairs: (flairs: ComposerFlair[]) => void
+  setPostType: (postType: PostType | null) => void
   isActive: boolean
   isReply: boolean
   isFirstPost: boolean
@@ -1452,9 +1513,14 @@ let ComposerPost = memo(function ComposerPost({
           // To avoid overlap with the close button:
           hasRightPadding={isPartOfThread}
           isActive={isActive}
+          civicAutocompleteEnabled={post.id === classificationPostId}
+          selectedFlairs={selectedFlairs}
+          postType={postType}
           setRichText={(rt: RichText) => {
             dispatchPost({type: 'update_richtext', richtext: rt})
           }}
+          setSelectedFlairs={setSelectedFlairs}
+          setPostType={setPostType}
           onFocus={() => {
             dispatch({
               type: 'focus_post',

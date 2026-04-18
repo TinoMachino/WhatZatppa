@@ -69,6 +69,11 @@ type Main = {
   postType?: string
 
   /**
+   * Optional title for policy or proposal posts, summarizing the content.
+   */
+  title?: string
+
+  /**
    * Client-declared timestamp when this post was originally created.
    */
   createdAt: l.DatetimeString
@@ -117,6 +122,7 @@ const main = l.record<'tid', Main>(
       l.array(l.string({ maxLength: 128 }), { maxLength: 10 }),
     ),
     postType: l.optional(l.string({ maxLength: 64 })),
+    title: l.optional(l.string({ maxLength: 300, maxGraphemes: 300 })),
     createdAt: l.string({ format: 'datetime' }),
   }),
 )

@@ -3,8 +3,13 @@ import {
   BlobRef,
   LegacyBlobRef,
   enumBlobRefs,
+  getBlobCid,
+  getBlobCidString,
+  getBlobMime,
+  getBlobSize,
   isBlobRef,
   isLegacyBlobRef,
+  isTypedBlobRef,
 } from './blob.js'
 import { RawCid, parseCid } from './cid.js'
 import { LexArray, LexMap, LexValue } from './lex.js'
@@ -211,6 +216,26 @@ describe(isBlobRef, () => {
   })
 })
 
+describe(isTypedBlobRef, () => {
+  it('acts as a compatibility alias for typed blob checks', () => {
+    expect(
+      isTypedBlobRef({
+        $type: 'blob',
+        ref: validBlobCid,
+        mimeType: 'image/jpeg',
+        size: 10000,
+      }),
+    ).toBe(true)
+
+    expect(
+      isTypedBlobRef({
+        cid: validBlobCid.toString(),
+        mimeType: 'image/jpeg',
+      }),
+    ).toBe(false)
+  })
+})
+
 describe(isLegacyBlobRef, () => {
   it('parses valid legacy blob', () => {
     expect(
@@ -388,5 +413,39 @@ describe(enumBlobRefs, () => {
       expect(refs).toHaveLength(1)
       expect(refs[0]).toBe(valid1)
     })
+  })
+})
+
+describe('blob helpers', () => {
+  const typed: BlobRef<RawCid> = {
+    $type: 'blob',
+    ref: validBlobCid,
+    mimeType: 'image/png',
+    size: 2048,
+  }
+
+  const legacy: LegacyBlobRef = {
+    cid: validBlobCid.toString(),
+    mimeType: 'image/gif',
+  }
+
+  it('reads mime and size safely', () => {
+    expect(getBlobMime(typed)).toBe('image/png')
+    expect(getBlobMime(legacy)).toBe('image/gif')
+    expect(getBlobSize(typed)).toBe(2048)
+    expect(getBlobSize(legacy)).toBeUndefined()
+  })
+
+  it('reads cid values from typed and legacy blobs', () => {
+    expect(getBlobCid(typed)).toBe(validBlobCid)
+    expect(getBlobCidString(typed)).toBe(validBlobCid.toString())
+    expect(getBlobCid(legacy).toString()).toBe(validBlobCid.toString())
+    expect(getBlobCidString(legacy)).toBe(validBlobCid.toString())
+  })
+
+  it('handles optional helper inputs', () => {
+    expect(getBlobMime()).toBeUndefined()
+    expect(getBlobCid()).toBeUndefined()
+    expect(getBlobCidString()).toBeUndefined()
   })
 })

@@ -242,6 +242,8 @@ export interface CabildeoOutcome {
 }
 
 export interface CabildeoUserContext {
+  viewerVoteOption?: number
+  viewerVoteIsDirect?: boolean
   hasDelegatedTo?: string
   delegateVoteEvent?: {
     optionIndex: number

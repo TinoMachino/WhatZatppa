@@ -1,6 +1,7 @@
 import {
   memo,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -18,8 +19,7 @@ import {Trans} from '@lingui/react/macro'
 import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native'
 import {useQueryClient} from '@tanstack/react-query'
 
-import {HITSLOP_20} from '#/lib/constants'
-import {HITSLOP_10} from '#/lib/constants'
+import {HITSLOP_10,HITSLOP_20} from '#/lib/constants'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {MagnifyingGlassIcon} from '#/lib/icons'
 import {type NavigationProp} from '#/lib/routes/types'
@@ -150,6 +150,10 @@ export function SearchScreenShell({
       setHeaderHeight(measurement.height)
     }
   }, [])
+
+  useEffect(() => {
+    setSearchText(queryParam)
+  }, [queryParam])
 
   useFocusEffect(
     useNonReactiveCallback(() => {
@@ -352,6 +356,7 @@ export function SearchScreenShell({
               <View style={[a.w_full, a.flex_row, a.align_stretch, a.gap_xs]}>
                 <View style={[a.flex_1]}>
                   <SearchInput
+                    hotkey={true}
                     ref={textInput}
                     value={searchText}
                     onFocus={onSearchInputFocus}

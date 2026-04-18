@@ -10,6 +10,14 @@ const $nsid = 'chat.bsky.actor.defs'
 
 export { $nsid }
 
+type MemberRole = 'owner' | 'standard' | l.UnknownString
+
+export type { MemberRole }
+
+const memberRole = l.string<{ knownValues: ['owner', 'standard'] }>()
+
+export { memberRole }
+
 type ProfileViewBasic = {
   $type?: 'chat.bsky.actor.defs#profileViewBasic'
   did: l.DidString
@@ -19,12 +27,21 @@ type ProfileViewBasic = {
   associated?: ActorDefs.ProfileAssociated
   viewer?: ActorDefs.ViewerState
   labels?: LabelDefs.Label[]
+  createdAt?: l.DatetimeString
 
   /**
    * Set to true when the actor cannot actively participate in conversations
    */
   chatDisabled?: boolean
   verification?: ActorDefs.VerificationState
+
+  /**
+   * Union field that has data specific to different kinds of convos.
+   */
+  kind?:
+    | l.$Typed<DirectConvoMember>
+    | l.$Typed<GroupConvoMember>
+    | l.Unknown$TypedObject
 }
 
 export type { ProfileViewBasic }
@@ -48,13 +65,68 @@ const profileViewBasic = l.typedObject<ProfileViewBasic>(
     labels: l.optional(
       l.array(l.ref<LabelDefs.Label>((() => LabelDefs.label) as any)),
     ),
+    createdAt: l.optional(l.string({ format: 'datetime' })),
     chatDisabled: l.optional(l.boolean()),
     verification: l.optional(
       l.ref<ActorDefs.VerificationState>(
         (() => ActorDefs.verificationState) as any,
       ),
     ),
+    kind: l.optional(
+      l.typedUnion(
+        [
+          l.typedRef<DirectConvoMember>((() => directConvoMember) as any),
+          l.typedRef<GroupConvoMember>((() => groupConvoMember) as any),
+        ],
+        false,
+      ),
+    ),
   }),
 )
 
 export { profileViewBasic }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+type DirectConvoMember = { $type?: 'chat.bsky.actor.defs#directConvoMember' }
+
+export type { DirectConvoMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+const directConvoMember = l.typedObject<DirectConvoMember>(
+  $nsid,
+  'directConvoMember',
+  l.object({}),
+)
+
+export { directConvoMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+type GroupConvoMember = {
+  $type?: 'chat.bsky.actor.defs#groupConvoMember'
+
+  /**
+   * Who added this member. Only present if the member was added (instead of joining via link).
+   */
+  addedBy?: ProfileViewBasic
+
+  /**
+   * The member's role within this conversation. Only present in group conversation member lists.
+   */
+  role: MemberRole
+}
+
+export type { GroupConvoMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+const groupConvoMember = l.typedObject<GroupConvoMember>(
+  $nsid,
+  'groupConvoMember',
+  l.object({
+    addedBy: l.optional(
+      l.ref<ProfileViewBasic>((() => profileViewBasic) as any),
+    ),
+    role: l.ref<MemberRole>((() => memberRole) as any),
+  }),
+)
+
+export { groupConvoMember }

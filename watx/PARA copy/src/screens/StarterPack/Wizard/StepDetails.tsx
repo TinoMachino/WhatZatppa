@@ -31,22 +31,38 @@ export function StepDetails() {
         <View style={[a.gap_md, a.align_center, a.px_md, a.mb_md]}>
           <StarterPack width={90} gradient="sky" />
           <Text style={[a.font_semi_bold, a.text_3xl]}>
-            <Trans>Invites, but personal</Trans>
+            {state.isCommunitySeed ? (
+              <Trans>Seed a Community</Trans>
+            ) : (
+              <Trans>Invites, but personal</Trans>
+            )}
           </Text>
           <Text style={[a.text_center, a.text_md, a.px_md]}>
-            <Trans>
-              Invite your friends to follow your favorite feeds and people
-            </Trans>
+            {state.isCommunitySeed ? (
+              <Trans>
+                Launch a new space! It remains in <Text style={[{color: t.palette.primary_500}, a.font_bold]}>Draft Phase</Text> until 9 people join your starter pack.
+              </Trans>
+            ) : (
+              <Trans>
+                Invite your friends to follow your favorite feeds and people
+              </Trans>
+            )}
           </Text>
         </View>
         <View>
           <TextField.LabelText>
-            <Trans>What do you want to call your starter pack?</Trans>
+            {state.isCommunitySeed ? (
+              <Trans>Name your community</Trans>
+            ) : (
+              <Trans>What do you want to call your starter pack?</Trans>
+            )}
           </TextField.LabelText>
           <TextField.Root>
             <TextField.Input
               label={
-                name ? _(msg`${name}'s starter pack`) : _(msg`My starter pack`)
+                state.isCommunitySeed
+                  ? _(msg`p/MyCommunity`)
+                  : name ? _(msg`${name}'s starter pack`) : _(msg`My starter pack`)
               }
               value={state.name}
               onChangeText={text => dispatch({type: 'SetName', name: text})}
@@ -67,14 +83,20 @@ export function StepDetails() {
         </View>
         <View>
           <TextField.LabelText>
-            <Trans>Tell us a little more</Trans>
+            {state.isCommunitySeed ? (
+              <Trans>Describe what this community is about</Trans>
+            ) : (
+              <Trans>Tell us a little more</Trans>
+            )}
           </TextField.LabelText>
           <TextField.Root>
             <TextField.Input
               label={
-                name
-                  ? _(msg`${name}'s favorite feeds and people - join me!`)
-                  : _(msg`My favorite feeds and people - join me!`)
+                state.isCommunitySeed
+                  ? _(msg`A civic space for discussing local policy and governance...`)
+                  : name
+                    ? _(msg`${name}'s favorite feeds and people - join me!`)
+                    : _(msg`My favorite feeds and people - join me!`)
               }
               value={state.description}
               onChangeText={text =>
@@ -85,6 +107,25 @@ export function StepDetails() {
             />
           </TextField.Root>
         </View>
+
+        {/* Aforo Progress Indicator */}
+        {state.isCommunitySeed && (
+          <View style={[
+            a.p_lg,
+            a.rounded_md,
+            {backgroundColor: t.palette.primary_500 + '10', borderWidth: 1, borderColor: t.palette.primary_500 + '30'},
+          ]}>
+            <View style={[a.flex_row, a.align_center, a.gap_sm, a.mb_xs]}>
+              <Text style={{fontSize: 20}}>🏛️</Text>
+              <Text style={[a.font_bold, a.text_md, {color: t.palette.primary_500}]}>
+                <Trans>Aforo Requirement</Trans>
+              </Text>
+            </View>
+            <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
+              <Trans>This starter pack needs at least 9 founding members to activate the community. Share this pack to gather your quorum!</Trans>
+            </Text>
+          </View>
+        )}
       </View>
     </ScreenTransition>
   )

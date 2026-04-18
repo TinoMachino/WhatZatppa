@@ -15,6 +15,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import * as Sentry from '@sentry/react-native'
 
+import {timeout} from '#/lib/async/timeout'
 import {Provider as HideBottomBarBorderProvider} from '#/lib/hooks/useHideBottomBarBorder'
 import {QueryProvider} from '#/lib/react-query'
 import {s} from '#/lib/styles'
@@ -41,7 +42,6 @@ import {Provider as UnreadNotifsProvider} from '#/state/queries/notifications/un
 import {Provider as ServiceAccountManager} from '#/state/service-config'
 import {
   Provider as SessionProvider,
-  type SessionAccount,
   useSession,
   useSessionApi,
 } from '#/state/session'
@@ -86,9 +86,9 @@ import {Splash} from '#/Splash'
 import {BottomSheetProvider} from '../modules/bottom-sheet'
 import {BackgroundNotificationPreferencesProvider} from '../modules/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
 
-SplashScreen.preventAutoHideAsync()
+void SplashScreen.preventAutoHideAsync()
 if (IS_IOS) {
-  SystemUI.setBackgroundColorAsync('black')
+  void SystemUI.setBackgroundColorAsync('black')
 }
 if (IS_ANDROID) {
   // iOS is handled by the config plugin -sfn
@@ -102,9 +102,11 @@ if (IS_ANDROID) {
 /**
  * Begin geolocation ASAP
  */
-Geo.resolve()
-prefetchAgeAssuranceConfig()
-prefetchLiveEvents()
+void Geo.resolve()
+void prefetchAgeAssuranceConfig()
+void prefetchLiveEvents()
+
+const STARTUP_MAX_BLOCK_MS = 1500
 
 function InnerApp() {
   const [isReady, setIsReady] = useState(false)
@@ -116,7 +118,9 @@ function InnerApp() {
 
   // init
   useEffect(() => {
-    async function onLaunch(account?: SessionAccount) {
+    let cancelled = false
+    const account = readLastActiveAccount()
+    const bootTask = (async () => {
       try {
         if (account) {
           await resumeSession(account)
@@ -125,12 +129,18 @@ function InnerApp() {
         }
       } catch (e) {
         logger.error(`session: resume failed`, {message: e})
-      } finally {
+      }
+    })()
+
+    void Promise.race([bootTask, timeout(STARTUP_MAX_BLOCK_MS)]).finally(() => {
+      if (!cancelled) {
         setIsReady(true)
       }
+    })
+
+    return () => {
+      cancelled = true
     }
-    const account = readLastActiveAccount()
-    onLaunch(account)
   }, [resumeSession])
 
   useEffect(() => {
@@ -145,7 +155,7 @@ function InnerApp() {
     <Alf theme={theme}>
       <ThemeProvider theme={theme}>
         <ContextMenuProvider>
-          <Splash isReady={isReady && hasCheckedReferrer}>
+          <Splash isReady={isReady && hasCheckedReferrer} theme={theme}>
             <VideoVolumeProvider>
               <Fragment
                 // Resets the entire tree below when it changes:
@@ -216,7 +226,7 @@ function App() {
   const [isReady, setReady] = useState(false)
 
   useEffect(() => {
-    Promise.all([initPersistedState(), Geo.resolve(), setupDeviceId]).then(() =>
+    void Promise.all([initPersistedState(), setupDeviceId]).then(() =>
       setReady(true),
     )
   }, [])

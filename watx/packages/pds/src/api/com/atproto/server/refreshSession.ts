@@ -4,7 +4,7 @@ import { formatAccountStatus } from '../../../../account-manager/account-manager
 import { AppContext } from '../../../../context'
 import { softDeleted } from '../../../../db/util'
 import { Server } from '../../../../lexicon'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 import { didDocForSession } from './util'
 
 export default function (server: Server, ctx: AppContext) {
@@ -28,13 +28,16 @@ export default function (server: Server, ctx: AppContext) {
         )
       }
 
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.server.refreshSession(
-            undefined,
-            ctx.entrywayPassthruHeaders(req),
-          ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.server.refreshSession.main,
+          undefined,
+          ctx.entrywayPassthruHeaders(req),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       const [didDoc, rotated] = await Promise.all([
@@ -46,21 +49,21 @@ export default function (server: Server, ctx: AppContext) {
       }
 
       const { status, active } = formatAccountStatus(user)
+      const body = {
+        accessJwt: rotated.accessJwt,
+        refreshJwt: rotated.refreshJwt,
+        did: user.did,
+        handle: user.handle ?? INVALID_HANDLE,
+        emailConfirmed: !!user.emailConfirmedAt,
+        active,
+        ...(status ? { status } : {}),
+        ...(didDoc ? { didDoc } : {}),
+        ...(user.email ? { email: user.email } : {}),
+      }
 
       return {
         encoding: 'application/json',
-        body: {
-          accessJwt: rotated.accessJwt,
-          refreshJwt: rotated.refreshJwt,
-
-          did: user.did,
-          didDoc,
-          handle: user.handle ?? INVALID_HANDLE,
-          email: user.email ?? undefined,
-          emailConfirmed: !!user.emailConfirmedAt,
-          active,
-          status,
-        },
+        body,
       }
     },
   })

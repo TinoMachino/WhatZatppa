@@ -1,5 +1,6 @@
-import AtpAgent, { AtUri } from '@atproto/api'
+import { AtUri } from '@atproto/api'
 import { dedupeStrs, mapDefined, noUndefinedVals } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { InternalServerError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import {
@@ -9,6 +10,7 @@ import {
 } from '../../../../hydration/hydrator'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/unspecced/getOnboardingSuggestedStarterPacks'
+import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
   PresentationFnInput,
@@ -55,19 +57,17 @@ export default function (server: Server, ctx: AppContext) {
 
 const skeleton = async (input: SkeletonFnInput<Context, Params>) => {
   const { params, ctx } = input
-  if (ctx.topicsAgent) {
-    const res =
-      await ctx.topicsAgent.app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton(
-        {
-          limit: params.limit,
-          viewer: params.hydrateCtx.viewer ?? undefined,
-        },
-        {
-          headers: params.headers,
-        },
-      )
-
-    return res.data
+  if (ctx.topicsClient) {
+    return ctx.topicsClient.call(
+      app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton,
+      {
+        limit: params.limit,
+        viewer: params.hydrateCtx.viewer ?? undefined,
+      } as app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton.$Params,
+      {
+        headers: params.headers,
+      },
+    )
   } else {
     throw new InternalServerError('Topics agent not available')
   }
@@ -139,7 +139,7 @@ const presentation = (
 type Context = {
   hydrator: Hydrator
   views: Views
-  topicsAgent: AtpAgent | undefined
+  topicsClient: Client | undefined
 }
 
 type Params = QueryParams & {

@@ -69,7 +69,11 @@ class SessionStore {
 
   constructor() {
     // Careful: By the time this runs, `persisted` needs to already be filled.
-    const initialState = getInitialState(persisted.get('session').accounts)
+    const session = persisted.get('session')
+    const initialState = getInitialState(
+      session.accounts,
+      session.currentAccount?.did,
+    )
     addSessionDebugLog({type: 'reducer:init', state: initialState})
     this.state = initialState
   }

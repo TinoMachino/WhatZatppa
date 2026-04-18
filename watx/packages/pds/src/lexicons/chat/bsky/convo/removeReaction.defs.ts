@@ -26,7 +26,12 @@ const main = l.procedure(
   l.jsonPayload({
     message: l.ref<ConvoDefs.MessageView>((() => ConvoDefs.messageView) as any),
   }),
-  ['ReactionMessageDeleted', 'ReactionInvalidValue'],
+  [
+    'InvalidConvo',
+    'ReactionNotAllowed',
+    'ReactionMessageDeleted',
+    'ReactionInvalidValue',
+  ],
 )
 export { main }
 

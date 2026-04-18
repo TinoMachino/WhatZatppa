@@ -27,6 +27,9 @@ const main = l.query(
           l.typedRef<ConvoDefs.DeletedMessageView>(
             (() => ConvoDefs.deletedMessageView) as any,
           ),
+          l.typedRef<ConvoDefs.SystemMessageView>(
+            (() => ConvoDefs.systemMessageView) as any,
+          ),
         ],
         false,
       ),

@@ -5,6 +5,7 @@ import Animated, {
   interpolateColor,
   runOnJS,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSpring,
   withTiming,
@@ -33,6 +34,8 @@ export function VotingButtonHorizontal({
   const t = useTheme()
   const [currentVote, setCurrentVote] = useState(initialVote)
   const translationX = useSharedValue(0)
+  const committedVote = useSharedValue(initialVote)
+  const liveVote = useSharedValue(initialVote)
   const scale = useSharedValue(1)
   const isActive = useSharedValue(false)
 
@@ -51,6 +54,7 @@ export function VotingButtonHorizontal({
       const step = 35
       let newVote = Math.round(clampedTranslation / step)
       newVote = Math.max(-3, Math.min(3, newVote))
+      liveVote.value = newVote
 
       if (newVote !== currentVote) {
         runOnJS(setCurrentVote)(newVote)
@@ -60,21 +64,32 @@ export function VotingButtonHorizontal({
       isActive.value = false
       translationX.value = withSpring(0)
       scale.value = withSpring(1)
+      committedVote.value = liveVote.value
 
       if (onVoteChange) {
-        runOnJS(onVoteChange)(currentVote)
+        runOnJS(onVoteChange)(liveVote.value)
       }
     })
 
+  const visualVote = useDerivedValue(() => {
+    if (isActive.value) {
+      const step = 35
+      const derivedVote = Math.round(translationX.value / step)
+      return Math.max(-3, Math.min(3, derivedVote))
+    }
+    return committedVote.value
+  })
+
   const controlStyle = useAnimatedStyle(() => {
+    const normalizedVote = visualVote.value / 3
     const bg = interpolateColor(
-      translationX.value,
-      [-100, 0, 100],
+      normalizedVote,
+      [-1, 0, 1],
       [DISAGREE + '28', t.palette.contrast_50, AGREE + '28'],
     )
     const border = interpolateColor(
-      translationX.value,
-      [-100, 0, 100],
+      normalizedVote,
+      [-1, 0, 1],
       [DISAGREE + '50', t.palette.contrast_100, AGREE + '50'],
     )
     return {
@@ -85,10 +100,11 @@ export function VotingButtonHorizontal({
   })
 
   const trackStyle = useAnimatedStyle(() => {
+    const normalizedVote = visualVote.value / 3
     const backgroundColor = interpolateColor(
-      translationX.value,
-      [-100, 0, 100],
-      [DISAGREE + '0C', t.palette.contrast_25, AGREE + '0C'],
+      normalizedVote,
+      [-1, 0, 1],
+      [DISAGREE + '16', t.palette.contrast_25, AGREE + '16'],
     )
     return {backgroundColor}
   })

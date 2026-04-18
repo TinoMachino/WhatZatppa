@@ -3,7 +3,7 @@ import { ACCESS_FULL } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.createAppPassword({
@@ -17,17 +17,20 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ auth, input, req }) => {
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.server.createAppPassword(
-            input.body,
-            await ctx.entrywayAuthHeaders(
-              req,
-              auth.credentials.did,
-              ids.ComAtprotoServerCreateAppPassword,
-            ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.server.createAppPassword.main,
+          input.body,
+          await ctx.entrywayAuthHeaders(
+            req,
+            auth.credentials.did,
+            ids.ComAtprotoServerCreateAppPassword,
           ),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       const { name } = input.body

@@ -1,9 +1,13 @@
 import { CID } from 'multiformats/cid'
 import { TID, check, dataToCborBlock } from '@atproto/common'
 import {
-  BlobRef,
+  RecordSchema,
+  type BlobRef as TypedBlobRef,
+  isBlobRef as isTypedBlobRef,
+} from '@atproto/lex'
+import {
+  BlobRef as LexiconBlobRef,
   LexValue,
-  LexiconDefNotFoundError,
   RepoRecord,
   ValidationError,
   lexToIpld,
@@ -47,6 +51,42 @@ const isValidPost = asPredicate(AppBskyFeedPost.validateRecord)
 const isValidList = asPredicate(AppBskyGraphList.validateRecord)
 const isValidProfile = asPredicate(AppBskyActorProfile.validateRecord)
 
+const KNOWN_RECORD_SCHEMAS = new Map<string, RecordSchema>(
+  [
+    lex.app.bsky.actor.profile.main,
+    lex.app.bsky.actor.status.main,
+    lex.app.bsky.feed.generator.main,
+    lex.app.bsky.feed.like.main,
+    lex.app.bsky.feed.post.main,
+    lex.app.bsky.feed.postgate.main,
+    lex.app.bsky.feed.repost.main,
+    lex.app.bsky.feed.threadgate.main,
+    lex.app.bsky.graph.block.main,
+    lex.app.bsky.graph.follow.main,
+    lex.app.bsky.graph.list.main,
+    lex.app.bsky.graph.listblock.main,
+    lex.app.bsky.graph.listitem.main,
+    lex.app.bsky.graph.starterpack.main,
+    lex.app.bsky.graph.verification.main,
+    lex.app.bsky.labeler.service.main,
+    lex.app.bsky.notification.declaration.main,
+    lex.chat.bsky.actor.declaration.main,
+    lex.com.atproto.lexicon.schema.main,
+    lex.com.germnetwork.declaration.main,
+    lex.com.para.post.main,
+    lex.com.para.status.main,
+    lex.com.para.social.postMeta.main,
+    lex.com.para.civic.position.main,
+    lex.com.para.civic.delegation.main,
+    lex.com.para.civic.vote.main,
+    lex.com.para.civic.cabildeo.main,
+    lex.com.para.community.board.main,
+    lex.com.para.community.membership.main,
+    lex.com.para.community.governance.main,
+    lex.com.para.highlight.annotation.main,
+  ].map((schema: RecordSchema) => [schema.$type, schema]),
+)
+
 export const assertValidRecordWithStatus = (
   record: Record<string, unknown>,
   opts: { requireLexicon: boolean },
@@ -54,24 +94,49 @@ export const assertValidRecordWithStatus = (
   if (typeof record.$type !== 'string') {
     throw new InvalidRecordError('No $type provided')
   }
-  try {
-    lex.lexicons.assertValidRecord(record.$type, record)
-    assertValidCreatedAt(record)
-  } catch (e) {
-    if (e instanceof LexiconDefNotFoundError) {
-      if (opts.requireLexicon) {
-        throw new InvalidRecordError(e.message)
-      } else {
-        return 'unknown'
-      }
+
+  const schema = KNOWN_RECORD_SCHEMAS.get(record.$type)
+  if (!schema) {
+    if (opts.requireLexicon) {
+      throw new InvalidRecordError(`Unknown lexicon type: ${record.$type}`)
     }
+    return 'unknown'
+  }
+
+  const result = schema.safeValidate(record, { path: ['record'] })
+  if (!result.success) {
     throw new InvalidRecordError(
-      `Invalid ${record.$type} record: ${
-        e instanceof Error ? e.message : String(e)
-      }`,
+      `Invalid ${record.$type} record: ${result.reason.message}`,
     )
   }
+
+  assertValidCreatedAt(record)
   return 'valid'
+}
+
+const assertValidRecordKeyForSchema = (
+  record: Record<string, unknown>,
+  rkey: string,
+  opts: { requireLexicon: boolean },
+) => {
+  if (typeof record.$type !== 'string') {
+    throw new InvalidRecordError('No $type provided')
+  }
+
+  const schema = KNOWN_RECORD_SCHEMAS.get(record.$type)
+  if (!schema) {
+    if (opts.requireLexicon) {
+      throw new InvalidRecordError(`Unknown lexicon type: ${record.$type}`)
+    }
+    return
+  }
+
+  const result = schema.keySchema.safeValidate(rkey)
+  if (!result.success) {
+    throw new InvalidRecordError(
+      `Invalid record key for ${record.$type}: ${result.reason.message}`,
+    )
+  }
 }
 
 // additional more rigorous check on datetimes
@@ -116,24 +181,31 @@ export const prepareCreate = async (opts: {
 }): Promise<PreparedCreate> => {
   const { did, collection, swapCid, validate } = opts
   const maybeValidate = validate !== false
-  const record = setCollectionName(collection, opts.record, maybeValidate)
+  const sourceRecord = reviveLexValues(
+    setCollectionName(collection, opts.record, maybeValidate),
+  )
+  assertNoLegacyBlobRefs(sourceRecord)
+  const record = normalizeRecordBlobs(sourceRecord)
+  const requireLexicon = validate === true
   const constrainedRkey = assertCollectionConstraint({
     did,
     collection,
     rkey: opts.rkey,
-    record,
+    record: sourceRecord,
   })
   let validationStatus: ValidationStatus
   if (maybeValidate) {
     validationStatus = assertValidRecordWithStatus(record, {
-      requireLexicon: validate === true,
+      requireLexicon,
     })
   }
   const nextRkey = TID.next()
   const rkey = constrainedRkey || opts.rkey || nextRkey.toString()
-  // @TODO: validate against Lexicon record 'key' type, not just overall recordkey syntax
   ensureValidRecordKey(rkey)
-  assertNoExplicitSlurs(rkey, record)
+  if (maybeValidate) {
+    assertValidRecordKeyForSchema(record, rkey, { requireLexicon })
+  }
+  assertNoExplicitSlurs(rkey, sourceRecord)
   return {
     action: WriteOpAction.Create,
     uri: AtUri.make(did, collection, rkey),
@@ -155,20 +227,29 @@ export const prepareUpdate = async (opts: {
 }): Promise<PreparedUpdate> => {
   const { did, collection, rkey, swapCid, validate } = opts
   const maybeValidate = validate !== false
-  const record = setCollectionName(collection, opts.record, maybeValidate)
+  const sourceRecord = reviveLexValues(
+    setCollectionName(collection, opts.record, maybeValidate),
+  )
+  assertNoLegacyBlobRefs(sourceRecord)
+  const record = normalizeRecordBlobs(sourceRecord)
+  const requireLexicon = validate === true
   assertCollectionConstraint({
     did,
     collection,
     rkey,
-    record,
+    record: sourceRecord,
   })
   let validationStatus: ValidationStatus
   if (maybeValidate) {
     validationStatus = assertValidRecordWithStatus(record, {
-      requireLexicon: validate === true,
+      requireLexicon,
     })
   }
-  assertNoExplicitSlurs(rkey, record)
+  ensureValidRecordKey(rkey)
+  if (maybeValidate) {
+    assertValidRecordKeyForSchema(record, rkey, { requireLexicon })
+  }
+  assertNoExplicitSlurs(rkey, sourceRecord)
   return {
     action: WriteOpAction.Update,
     uri: AtUri.make(did, collection, rkey),
@@ -256,24 +337,32 @@ export const prepareDelete = (opts: {
   }
 }
 
+const toWriteRecord = (
+  record: RepoRecord,
+): RecordCreateOp['record'] | RecordUpdateOp['record'] => {
+  // Prepared writes have already been normalized and safely round-tripped
+  // through CBOR before we hand them to the stricter repo writer types.
+  return record as RecordCreateOp['record']
+}
+
 export const createWriteToOp = (write: PreparedCreate): RecordCreateOp => ({
   action: WriteOpAction.Create,
-  collection: write.uri.collection,
-  rkey: write.uri.rkey,
-  record: write.record,
+  collection: write.uri.collectionSafe,
+  rkey: write.uri.rkeySafe,
+  record: toWriteRecord(write.record),
 })
 
 export const updateWriteToOp = (write: PreparedUpdate): RecordUpdateOp => ({
   action: WriteOpAction.Update,
-  collection: write.uri.collection,
-  rkey: write.uri.rkey,
-  record: write.record,
+  collection: write.uri.collectionSafe,
+  rkey: write.uri.rkeySafe,
+  record: toWriteRecord(write.record),
 })
 
 export const deleteWriteToOp = (write: PreparedDelete): RecordDeleteOp => ({
   action: WriteOpAction.Delete,
-  collection: write.uri.collection,
-  rkey: write.uri.rkey,
+  collection: write.uri.collectionSafe,
+  rkey: write.uri.rkeySafe,
 })
 
 export const writeToOp = (write: PreparedWrite): RecordWriteOp => {
@@ -333,8 +422,100 @@ function assertNoExplicitSlurs(rkey: string, record: RepoRecord) {
 }
 
 type FoundBlobRef = {
-  ref: BlobRef
+  ref: LexiconBlobRef | TypedBlobRef
   path: string[]
+}
+
+const reviveLexValues = <T extends LexValue>(val: T, layer = 0): T => {
+  if (layer > 32) {
+    return val
+  }
+  if (Array.isArray(val)) {
+    return val.map((item) => reviveLexValues(item, layer + 1)) as T
+  }
+  if (val && typeof val === 'object') {
+    if (val instanceof LexiconBlobRef || CID.asCID(val) || val instanceof Uint8Array) {
+      return val
+    }
+    if (
+      '$link' in val &&
+      typeof val.$link === 'string' &&
+      Object.keys(val).length === 1
+    ) {
+      return CID.parse(val.$link) as T
+    }
+    const blob = LexiconBlobRef.asBlobRef(val)
+    if (blob) {
+      return blob as T
+    }
+    const revived: Record<string, LexValue> = {}
+    for (const [key, item] of Object.entries(val)) {
+      revived[key] = reviveLexValues(item, layer + 1)
+    }
+    return revived as T
+  }
+  return val
+}
+
+const assertNoLegacyBlobRefs = (
+  val: LexValue,
+  path: string[] = [],
+  layer = 0,
+): void => {
+  if (layer > 32) {
+    return
+  }
+  if (Array.isArray(val)) {
+    for (const item of val) {
+      assertNoLegacyBlobRefs(item, path, layer + 1)
+    }
+    return
+  }
+  if (val && typeof val === 'object') {
+    if (val instanceof LexiconBlobRef) {
+      if (check.is(val.original, untypedJsonBlobRef)) {
+        throw new InvalidRecordError(`Legacy blob ref at '${path.join('/')}'`)
+      }
+      return
+    }
+    if (check.is(val, untypedJsonBlobRef)) {
+      throw new InvalidRecordError(`Legacy blob ref at '${path.join('/')}'`)
+    }
+    if (CID.asCID(val) || val instanceof Uint8Array) {
+      return
+    }
+    for (const [key, item] of Object.entries(val)) {
+      assertNoLegacyBlobRefs(item, [...path, key], layer + 1)
+    }
+  }
+}
+
+const normalizeRecordBlobs = <T extends LexValue>(val: T, layer = 0): T => {
+  if (layer > 32) {
+    return val
+  }
+  if (Array.isArray(val)) {
+    return val.map((item) => normalizeRecordBlobs(item, layer + 1)) as T
+  }
+  if (val && typeof val === 'object') {
+    if (val instanceof LexiconBlobRef) {
+      return {
+        $type: 'blob',
+        ref: val.ref,
+        mimeType: val.mimeType,
+        size: val.size,
+      } as T
+    }
+    if (CID.asCID(val) || val instanceof Uint8Array) {
+      return val
+    }
+    const normalized: Record<string, LexValue> = {}
+    for (const [key, item] of Object.entries(val)) {
+      normalized[key] = normalizeRecordBlobs(item, layer + 1)
+    }
+    return normalized as T
+  }
+  return val
 }
 
 export const blobsForWrite = (
@@ -346,7 +527,10 @@ export const blobsForWrite = (
     typeof record['$type'] === 'string' ? record['$type'] : undefined
 
   for (const ref of refs) {
-    if (check.is(ref.ref.original, untypedJsonBlobRef)) {
+    if (
+      ref.ref instanceof LexiconBlobRef &&
+      check.is(ref.ref.original, untypedJsonBlobRef)
+    ) {
       throw new InvalidRecordError(`Legacy blob ref at '${ref.path.join('/')}'`)
     }
   }
@@ -377,7 +561,7 @@ export const findBlobRefs = (
   // objects
   if (val && typeof val === 'object') {
     // convert blobs, leaving the original encoding so that we don't change CIDs on re-encode
-    if (val instanceof BlobRef) {
+    if (val instanceof LexiconBlobRef || isTypedBlobRef(val, { strict: false })) {
       return [
         {
           ref: val,

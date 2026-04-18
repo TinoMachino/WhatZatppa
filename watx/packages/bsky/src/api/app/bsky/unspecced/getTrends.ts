@@ -1,5 +1,5 @@
-import AtpAgent from '@atproto/api'
 import { dedupeStrs, mapDefined, noUndefinedVals } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { InternalServerError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import {
@@ -10,6 +10,7 @@ import {
 import { Server } from '../../../../lexicon'
 import { SkeletonTrend } from '../../../../lexicon/types/app/bsky/unspecced/defs'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/unspecced/getTrends'
+import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
   PresentationFnInput,
@@ -51,17 +52,17 @@ export default function (server: Server, ctx: AppContext) {
 
 const skeleton = async (input: SkeletonFnInput<Context, Params>) => {
   const { params, ctx } = input
-  if (ctx.topicsAgent) {
-    const res = await ctx.topicsAgent.app.bsky.unspecced.getTrendsSkeleton(
+  if (ctx.topicsClient) {
+    return ctx.topicsClient.call(
+      app.bsky.unspecced.getTrendsSkeleton,
       {
         limit: params.limit,
         viewer: params.hydrateCtx.viewer ?? undefined,
-      },
+      } as app.bsky.unspecced.getTrendsSkeleton.$Params,
       {
         headers: params.headers,
       },
     )
-    return res.data
   } else {
     throw new InternalServerError('Topics agent not available')
   }
@@ -131,7 +132,7 @@ const presentation = (
 type Context = {
   hydrator: Hydrator
   views: Views
-  topicsAgent: AtpAgent | undefined
+  topicsClient: Client | undefined
 }
 
 type Params = QueryParams & {

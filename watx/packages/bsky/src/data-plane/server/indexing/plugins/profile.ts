@@ -6,6 +6,7 @@ import { BackgroundQueue } from '../../background'
 import { Database } from '../../db'
 import { DatabaseSchema, DatabaseSchemaType } from '../../db/database-schema'
 import { RecordProcessor } from '../processor'
+import { cidFromBlobJson } from '../../../../views/util'
 
 const lexId = lex.ids.AppBskyActorProfile
 type IndexedProfile = DatabaseSchemaType['profile']
@@ -26,8 +27,8 @@ const insertFn = async (
       creator: uri.host,
       displayName: obj.displayName,
       description: obj.description,
-      avatarCid: obj.avatar?.ref.toString(),
-      bannerCid: obj.banner?.ref.toString(),
+      avatarCid: obj.avatar ? cidFromBlobJson(obj.avatar) : undefined,
+      bannerCid: obj.banner ? cidFromBlobJson(obj.banner) : undefined,
       joinedViaStarterPackUri: obj.joinedViaStarterPack?.uri,
       createdAt: obj.createdAt ?? new Date().toISOString(),
       indexedAt: timestamp,

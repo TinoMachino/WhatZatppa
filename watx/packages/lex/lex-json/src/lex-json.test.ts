@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { LexValue, lexEquals, parseCid } from '@atproto/lex-data'
 import { JsonValue } from './json.js'
-import { jsonToLex, lexParse, lexStringify, lexToJson } from './lex-json.js'
+import { jsonToLex, lexToJson } from './lex-json.js'
+import { lexParse, lexParseJsonBytes } from './lex-parse.js'
+import { lexStringify } from './lex-stringify.js'
 
 export const validVectors: Array<{
   name: string
@@ -431,6 +433,54 @@ describe(lexStringify, () => {
         })
       })
     }
+  })
+
+  it('stringifies deeply nested structures', () => {
+    let nested: { level: number; nested?: { level: number; nested?: unknown } } =
+      { level: 0 }
+    let current = nested
+    for (let i = 1; i <= 5000; i++) {
+      current.nested = { level: i }
+      current = current.nested
+    }
+
+    const parsed = JSON.parse(lexStringify(nested)) as {
+      level: number
+      nested?: { level: number; nested?: unknown }
+    }
+
+    let check = parsed
+    for (let i = 0; i <= 5000; i++) {
+      expect(check.level).toBe(i)
+      if (i < 5000) {
+        expect(check.nested).toBeDefined()
+        check = check.nested!
+      }
+    }
+  })
+
+  it('omits undefined object properties', () => {
+    expect(
+      JSON.parse(
+        lexStringify({
+          present: 'ok',
+          omitted: undefined,
+          nested: {
+            child: 1,
+            skipped: undefined,
+          },
+        }),
+      ),
+    ).toEqual({
+      present: 'ok',
+      nested: {
+        child: 1,
+      },
+    })
+  })
+
+  it('serializes undefined array entries as null', () => {
+    expect(JSON.parse(lexStringify([1, undefined, 3]))).toEqual([1, null, 3])
   })
 })
 

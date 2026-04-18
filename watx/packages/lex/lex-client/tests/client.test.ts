@@ -209,6 +209,34 @@ describe('Client', () => {
         enabled: false,
       })
     })
+
+    it('applies constructor xrpc defaults to call()', async () => {
+      const fetchHandler: FetchHandler = async () =>
+        Response.json({
+          preferences: [
+            {
+              $type: 'app.bsky.actor.defs#adultContentPref',
+              enabled: 'not-a-boolean',
+            },
+          ],
+        })
+
+      const client = new Client(
+        { fetchHandler },
+        {
+          validateResponse: false,
+        },
+      )
+
+      const { preferences } = await client.call(app.bsky.actor.getPreferences)
+
+      expect(preferences).toEqual([
+        {
+          $type: 'app.bsky.actor.defs#adultContentPref',
+          enabled: 'not-a-boolean',
+        },
+      ])
+    })
   })
 
   describe('errors', () => {

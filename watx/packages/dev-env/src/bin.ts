@@ -1,6 +1,7 @@
 import './env'
 import path from 'node:path'
 import { generateMockSetup } from './mock'
+import { IntrospectServer } from './introspect'
 import { TestNetwork } from './network'
 import { mockMailer } from './util'
 
@@ -121,15 +122,17 @@ const run = async () => {
       port: chatPort,
       publicUrl: chatPublicUrl,
     },
-    introspect: { port: introspectPort },
   })
+  network.introspect = await IntrospectServer.start(introspectPort, network)
   mockMailer(network.pds)
   if (!skipMockSetup) {
     await generateMockSetup(network)
   }
 
   if (network.introspect) {
-    console.log(`🔍 Dev-env introspection server http://localhost:${introspectPort}`)
+    console.log(
+      `🔍 Dev-env introspection server http://127.0.0.1:${introspectPort}`,
+    )
   }
   console.log(`👤 DID Placeholder server http://localhost:${plcPort}`)
   if (plcDbUrl) {

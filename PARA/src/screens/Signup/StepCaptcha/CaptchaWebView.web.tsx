@@ -1,5 +1,6 @@
-import {useCallback, useEffect} from 'react'
-import {StyleSheet} from 'react-native'
+import {useCallback, useEffect, useState} from 'react'
+import {StyleSheet, View, TextInput, Button, Text, Linking} from 'react-native'
+import {atoms as a} from '#/alf'
 
 // @ts-ignore web only, we will always redirect to the app on web (CORS)
 const REDIRECT_HOST = new URL(window.location.href).host
@@ -55,17 +56,52 @@ export function CaptchaWebView({
     }
   }, [stateParam, onSuccess, onError])
 
+  const [devCode, setDevCode] = useState('')
+
   return (
-    <iframe
-      src={url}
-      style={styles.iframe}
-      id="captcha-iframe"
-      onLoad={onLoad}
-    />
+    <View style={styles.container}>
+      {__DEV__ && (
+        <View style={styles.devFallback}>
+          <Text style={{fontWeight: 'bold', marginBottom: 8}}>
+            [DEV ONLY] Captcha blocked by iframe?
+          </Text>
+          <Button title="Open Captcha in New Tab" onPress={() => window.open(url, '_blank')} />
+          <TextInput
+            placeholder="Paste code here from redirect URL..."
+            value={devCode}
+            onChangeText={setDevCode}
+            style={styles.devInput}
+          />
+          <Button title="Submit Dev Code" onPress={() => onSuccess(devCode || 'test-captcha')} />
+        </View>
+      )}
+      <iframe
+        src={url}
+        style={styles.iframe}
+        id="captcha-iframe"
+        onLoad={onLoad}
+      />
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  devFallback: {
+    padding: 16,
+    backgroundColor: '#ffd',
+    marginBottom: 16,
+    borderRadius: 8,
+  },
+  devInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    marginVertical: 8,
+    borderRadius: 4,
+  },
   iframe: {
     flex: 1,
     borderWidth: 0,

@@ -27,6 +27,8 @@ import * as mute from './tables/mute'
 import * as notification from './tables/notification'
 import * as notificationPushToken from './tables/notification-push-token'
 import * as paraPost from './tables/para-post'
+import * as paraCommunityBoard from './tables/para-community-board'
+import * as paraCommunityMembership from './tables/para-community-membership'
 import * as paraPostMeta from './tables/para-post-meta'
 import * as paraProfileStats from './tables/para-profile-stats'
 import * as paraStatus from './tables/para-status'
@@ -93,6 +95,8 @@ export type DatabaseSchemaType = duplicateRecord.PartialDB &
   activitySubscription.PartialDB &
   bookmark.PartialDB &
   draft.PartialDB &
+  paraCommunityBoard.PartialDB &
+  paraCommunityMembership.PartialDB &
   paraPost.PartialDB &
   paraPostMeta.PartialDB &
   paraStatus.PartialDB &

@@ -210,15 +210,6 @@ let FeedItemInner = ({
     })
   }
 
-  const onOpenReposter = () => {
-    sendInteraction({
-      item: post.uri,
-      event: 'app.bsky.feed.defs#clickthroughReposter',
-      feedContext,
-      reqId,
-    })
-  }
-
   const onOpenEmbed = () => {
     sendInteraction({
       item: post.uri,
@@ -293,6 +284,7 @@ let FeedItemInner = ({
       }
     }
   }, [reason])
+  const hasVisibleReason = reason && !AppBskyFeedDefs.isReasonRepost(reason)
 
   return (
     <Link
@@ -310,32 +302,30 @@ let FeedItemInner = ({
         setHover(false)
       }}>
       <SubtleHover hover={hover} />
-      <View style={{flexDirection: 'row', gap: 10, paddingLeft: 8}}>
-        <View style={{width: 42}}>
-          {isThreadChild && (
-            <View
-              style={[
-                styles.replyLine,
-                {
-                  flexGrow: 1,
-                  backgroundColor: pal.colors.replyLine,
-                  marginBottom: 4,
-                },
-              ]}
-            />
-          )}
-        </View>
+      {(hasVisibleReason || isThreadChild) && (
+        <View style={{flexDirection: 'row', gap: 10, paddingLeft: 8}}>
+          <View style={{width: 42}}>
+            {isThreadChild && (
+              <View
+                style={[
+                  styles.replyLine,
+                  {
+                    flexGrow: 1,
+                    backgroundColor: pal.colors.replyLine,
+                    marginBottom: 4,
+                  },
+                ]}
+              />
+            )}
+          </View>
 
-        <View style={[a.pt_sm, a.flex_shrink]}>
-          {reason && (
-            <PostFeedReason
-              reason={reason}
-              moderation={moderation}
-              onOpenReposter={onOpenReposter}
-            />
-          )}
+          <View style={[a.pt_sm, a.flex_shrink]}>
+            {hasVisibleReason ? (
+              <PostFeedReason reason={reason} />
+            ) : null}
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={styles.layout}>
         <View style={styles.layoutAvi}>

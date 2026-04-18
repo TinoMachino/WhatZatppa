@@ -3,6 +3,7 @@ import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { com } from '../../../../lexicons/index.js'
 import { httpLogger } from '../../../../logger'
 
 export default function (server: Server, ctx: AppContext) {
@@ -28,13 +29,14 @@ export default function (server: Server, ctx: AppContext) {
     handler: async ({ auth, input, req }) => {
       const requester = auth.credentials.did
 
-      if (ctx.entrywayAgent) {
+      if (ctx.entrywayClient) {
         // the full flow is:
         // -> entryway(identity.updateHandle) [update handle, submit plc op]
         // -> pds(admin.updateAccountHandle)  [track handle, sequence handle update]
-        await ctx.entrywayAgent.com.atproto.identity.updateHandle(
-          // @ts-expect-error "did" is not in the schema
-          { did: requester, handle: input.body.handle },
+        await ctx.entrywayClient.call(
+          com.atproto.identity.updateHandle.main,
+          { did: requester, handle: input.body.handle } as
+            com.atproto.identity.updateHandle.$InputBody,
           await ctx.entrywayAuthHeaders(
             req,
             auth.credentials.did,

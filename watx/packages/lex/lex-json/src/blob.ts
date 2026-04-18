@@ -68,3 +68,5 @@ export function parseBlobRef(
 
   return undefined
 }
+
+export const parseTypedBlobRef = parseBlobRef

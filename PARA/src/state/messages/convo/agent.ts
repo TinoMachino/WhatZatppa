@@ -5,8 +5,8 @@ import {
   type ChatBskyConvoGetLog,
   type ChatBskyConvoSendMessage,
 } from '@atproto/api'
-import {XRPCError} from '@atproto/xrpc'
-import EventEmitter from 'eventemitter3'
+import {XRPCError} from '@atproto/api'
+import {EventEmitter} from 'eventemitter3'
 import {nanoid} from 'nanoid/non-secure'
 
 import {networkRetry} from '#/lib/async/retry'
@@ -33,6 +33,7 @@ import {
   type ConvoParams,
   type ConvoState,
   ConvoStatus,
+  type ConvoTimelineMessage,
 } from '#/state/messages/convo/types'
 import {type MessagesEventBus} from '#/state/messages/events/agent'
 import {type MessagesEventBusError} from '#/state/messages/events/types'
@@ -51,6 +52,16 @@ export function isConvoItemMessage(
   )
 }
 
+function isTimelineMessage(
+  message: unknown,
+): message is ConvoTimelineMessage {
+  return (
+    ChatBskyConvoDefs.isMessageView(message) ||
+    ChatBskyConvoDefs.isDeletedMessageView(message) ||
+    ChatBskyConvoDefs.isSystemMessageView(message)
+  )
+}
+
 export class Convo {
   private id: string
 
@@ -66,12 +77,9 @@ export class Convo {
 
   private pastMessages: Map<
     string,
-    ChatBskyConvoDefs.MessageView | ChatBskyConvoDefs.DeletedMessageView
+    ConvoTimelineMessage
   > = new Map()
-  private newMessages: Map<
-    string,
-    ChatBskyConvoDefs.MessageView | ChatBskyConvoDefs.DeletedMessageView
-  > = new Map()
+  private newMessages: Map<string, ConvoTimelineMessage> = new Map()
   private pendingMessages: Map<
     string,
     {id: string; message: ChatBskyConvoSendMessage.InputSchema['message']}
@@ -653,10 +661,7 @@ export class Convo {
       this.oldestRev = cursor ?? null
 
       for (const message of messages) {
-        if (
-          ChatBskyConvoDefs.isMessageView(message) ||
-          ChatBskyConvoDefs.isDeletedMessageView(message)
-        ) {
+        if (isTimelineMessage(message)) {
           /*
            * If this message is already in new messages, it was added by the
            * firehose ingestion, and we can safely overwrite it. This trusts
@@ -760,7 +765,7 @@ export class Convo {
 
           if (
             ChatBskyConvoDefs.isLogCreateMessage(ev) &&
-            ChatBskyConvoDefs.isMessageView(ev.message)
+            isTimelineMessage(ev.message)
           ) {
             /**
              * If this message is already in new messages, it was added by our
@@ -1063,6 +1068,14 @@ export class Convo {
           nextMessage: null,
           prevMessage: null,
         })
+      } else if (ChatBskyConvoDefs.isSystemMessageView(m)) {
+        items.unshift({
+          type: 'system-message',
+          key: m.id,
+          message: m,
+          nextMessage: null,
+          prevMessage: null,
+        })
       }
     })
 
@@ -1089,6 +1102,14 @@ export class Convo {
       } else if (ChatBskyConvoDefs.isDeletedMessageView(m)) {
         items.push({
           type: 'deleted-message',
+          key: m.id,
+          message: m,
+          nextMessage: null,
+          prevMessage: null,
+        })
+      } else if (ChatBskyConvoDefs.isSystemMessageView(m)) {
+        items.push({
+          type: 'system-message',
           key: m.id,
           message: m,
           nextMessage: null,
@@ -1148,34 +1169,33 @@ export class Convo {
         return true
       })
       .map((item, i, arr) => {
-        let nextMessage = null
-        let prevMessage = null
+        let nextMessage: ConvoTimelineMessage | null = null
+        let prevMessage: ConvoTimelineMessage | null = null
         const isMessage = isConvoItemMessage(item)
 
-        if (isMessage) {
+        if (
+          isMessage ||
+          item.type === 'deleted-message' ||
+          item.type === 'system-message'
+        ) {
+          const next = arr[i + 1]
           if (
-            ChatBskyConvoDefs.isMessageView(item.message) ||
-            ChatBskyConvoDefs.isDeletedMessageView(item.message)
+            next &&
+            next.type !== 'error' &&
+            next.message &&
+            isTimelineMessage(next.message)
           ) {
-            const next = arr[i + 1]
+            nextMessage = next.message
+          }
 
-            if (
-              isConvoItemMessage(next) &&
-              (ChatBskyConvoDefs.isMessageView(next.message) ||
-                ChatBskyConvoDefs.isDeletedMessageView(next.message))
-            ) {
-              nextMessage = next.message
-            }
-
-            const prev = arr[i - 1]
-
-            if (
-              isConvoItemMessage(prev) &&
-              (ChatBskyConvoDefs.isMessageView(prev.message) ||
-                ChatBskyConvoDefs.isDeletedMessageView(prev.message))
-            ) {
-              prevMessage = prev.message
-            }
+          const prev = arr[i - 1]
+          if (
+            prev &&
+            prev.type !== 'error' &&
+            prev.message &&
+            isTimelineMessage(prev.message)
+          ) {
+            prevMessage = prev.message
           }
 
           return {

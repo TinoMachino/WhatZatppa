@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.updateRead'
 
 export { $nsid }
 
+/** Updates the read state of a conversation from, optionally specifying the last read message. */
 const main = l.procedure(
   $nsid,
   l.params(),
@@ -16,6 +17,7 @@ const main = l.procedure(
   l.jsonPayload({
     convo: l.ref<ConvoDefs.ConvoView>((() => ConvoDefs.convoView) as any),
   }),
+  ['InvalidConvo'],
 )
 export { main }
 

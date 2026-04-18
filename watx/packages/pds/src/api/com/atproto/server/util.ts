@@ -34,6 +34,9 @@ export const safeResolveDidDoc = async (
   forceRefresh?: boolean,
 ): Promise<DidDocument | undefined> => {
   try {
+    if (did.startsWith('did:plc:')) {
+      return await ctx.plcClient.getDocument(did)
+    }
     const didDoc = await ctx.idResolver.did.resolve(did, forceRefresh)
     return didDoc ?? undefined
   } catch (err) {

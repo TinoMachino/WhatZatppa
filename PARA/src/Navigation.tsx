@@ -87,6 +87,7 @@ import {CommunityProfileScreen} from '#/screens/Communities/CommunityProfileScre
 import {CommunityRAQScreen} from '#/screens/Communities/CommunityRAQScreen'
 import {CommunityVotersScreen} from '#/screens/Communities/CommunityVotersScreen'
 import {CreateCabildeoScreen} from '#/screens/Communities/CreateCabildeoScreen'
+import {CreateCommunityScreen} from '#/screens/Communities/CreateCommunityScreen'
 import {CreatePositionScreen} from '#/screens/Communities/CreatePositionScreen'
 import {DelegateVoteScreen} from '#/screens/Communities/DelegateVoteScreen'
 import {DiscourseAnalysisScreen} from '#/screens/Dashboard/DiscourseAnalysis'
@@ -999,6 +1000,11 @@ function BaseTabNavigator() {
         options={{title: 'Communities'}}
       />
       <BaseTab.Screen
+        name="CreateCommunity"
+        getComponent={() => CreateCommunityScreen}
+        options={{title: 'Create Community'}}
+      />
+      <BaseTab.Screen
         name="CommunityProfile"
         getComponent={() => CommunityProfileScreen}
         options={{title: 'Community'}}
@@ -1060,7 +1066,7 @@ const FlatNavigator = ({
       <Flat.Screen
         name="Base"
         getComponent={() => BaseScreen}
-        options={{title: title(msg`Base`)}}
+        options={{title: bskyTitle('Base', numUnread)}}
       />
       <Flat.Screen
         name="CreatePost"
@@ -1075,7 +1081,12 @@ const FlatNavigator = ({
       <Flat.Screen
         name="Communities"
         getComponent={() => CommunitiesScreen}
-        options={{title: title(msg`Communities`)}}
+        options={{title: bskyTitle('Communities', numUnread)}}
+      />
+      <Flat.Screen
+        name="CreateCommunity"
+        getComponent={() => CreateCommunityScreen}
+        options={{title: title(msg`Create Community`)}}
       />
       <Flat.Screen
         name="Start"

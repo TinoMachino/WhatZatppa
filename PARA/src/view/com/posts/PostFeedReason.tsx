@@ -1,38 +1,27 @@
 import {StyleSheet, View} from 'react-native'
-import {AppBskyFeedDefs, type ModerationDecision} from '@atproto/api'
+import {AppBskyFeedDefs} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {isReasonFeedSource, type ReasonFeedSource} from '#/lib/api/feed/types'
-import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
-import {makeProfileLink} from '#/lib/routes/links'
-import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import {Pin_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/Pin'
-import {Repost_Stroke2_Corner3_Rounded as RepostIcon} from '#/components/icons/Repost'
 import {Link} from '#/components/Link'
-import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
 import {FeedNameText} from '../util/FeedInfoText'
 
 export function PostFeedReason({
   reason,
-  moderation,
-  onOpenReposter,
 }: {
   reason:
     | ReasonFeedSource
     | AppBskyFeedDefs.ReasonRepost
     | AppBskyFeedDefs.ReasonPin
     | {[k: string]: unknown; $type: string}
-  moderation?: ModerationDecision
-  onOpenReposter?: () => void
 }) {
   const t = useTheme()
   const {_} = useLingui()
-
-  const {currentAccount} = useSession()
 
   if (isReasonFeedSource(reason)) {
     return (
@@ -64,42 +53,7 @@ export function PostFeedReason({
   }
 
   if (AppBskyFeedDefs.isReasonRepost(reason)) {
-    const isOwner = reason.by.did === currentAccount?.did
-    const reposter = createSanitizedDisplayName(
-      reason.by,
-      false,
-      moderation?.ui('displayName'),
-    )
-    return (
-      <Link
-        style={styles.includeReason}
-        to={makeProfileLink(reason.by)}
-        label={
-          isOwner ? _(msg`Reposted by you`) : _(msg`Reposted by ${reposter}`)
-        }
-        onPress={onOpenReposter}>
-        <RepostIcon
-          style={[t.atoms.text_contrast_medium, {marginRight: 3}]}
-          width={13}
-          height={13}
-        />
-        <ProfileHoverCard did={reason.by.did}>
-          <Text
-            style={[
-              t.atoms.text_contrast_medium,
-              a.font_medium,
-              a.leading_snug,
-            ]}
-            numberOfLines={1}>
-            {isOwner ? (
-              <Trans>Reposted by you</Trans>
-            ) : (
-              <Trans>Reposted by {reposter}</Trans>
-            )}
-          </Text>
-        </ProfileHoverCard>
-      </Link>
-    )
+    return null
   }
 
   if (AppBskyFeedDefs.isReasonPin(reason)) {

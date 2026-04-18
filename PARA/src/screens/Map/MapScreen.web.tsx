@@ -1,4 +1,4 @@
-import MapView, {Polygon} from 'react-native-maps'
+import MapView, {Marker, Polygon} from 'react-native-maps'
 
 import {MapScreenImpl, type Props} from './MapScreen.shared'
 
@@ -7,6 +7,7 @@ export function MapScreen(props: Props) {
     <MapScreenImpl
       {...props}
       MapViewComponent={MapView}
+      MarkerComponent={Marker}
       PolygonComponent={Polygon}
     />
   )

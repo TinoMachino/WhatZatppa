@@ -48,6 +48,18 @@ const testNoOutputQuery = l.query(
   l.payload(),
 )
 
+const testLooseJsonQuery = l.query(
+  'io.example.testLooseJsonQuery',
+  l.params(),
+  l.payload('application/json', undefined),
+)
+
+const testLooseSchemaQuery = l.query(
+  'io.example.testLooseSchemaQuery',
+  l.params(),
+  l.jsonPayload({ value: l.string({ format: 'datetime' }) }),
+)
+
 describe(xrpc, () => {
   describe('success paths', () => {
     it('returns parsed JSON body for a query', async () => {
@@ -124,6 +136,17 @@ describe(xrpc, () => {
       expect(response.status).toBe(200)
       expect(response.body).toBeUndefined()
       expect(response.encoding).toBeUndefined()
+    })
+
+    it('accepts payloads for queries with undeclared output encoding', async () => {
+      const fetchHandler: FetchHandler = async () =>
+        Response.json({ unexpected: 'data' })
+
+      const response = await xrpc(fetchHandler, testNoOutputQuery)
+
+      expect(response.success).toBe(true)
+      expect(response.body).toEqual({ unexpected: 'data' })
+      expect(response.encoding).toBe('application/json')
     })
 
     it('passes query params as URL search params', async () => {
@@ -397,19 +420,6 @@ describe(xrpc, () => {
         })
       })
 
-      it('throws XrpcUpstreamError when schema expects no payload but got one', async () => {
-        const fetchHandler: FetchHandler = async () =>
-          Response.json({ unexpected: 'data' })
-
-        await expect(xrpc(fetchHandler, testNoOutputQuery)).rejects.toSatisfy(
-          (err) => {
-            assert(err instanceof XrpcUpstreamError)
-            expect(err.message).toContain('no body')
-            return true
-          },
-        )
-      })
-
       it('throws XrpcUpstreamError when schema expects payload but response is empty', async () => {
         const fetchHandler: FetchHandler = async () =>
           new Response(null, { status: 200 })
@@ -418,7 +428,7 @@ describe(xrpc, () => {
           xrpc(fetchHandler, testQuery, { params: { limit: 10 } }),
         ).rejects.toSatisfy((err) => {
           assert(err instanceof XrpcUpstreamError)
-          expect(err.message).toContain('non-empty response')
+          expect(err.message).toContain('got no payload')
           return true
         })
       })
@@ -581,6 +591,45 @@ describe(xrpc, () => {
 
       expect(response.success).toBe(true)
       expect(response.body).toEqual({ value: 'hello' })
+    })
+  })
+
+  describe('strictResponseProcessing', () => {
+    it('rejects invalid Lex JSON by default', async () => {
+      const fetchHandler: FetchHandler = async () =>
+        Response.json({ value: 1.5 })
+
+      await expect(xrpc(fetchHandler, testLooseJsonQuery)).rejects.toSatisfy(
+        (err) => {
+          assert(err instanceof XrpcUpstreamError)
+          expect(err.message).toContain('Unable to parse response payload')
+          return true
+        },
+      )
+    })
+
+    it('accepts invalid Lex JSON when disabled', async () => {
+      const fetchHandler: FetchHandler = async () =>
+        Response.json({ value: 1.5 })
+
+      const response = await xrpc(fetchHandler, testLooseJsonQuery, {
+        strictResponseProcessing: false,
+      })
+
+      expect(response.success).toBe(true)
+      expect(response.body).toEqual({ value: 1.5 })
+    })
+
+    it('relaxes schema validation when disabled', async () => {
+      const fetchHandler: FetchHandler = async () =>
+        Response.json({ value: '2023-12-25T12:00:00' })
+
+      const response = await xrpc(fetchHandler, testLooseSchemaQuery, {
+        strictResponseProcessing: false,
+      })
+
+      expect(response.success).toBe(true)
+      expect(response.body).toEqual({ value: '2023-12-25T12:00:00' })
     })
   })
 })

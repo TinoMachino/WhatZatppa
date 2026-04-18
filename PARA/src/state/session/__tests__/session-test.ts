@@ -797,6 +797,39 @@ describe('session', () => {
     `)
   })
 
+  it('dedupes stale local accounts with the same handle when switching', () => {
+    let state = getInitialState([
+      {
+        service: 'http://localhost:2583',
+        did: 'stale-active-a-did',
+        handle: 'active-a.test',
+        active: true,
+      },
+    ])
+
+    const agent = new BskyAgent({service: 'http://127.0.0.1:2583'})
+    agent.sessionManager.session = {
+      active: true,
+      did: 'fresh-active-a-did',
+      handle: 'active-a.test',
+      accessJwt: 'fresh-access-jwt',
+      refreshJwt: 'fresh-refresh-jwt',
+    }
+
+    state = run(state, [
+      {
+        type: 'switched-to-account',
+        newAgent: agent,
+        newAccount: agentToSessionAccountOrThrow(agent),
+      },
+    ])
+
+    expect(state.accounts).toHaveLength(1)
+    expect(state.accounts[0].did).toBe('fresh-active-a-did')
+    expect(state.accounts[0].accessJwt).toBe('fresh-access-jwt')
+    expect(state.accounts[0].refreshJwt).toBe('fresh-refresh-jwt')
+  })
+
   it('updates stored account with refreshed tokens', () => {
     let state = getInitialState([])
 

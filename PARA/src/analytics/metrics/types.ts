@@ -66,6 +66,13 @@ export type Events = {
   'welcomeModal:signinClicked': {}
   'welcomeModal:dismissed': {}
   'welcomeModal:presented': {}
+  'community:create:ctaShown': {}
+  'community:create:ctaClicked': {}
+  'community:create:eligibilityDenied': {}
+  'community:create:submitStarted': {}
+  'community:create:submitSucceeded': {}
+  'community:create:submitFailed': {}
+  'community:create:wizardCompleted': {}
   'signup:nextPressed': {
     activeStep: number
     phoneVerificationRequired?: boolean
@@ -478,6 +485,7 @@ export type Events = {
       | 'InterstitialProfile'
       | 'Profile'
       | 'Onboarding'
+      | 'SeeMoreSuggestedUsers'
     location: 'Card' | 'Profile' | 'FollowAll'
     recId?: number | string
     position: number
@@ -490,6 +498,7 @@ export type Events = {
       | 'InterstitialDiscover'
       | 'InterstitialProfile'
       | 'Onboarding'
+      | 'SeeMoreSuggestedUsers'
     recId?: number | string
     position: number
     suggestedDid: string
@@ -503,6 +512,7 @@ export type Events = {
       | 'Profile'
       | 'Onboarding'
       | 'ProgressGuide'
+      | 'SeeMoreSuggestedUsers'
     recId?: number | string
     position: number
     suggestedDid: string

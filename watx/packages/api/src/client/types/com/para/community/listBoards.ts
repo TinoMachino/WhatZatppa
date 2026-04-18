@@ -1,0 +1,90 @@
+/**
+ * GENERATED CODE - DO NOT MODIFY
+ */
+import { HeadersMap, XRPCError } from '@atproto/xrpc'
+import { type ValidationResult, BlobRef } from '@atproto/lexicon'
+import { CID } from 'multiformats/cid'
+import { validate as _validate } from '../../../../lexicons'
+import {
+  type $Typed,
+  is$typed as _is$typed,
+  type OmitKey,
+} from '../../../../util'
+
+const is$typed = _is$typed,
+  validate = _validate
+const id = 'com.para.community.listBoards'
+
+export type QueryParams = {
+  limit?: number
+}
+export type InputSchema = undefined
+export type OutputSchema = Output
+
+export interface CallOptions {
+  signal?: AbortSignal
+  headers?: HeadersMap
+}
+
+export interface Response {
+  success: boolean
+  headers: HeadersMap
+  data: OutputSchema
+}
+
+export function toKnownErr(e: any) {
+  return e
+}
+
+export interface BoardView {
+  $type?: 'com.para.community.listBoards#boardView'
+  uri: string
+  cid: string
+  creatorDid: string
+  creatorHandle?: string
+  creatorDisplayName?: string
+  communityId: string
+  slug: string
+  name: string
+  description?: string
+  quadrant: string
+  delegatesChatId: string
+  subdelegatesChatId: string
+  memberCount: number
+  viewerMembershipState:
+    | 'none'
+    | 'pending'
+    | 'active'
+    | 'left'
+    | 'removed'
+    | 'blocked'
+    | (string & {})
+  viewerRoles?: string[]
+  createdAt: string
+}
+
+const hashBoardView = 'boardView'
+
+export function isBoardView<V>(v: V) {
+  return is$typed(v, id, hashBoardView)
+}
+
+export function validateBoardView<V>(v: V) {
+  return validate<BoardView & V>(v, id, hashBoardView)
+}
+
+export interface Output {
+  $type?: 'com.para.community.listBoards#output'
+  boards: BoardView[]
+  canCreateCommunity: boolean
+}
+
+const hashOutput = 'output'
+
+export function isOutput<V>(v: V) {
+  return is$typed(v, id, hashOutput)
+}
+
+export function validateOutput<V>(v: V) {
+  return validate<Output & V>(v, id, hashOutput)
+}

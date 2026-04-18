@@ -3,6 +3,7 @@ import { ACCESS_FULL, AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.identity.requestPlcOperationSignature({
@@ -15,8 +16,9 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ auth, req }) => {
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.identity.requestPlcOperationSignature(
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.identity.requestPlcOperationSignature.main,
           undefined,
           await ctx.entrywayAuthHeaders(
             req,

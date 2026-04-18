@@ -6,10 +6,41 @@ import { l } from '@atproto/lex'
 import * as RichtextFacet from '../../../app/bsky/richtext/facet.defs.js'
 import * as EmbedRecord from '../../../app/bsky/embed/record.defs.js'
 import * as ActorDefs from '../actor/defs.defs.js'
+import * as GroupDefs from '../group/defs.defs.js'
 
 const $nsid = 'chat.bsky.convo.defs'
 
 export { $nsid }
+
+type ConvoKind = 'direct' | 'group' | l.UnknownString
+
+export type { ConvoKind }
+
+const convoKind = l.string<{ knownValues: ['direct', 'group'] }>()
+
+export { convoKind }
+
+type ConvoLockStatus =
+  | 'unlocked'
+  | 'locked'
+  | 'locked-permanently'
+  | l.UnknownString
+
+export type { ConvoLockStatus }
+
+const convoLockStatus = l.string<{
+  knownValues: ['unlocked', 'locked', 'locked-permanently']
+}>()
+
+export { convoLockStatus }
+
+type ConvoStatus = 'request' | 'accepted' | l.UnknownString
+
+export type { ConvoStatus }
+
+const convoStatus = l.string<{ knownValues: ['request', 'accepted'] }>()
+
+export { convoStatus }
 
 type MessageRef = {
   $type?: 'chat.bsky.convo.defs#messageRef'
@@ -112,6 +143,390 @@ const messageView = l.typedObject<MessageView>(
 
 export { messageView }
 
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+type SystemMessageView = {
+  $type?: 'chat.bsky.convo.defs#systemMessageView'
+  id: string
+  rev: string
+  sentAt: l.DatetimeString
+  data:
+    | l.$Typed<SystemMessageDataAddMember>
+    | l.$Typed<SystemMessageDataRemoveMember>
+    | l.$Typed<SystemMessageDataMemberJoin>
+    | l.$Typed<SystemMessageDataMemberLeave>
+    | l.$Typed<SystemMessageDataLockConvo>
+    | l.$Typed<SystemMessageDataUnlockConvo>
+    | l.$Typed<SystemMessageDataLockConvoPermanently>
+    | l.$Typed<SystemMessageDataEditGroup>
+    | l.$Typed<SystemMessageDataCreateJoinLink>
+    | l.$Typed<SystemMessageDataEditJoinLink>
+    | l.$Typed<SystemMessageDataEnableJoinLink>
+    | l.$Typed<SystemMessageDataDisableJoinLink>
+    | l.Unknown$TypedObject
+}
+
+export type { SystemMessageView }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+const systemMessageView = l.typedObject<SystemMessageView>(
+  $nsid,
+  'systemMessageView',
+  l.object({
+    id: l.string(),
+    rev: l.string(),
+    sentAt: l.string({ format: 'datetime' }),
+    data: l.typedUnion(
+      [
+        l.typedRef<SystemMessageDataAddMember>(
+          (() => systemMessageDataAddMember) as any,
+        ),
+        l.typedRef<SystemMessageDataRemoveMember>(
+          (() => systemMessageDataRemoveMember) as any,
+        ),
+        l.typedRef<SystemMessageDataMemberJoin>(
+          (() => systemMessageDataMemberJoin) as any,
+        ),
+        l.typedRef<SystemMessageDataMemberLeave>(
+          (() => systemMessageDataMemberLeave) as any,
+        ),
+        l.typedRef<SystemMessageDataLockConvo>(
+          (() => systemMessageDataLockConvo) as any,
+        ),
+        l.typedRef<SystemMessageDataUnlockConvo>(
+          (() => systemMessageDataUnlockConvo) as any,
+        ),
+        l.typedRef<SystemMessageDataLockConvoPermanently>(
+          (() => systemMessageDataLockConvoPermanently) as any,
+        ),
+        l.typedRef<SystemMessageDataEditGroup>(
+          (() => systemMessageDataEditGroup) as any,
+        ),
+        l.typedRef<SystemMessageDataCreateJoinLink>(
+          (() => systemMessageDataCreateJoinLink) as any,
+        ),
+        l.typedRef<SystemMessageDataEditJoinLink>(
+          (() => systemMessageDataEditJoinLink) as any,
+        ),
+        l.typedRef<SystemMessageDataEnableJoinLink>(
+          (() => systemMessageDataEnableJoinLink) as any,
+        ),
+        l.typedRef<SystemMessageDataDisableJoinLink>(
+          (() => systemMessageDataDisableJoinLink) as any,
+        ),
+      ],
+      false,
+    ),
+  }),
+)
+
+export { systemMessageView }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user was added to the group convo. */
+type SystemMessageDataAddMember = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataAddMember'
+
+  /**
+   * Current view of the member who was added.
+   */
+  member: ActorDefs.ProfileViewBasic
+
+  /**
+   * Role the user was added to the group with. The role from 'member' will reflect the current data, not historical.
+   */
+  role: ActorDefs.MemberRole
+  addedBy: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataAddMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user was added to the group convo. */
+const systemMessageDataAddMember = l.typedObject<SystemMessageDataAddMember>(
+  $nsid,
+  'systemMessageDataAddMember',
+  l.object({
+    member: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+    role: l.ref<ActorDefs.MemberRole>((() => ActorDefs.memberRole) as any),
+    addedBy: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+  }),
+)
+
+export { systemMessageDataAddMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user was removed from the group convo. */
+type SystemMessageDataRemoveMember = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataRemoveMember'
+
+  /**
+   * Current view of the member who was removed.
+   */
+  member: ActorDefs.ProfileViewBasic
+  removedBy: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataRemoveMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user was removed from the group convo. */
+const systemMessageDataRemoveMember =
+  l.typedObject<SystemMessageDataRemoveMember>(
+    $nsid,
+    'systemMessageDataRemoveMember',
+    l.object({
+      member: l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
+      removedBy: l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
+    }),
+  )
+
+export { systemMessageDataRemoveMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user joined the group convo via join link. */
+type SystemMessageDataMemberJoin = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataMemberJoin'
+
+  /**
+   * Current view of the member who joined.
+   */
+  member: ActorDefs.ProfileViewBasic
+
+  /**
+   * Role the user was added to the group with. The role from 'member' will reflect the current data, not historical.
+   */
+  role: ActorDefs.MemberRole
+
+  /**
+   * If join link was configured to require approval, this will be set to who approved the request. Undefined if approval was not required.
+   */
+  approvedBy?: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataMemberJoin }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user joined the group convo via join link. */
+const systemMessageDataMemberJoin = l.typedObject<SystemMessageDataMemberJoin>(
+  $nsid,
+  'systemMessageDataMemberJoin',
+  l.object({
+    member: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+    role: l.ref<ActorDefs.MemberRole>((() => ActorDefs.memberRole) as any),
+    approvedBy: l.optional(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
+    ),
+  }),
+)
+
+export { systemMessageDataMemberJoin }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user voluntarily left the group convo. */
+type SystemMessageDataMemberLeave = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataMemberLeave'
+
+  /**
+   * Current view of the member who left the group.
+   */
+  member: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataMemberLeave }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating a user voluntarily left the group convo. */
+const systemMessageDataMemberLeave =
+  l.typedObject<SystemMessageDataMemberLeave>(
+    $nsid,
+    'systemMessageDataMemberLeave',
+    l.object({
+      member: l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
+    }),
+  )
+
+export { systemMessageDataMemberLeave }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group convo was locked. */
+type SystemMessageDataLockConvo = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataLockConvo'
+
+  /**
+   * Current view of the member who locked the group.
+   */
+  lockedBy: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataLockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group convo was locked. */
+const systemMessageDataLockConvo = l.typedObject<SystemMessageDataLockConvo>(
+  $nsid,
+  'systemMessageDataLockConvo',
+  l.object({
+    lockedBy: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+  }),
+)
+
+export { systemMessageDataLockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group convo was unlocked. */
+type SystemMessageDataUnlockConvo = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataUnlockConvo'
+
+  /**
+   * Current view of the member who unlocked the group.
+   */
+  unlockedBy: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataUnlockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group convo was unlocked. */
+const systemMessageDataUnlockConvo =
+  l.typedObject<SystemMessageDataUnlockConvo>(
+    $nsid,
+    'systemMessageDataUnlockConvo',
+    l.object({
+      unlockedBy: l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
+    }),
+  )
+
+export { systemMessageDataUnlockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group convo was locked permanently. */
+type SystemMessageDataLockConvoPermanently = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataLockConvoPermanently'
+
+  /**
+   * Current view of the member who locked the group.
+   */
+  lockedBy: ActorDefs.ProfileViewBasic
+}
+
+export type { SystemMessageDataLockConvoPermanently }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group convo was locked permanently. */
+const systemMessageDataLockConvoPermanently =
+  l.typedObject<SystemMessageDataLockConvoPermanently>(
+    $nsid,
+    'systemMessageDataLockConvoPermanently',
+    l.object({
+      lockedBy: l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
+    }),
+  )
+
+export { systemMessageDataLockConvoPermanently }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group info was edited. */
+type SystemMessageDataEditGroup = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataEditGroup'
+
+  /**
+   * Group name that was replaced.
+   */
+  oldName?: string
+
+  /**
+   * Group name that replaced the old.
+   */
+  newName?: string
+}
+
+export type { SystemMessageDataEditGroup }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group info was edited. */
+const systemMessageDataEditGroup = l.typedObject<SystemMessageDataEditGroup>(
+  $nsid,
+  'systemMessageDataEditGroup',
+  l.object({
+    oldName: l.optional(l.string()),
+    newName: l.optional(l.string()),
+  }),
+)
+
+export { systemMessageDataEditGroup }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was created. */
+type SystemMessageDataCreateJoinLink = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataCreateJoinLink'
+}
+
+export type { SystemMessageDataCreateJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was created. */
+const systemMessageDataCreateJoinLink =
+  l.typedObject<SystemMessageDataCreateJoinLink>(
+    $nsid,
+    'systemMessageDataCreateJoinLink',
+    l.object({}),
+  )
+
+export { systemMessageDataCreateJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was edited. */
+type SystemMessageDataEditJoinLink = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataEditJoinLink'
+}
+
+export type { SystemMessageDataEditJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was edited. */
+const systemMessageDataEditJoinLink =
+  l.typedObject<SystemMessageDataEditJoinLink>(
+    $nsid,
+    'systemMessageDataEditJoinLink',
+    l.object({}),
+  )
+
+export { systemMessageDataEditJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was enabled. */
+type SystemMessageDataEnableJoinLink = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataEnableJoinLink'
+}
+
+export type { SystemMessageDataEnableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was enabled. */
+const systemMessageDataEnableJoinLink =
+  l.typedObject<SystemMessageDataEnableJoinLink>(
+    $nsid,
+    'systemMessageDataEnableJoinLink',
+    l.object({}),
+  )
+
+export { systemMessageDataEnableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was disabled. */
+type SystemMessageDataDisableJoinLink = {
+  $type?: 'chat.bsky.convo.defs#systemMessageDataDisableJoinLink'
+}
+
+export type { SystemMessageDataDisableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. System message indicating the group join link was disabled. */
+const systemMessageDataDisableJoinLink =
+  l.typedObject<SystemMessageDataDisableJoinLink>(
+    $nsid,
+    'systemMessageDataDisableJoinLink',
+    l.object({}),
+  )
+
+export { systemMessageDataDisableJoinLink }
+
 type DeletedMessageView = {
   $type?: 'chat.bsky.convo.defs#deletedMessageView'
   id: string
@@ -209,15 +624,29 @@ type ConvoView = {
   $type?: 'chat.bsky.convo.defs#convoView'
   id: string
   rev: string
+
+  /**
+   * Members of this conversation. For direct convos, it will be an immutable list of the 2 members. For group convos, it will a list of important members (the first few members, the viewer, the member who invited the viewer, the member who sent the last message, the member who sent the last reaction), but will not contain the full list of members. NOTE: TBD an endpoint to list all members.
+   */
   members: ActorDefs.ProfileViewBasic[]
   lastMessage?:
     | l.$Typed<MessageView>
     | l.$Typed<DeletedMessageView>
+    | l.$Typed<SystemMessageView>
     | l.Unknown$TypedObject
   lastReaction?: l.$Typed<MessageAndReactionView> | l.Unknown$TypedObject
   muted: boolean
-  status?: 'request' | 'accepted' | l.UnknownString
+
+  /**
+   * Convo status for the viewer member (not the convo itself).
+   */
+  status?: ConvoStatus
   unreadCount: number
+
+  /**
+   * Union field that has data specific to different kinds of convos.
+   */
+  kind?: l.$Typed<DirectConvo> | l.$Typed<GroupConvo> | l.Unknown$TypedObject
 }
 
 export type { ConvoView }
@@ -238,6 +667,7 @@ const convoView = l.typedObject<ConvoView>(
         [
           l.typedRef<MessageView>((() => messageView) as any),
           l.typedRef<DeletedMessageView>((() => deletedMessageView) as any),
+          l.typedRef<SystemMessageView>((() => systemMessageView) as any),
         ],
         false,
       ),
@@ -253,13 +683,70 @@ const convoView = l.typedObject<ConvoView>(
       ),
     ),
     muted: l.boolean(),
-    status: l.optional(l.string<{ knownValues: ['request', 'accepted'] }>()),
+    status: l.optional(l.ref<ConvoStatus>((() => convoStatus) as any)),
     unreadCount: l.integer(),
+    kind: l.optional(
+      l.typedUnion(
+        [
+          l.typedRef<DirectConvo>((() => directConvo) as any),
+          l.typedRef<GroupConvo>((() => groupConvo) as any),
+        ],
+        false,
+      ),
+    ),
   }),
 )
 
 export { convoView }
 
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+type DirectConvo = { $type?: 'chat.bsky.convo.defs#directConvo' }
+
+export type { DirectConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+const directConvo = l.typedObject<DirectConvo>(
+  $nsid,
+  'directConvo',
+  l.object({}),
+)
+
+export { directConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+type GroupConvo = {
+  $type?: 'chat.bsky.convo.defs#groupConvo'
+
+  /**
+   * The display name of the group conversation.
+   */
+  name: string
+  joinLink?: GroupDefs.JoinLinkView
+
+  /**
+   * The lock status of the conversation.
+   */
+  lockStatus: ConvoLockStatus
+}
+
+export type { GroupConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+const groupConvo = l.typedObject<GroupConvo>(
+  $nsid,
+  'groupConvo',
+  l.object({
+    name: l.string({ maxGraphemes: 128, maxLength: 1280 }),
+    joinLink: l.optional(
+      l.ref<GroupDefs.JoinLinkView>((() => GroupDefs.joinLinkView) as any),
+    ),
+    lockStatus: l.ref<ConvoLockStatus>((() => convoLockStatus) as any),
+  }),
+)
+
+export { groupConvo }
+
+/** Event indicating a convo containing the viewer was started. Can be direct or group. When a member is added to a group convo, they also get this event. */
 type LogBeginConvo = {
   $type?: 'chat.bsky.convo.defs#logBeginConvo'
   rev: string
@@ -268,6 +755,7 @@ type LogBeginConvo = {
 
 export type { LogBeginConvo }
 
+/** Event indicating a convo containing the viewer was started. Can be direct or group. When a member is added to a group convo, they also get this event. */
 const logBeginConvo = l.typedObject<LogBeginConvo>(
   $nsid,
   'logBeginConvo',
@@ -276,6 +764,7 @@ const logBeginConvo = l.typedObject<LogBeginConvo>(
 
 export { logBeginConvo }
 
+/** Event indicating the viewer accepted a convo, and it can be moved out of the request inbox. Can be direct or group. */
 type LogAcceptConvo = {
   $type?: 'chat.bsky.convo.defs#logAcceptConvo'
   rev: string
@@ -284,6 +773,7 @@ type LogAcceptConvo = {
 
 export type { LogAcceptConvo }
 
+/** Event indicating the viewer accepted a convo, and it can be moved out of the request inbox. Can be direct or group. */
 const logAcceptConvo = l.typedObject<LogAcceptConvo>(
   $nsid,
   'logAcceptConvo',
@@ -292,6 +782,7 @@ const logAcceptConvo = l.typedObject<LogAcceptConvo>(
 
 export { logAcceptConvo }
 
+/** Event indicating the viewer left a convo. Can be direct or group. */
 type LogLeaveConvo = {
   $type?: 'chat.bsky.convo.defs#logLeaveConvo'
   rev: string
@@ -300,6 +791,7 @@ type LogLeaveConvo = {
 
 export type { LogLeaveConvo }
 
+/** Event indicating the viewer left a convo. Can be direct or group. */
 const logLeaveConvo = l.typedObject<LogLeaveConvo>(
   $nsid,
   'logLeaveConvo',
@@ -308,6 +800,7 @@ const logLeaveConvo = l.typedObject<LogLeaveConvo>(
 
 export { logLeaveConvo }
 
+/** Event indicating the viewer muted a convo. Can be direct or group. */
 type LogMuteConvo = {
   $type?: 'chat.bsky.convo.defs#logMuteConvo'
   rev: string
@@ -316,6 +809,7 @@ type LogMuteConvo = {
 
 export type { LogMuteConvo }
 
+/** Event indicating the viewer muted a convo. Can be direct or group. */
 const logMuteConvo = l.typedObject<LogMuteConvo>(
   $nsid,
   'logMuteConvo',
@@ -324,6 +818,7 @@ const logMuteConvo = l.typedObject<LogMuteConvo>(
 
 export { logMuteConvo }
 
+/** Event indicating the viewer unmuted a convo. Can be direct or group. */
 type LogUnmuteConvo = {
   $type?: 'chat.bsky.convo.defs#logUnmuteConvo'
   rev: string
@@ -332,6 +827,7 @@ type LogUnmuteConvo = {
 
 export type { LogUnmuteConvo }
 
+/** Event indicating the viewer unmuted a convo. Can be direct or group. */
 const logUnmuteConvo = l.typedObject<LogUnmuteConvo>(
   $nsid,
   'logUnmuteConvo',
@@ -340,6 +836,7 @@ const logUnmuteConvo = l.typedObject<LogUnmuteConvo>(
 
 export { logUnmuteConvo }
 
+/** Event indicating a user-originated message was created. Is not emitted for system messages. */
 type LogCreateMessage = {
   $type?: 'chat.bsky.convo.defs#logCreateMessage'
   rev: string
@@ -352,6 +849,7 @@ type LogCreateMessage = {
 
 export type { LogCreateMessage }
 
+/** Event indicating a user-originated message was created. Is not emitted for system messages. */
 const logCreateMessage = l.typedObject<LogCreateMessage>(
   $nsid,
   'logCreateMessage',
@@ -370,6 +868,7 @@ const logCreateMessage = l.typedObject<LogCreateMessage>(
 
 export { logCreateMessage }
 
+/** Event indicating a user-originated message was deleted. Is not emitted for system messages. */
 type LogDeleteMessage = {
   $type?: 'chat.bsky.convo.defs#logDeleteMessage'
   rev: string
@@ -382,6 +881,7 @@ type LogDeleteMessage = {
 
 export type { LogDeleteMessage }
 
+/** Event indicating a user-originated message was deleted. Is not emitted for system messages. */
 const logDeleteMessage = l.typedObject<LogDeleteMessage>(
   $nsid,
   'logDeleteMessage',
@@ -400,6 +900,7 @@ const logDeleteMessage = l.typedObject<LogDeleteMessage>(
 
 export { logDeleteMessage }
 
+/** @deprecated use logReadConvo instead. Event indicating a convo was read up to a certain message. */
 type LogReadMessage = {
   $type?: 'chat.bsky.convo.defs#logReadMessage'
   rev: string
@@ -407,11 +908,13 @@ type LogReadMessage = {
   message:
     | l.$Typed<MessageView>
     | l.$Typed<DeletedMessageView>
+    | l.$Typed<SystemMessageView>
     | l.Unknown$TypedObject
 }
 
 export type { LogReadMessage }
 
+/** @deprecated use logReadConvo instead. Event indicating a convo was read up to a certain message. */
 const logReadMessage = l.typedObject<LogReadMessage>(
   $nsid,
   'logReadMessage',
@@ -422,6 +925,7 @@ const logReadMessage = l.typedObject<LogReadMessage>(
       [
         l.typedRef<MessageView>((() => messageView) as any),
         l.typedRef<DeletedMessageView>((() => deletedMessageView) as any),
+        l.typedRef<SystemMessageView>((() => systemMessageView) as any),
       ],
       false,
     ),
@@ -430,6 +934,7 @@ const logReadMessage = l.typedObject<LogReadMessage>(
 
 export { logReadMessage }
 
+/** Event indicating a reaction was added to a message. */
 type LogAddReaction = {
   $type?: 'chat.bsky.convo.defs#logAddReaction'
   rev: string
@@ -443,6 +948,7 @@ type LogAddReaction = {
 
 export type { LogAddReaction }
 
+/** Event indicating a reaction was added to a message. */
 const logAddReaction = l.typedObject<LogAddReaction>(
   $nsid,
   'logAddReaction',
@@ -462,6 +968,7 @@ const logAddReaction = l.typedObject<LogAddReaction>(
 
 export { logAddReaction }
 
+/** Event indicating a reaction was removed from a message. */
 type LogRemoveReaction = {
   $type?: 'chat.bsky.convo.defs#logRemoveReaction'
   rev: string
@@ -475,6 +982,7 @@ type LogRemoveReaction = {
 
 export type { LogRemoveReaction }
 
+/** Event indicating a reaction was removed from a message. */
 const logRemoveReaction = l.typedObject<LogRemoveReaction>(
   $nsid,
   'logRemoveReaction',
@@ -493,3 +1001,442 @@ const logRemoveReaction = l.typedObject<LogRemoveReaction>(
 )
 
 export { logRemoveReaction }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a convo was read up to a certain message. */
+type LogReadConvo = {
+  $type?: 'chat.bsky.convo.defs#logReadConvo'
+  rev: string
+  convoId: string
+  message:
+    | l.$Typed<MessageView>
+    | l.$Typed<DeletedMessageView>
+    | l.$Typed<SystemMessageView>
+    | l.Unknown$TypedObject
+}
+
+export type { LogReadConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a convo was read up to a certain message. */
+const logReadConvo = l.typedObject<LogReadConvo>(
+  $nsid,
+  'logReadConvo',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.typedUnion(
+      [
+        l.typedRef<MessageView>((() => messageView) as any),
+        l.typedRef<DeletedMessageView>((() => deletedMessageView) as any),
+        l.typedRef<SystemMessageView>((() => systemMessageView) as any),
+      ],
+      false,
+    ),
+  }),
+)
+
+export { logReadConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member was added to a group convo. The member who was added gets a logBeginConvo (to create the convo) but also a logAddMember (to show the system message as the first message the user sees). */
+type LogAddMember = {
+  $type?: 'chat.bsky.convo.defs#logAddMember'
+  rev: string
+  convoId: string
+  message: SystemMessageDataAddMember
+}
+
+export type { LogAddMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member was added to a group convo. The member who was added gets a logBeginConvo (to create the convo) but also a logAddMember (to show the system message as the first message the user sees). */
+const logAddMember = l.typedObject<LogAddMember>(
+  $nsid,
+  'logAddMember',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataAddMember>(
+      (() => systemMessageDataAddMember) as any,
+    ),
+  }),
+)
+
+export { logAddMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member was removed from a group convo. The member who was removed gets a logLeaveConvo (to leave the convo) but not a logRemoveMember (because they already left, so can't see the system message). */
+type LogRemoveMember = {
+  $type?: 'chat.bsky.convo.defs#logRemoveMember'
+  rev: string
+  convoId: string
+  message: SystemMessageDataRemoveMember
+}
+
+export type { LogRemoveMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member was removed from a group convo. The member who was removed gets a logLeaveConvo (to leave the convo) but not a logRemoveMember (because they already left, so can't see the system message). */
+const logRemoveMember = l.typedObject<LogRemoveMember>(
+  $nsid,
+  'logRemoveMember',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataRemoveMember>(
+      (() => systemMessageDataRemoveMember) as any,
+    ),
+  }),
+)
+
+export { logRemoveMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member joined a group convo via join link. The member who was added gets a logBeginConvo (to create the convo) but also a logMemberJoin (to show the system message as the first message the user sees). */
+type LogMemberJoin = {
+  $type?: 'chat.bsky.convo.defs#logMemberJoin'
+  rev: string
+  convoId: string
+  message: SystemMessageDataMemberJoin
+}
+
+export type { LogMemberJoin }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member joined a group convo via join link. The member who was added gets a logBeginConvo (to create the convo) but also a logMemberJoin (to show the system message as the first message the user sees). */
+const logMemberJoin = l.typedObject<LogMemberJoin>(
+  $nsid,
+  'logMemberJoin',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataMemberJoin>(
+      (() => systemMessageDataMemberJoin) as any,
+    ),
+  }),
+)
+
+export { logMemberJoin }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member voluntarily left a group convo. The member who was removed gets a logLeaveConvo (to leave the convo) but not a logMemberLeave (because they already left, so can't see the system message). */
+type LogMemberLeave = {
+  $type?: 'chat.bsky.convo.defs#logMemberLeave'
+  rev: string
+  convoId: string
+  message: SystemMessageDataMemberLeave
+}
+
+export type { LogMemberLeave }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member voluntarily left a group convo. The member who was removed gets a logLeaveConvo (to leave the convo) but not a logMemberLeave (because they already left, so can't see the system message). */
+const logMemberLeave = l.typedObject<LogMemberLeave>(
+  $nsid,
+  'logMemberLeave',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataMemberLeave>(
+      (() => systemMessageDataMemberLeave) as any,
+    ),
+  }),
+)
+
+export { logMemberLeave }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was locked. */
+type LogLockConvo = {
+  $type?: 'chat.bsky.convo.defs#logLockConvo'
+  rev: string
+  convoId: string
+  message: SystemMessageDataLockConvo
+}
+
+export type { LogLockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was locked. */
+const logLockConvo = l.typedObject<LogLockConvo>(
+  $nsid,
+  'logLockConvo',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataLockConvo>(
+      (() => systemMessageDataLockConvo) as any,
+    ),
+  }),
+)
+
+export { logLockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was unlocked. */
+type LogUnlockConvo = {
+  $type?: 'chat.bsky.convo.defs#logUnlockConvo'
+  rev: string
+  convoId: string
+  message: SystemMessageDataUnlockConvo
+}
+
+export type { LogUnlockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was unlocked. */
+const logUnlockConvo = l.typedObject<LogUnlockConvo>(
+  $nsid,
+  'logUnlockConvo',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataUnlockConvo>(
+      (() => systemMessageDataUnlockConvo) as any,
+    ),
+  }),
+)
+
+export { logUnlockConvo }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was locked permanently. */
+type LogLockConvoPermanently = {
+  $type?: 'chat.bsky.convo.defs#logLockConvoPermanently'
+  rev: string
+  convoId: string
+  message: SystemMessageDataLockConvoPermanently
+}
+
+export type { LogLockConvoPermanently }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was locked permanently. */
+const logLockConvoPermanently = l.typedObject<LogLockConvoPermanently>(
+  $nsid,
+  'logLockConvoPermanently',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataLockConvoPermanently>(
+      (() => systemMessageDataLockConvoPermanently) as any,
+    ),
+  }),
+)
+
+export { logLockConvoPermanently }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating info about group convo was edited. */
+type LogEditGroup = {
+  $type?: 'chat.bsky.convo.defs#logEditGroup'
+  rev: string
+  convoId: string
+  message: SystemMessageDataEditGroup
+}
+
+export type { LogEditGroup }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating info about group convo was edited. */
+const logEditGroup = l.typedObject<LogEditGroup>(
+  $nsid,
+  'logEditGroup',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataEditGroup>(
+      (() => systemMessageDataEditGroup) as any,
+    ),
+  }),
+)
+
+export { logEditGroup }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join link was created for a group convo. */
+type LogCreateJoinLink = {
+  $type?: 'chat.bsky.convo.defs#logCreateJoinLink'
+  rev: string
+  convoId: string
+  message: SystemMessageDataCreateJoinLink
+}
+
+export type { LogCreateJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join link was created for a group convo. */
+const logCreateJoinLink = l.typedObject<LogCreateJoinLink>(
+  $nsid,
+  'logCreateJoinLink',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataCreateJoinLink>(
+      (() => systemMessageDataCreateJoinLink) as any,
+    ),
+  }),
+)
+
+export { logCreateJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a settings about a join link for a group convo were edited. */
+type LogEditJoinLink = {
+  $type?: 'chat.bsky.convo.defs#logEditJoinLink'
+  rev: string
+  convoId: string
+  message: SystemMessageDataEditJoinLink
+}
+
+export type { LogEditJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a settings about a join link for a group convo were edited. */
+const logEditJoinLink = l.typedObject<LogEditJoinLink>(
+  $nsid,
+  'logEditJoinLink',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataEditJoinLink>(
+      (() => systemMessageDataEditJoinLink) as any,
+    ),
+  }),
+)
+
+export { logEditJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join link was enabled for a group convo. */
+type LogEnableJoinLink = {
+  $type?: 'chat.bsky.convo.defs#logEnableJoinLink'
+  rev: string
+  convoId: string
+  message: SystemMessageDataEnableJoinLink
+}
+
+export type { LogEnableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join link was enabled for a group convo. */
+const logEnableJoinLink = l.typedObject<LogEnableJoinLink>(
+  $nsid,
+  'logEnableJoinLink',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataEnableJoinLink>(
+      (() => systemMessageDataEnableJoinLink) as any,
+    ),
+  }),
+)
+
+export { logEnableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join link was disabled for a group convo. */
+type LogDisableJoinLink = {
+  $type?: 'chat.bsky.convo.defs#logDisableJoinLink'
+  rev: string
+  convoId: string
+  message: SystemMessageDataDisableJoinLink
+}
+
+export type { LogDisableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join link was disabled for a group convo. */
+const logDisableJoinLink = l.typedObject<LogDisableJoinLink>(
+  $nsid,
+  'logDisableJoinLink',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    message: l.ref<SystemMessageDataDisableJoinLink>(
+      (() => systemMessageDataDisableJoinLink) as any,
+    ),
+  }),
+)
+
+export { logDisableJoinLink }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was made to a group the viewer owns. Only the owner gets this. */
+type LogIncomingJoinRequest = {
+  $type?: 'chat.bsky.convo.defs#logIncomingJoinRequest'
+  rev: string
+  convoId: string
+
+  /**
+   * Prospective member who requested to join.
+   */
+  member: ActorDefs.ProfileViewBasic
+}
+
+export type { LogIncomingJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was made to a group the viewer owns. Only the owner gets this. */
+const logIncomingJoinRequest = l.typedObject<LogIncomingJoinRequest>(
+  $nsid,
+  'logIncomingJoinRequest',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    member: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+  }),
+)
+
+export { logIncomingJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was approved by the viewer. Only the owner gets this. The approved member gets a logBeginConvo. */
+type LogApproveJoinRequest = {
+  $type?: 'chat.bsky.convo.defs#logApproveJoinRequest'
+  rev: string
+  convoId: string
+
+  /**
+   * Prospective member who requested to join.
+   */
+  member: ActorDefs.ProfileViewBasic
+}
+
+export type { LogApproveJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was approved by the viewer. Only the owner gets this. The approved member gets a logBeginConvo. */
+const logApproveJoinRequest = l.typedObject<LogApproveJoinRequest>(
+  $nsid,
+  'logApproveJoinRequest',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    member: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+  }),
+)
+
+export { logApproveJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was rejected by the viewer. Only the owner gets this. */
+type LogRejectJoinRequest = {
+  $type?: 'chat.bsky.convo.defs#logRejectJoinRequest'
+  rev: string
+  convoId: string
+
+  /**
+   * Prospective member who requested to join.
+   */
+  member: ActorDefs.ProfileViewBasic
+}
+
+export type { LogRejectJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was rejected by the viewer. Only the owner gets this. */
+const logRejectJoinRequest = l.typedObject<LogRejectJoinRequest>(
+  $nsid,
+  'logRejectJoinRequest',
+  l.object({
+    rev: l.string(),
+    convoId: l.string(),
+    member: l.ref<ActorDefs.ProfileViewBasic>(
+      (() => ActorDefs.profileViewBasic) as any,
+    ),
+  }),
+)
+
+export { logRejectJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was made by the viewer. */
+type LogOutgoingJoinRequest = {
+  $type?: 'chat.bsky.convo.defs#logOutgoingJoinRequest'
+  rev: string
+  convoId: string
+}
+
+export type { LogOutgoingJoinRequest }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a join request was made by the viewer. */
+const logOutgoingJoinRequest = l.typedObject<LogOutgoingJoinRequest>(
+  $nsid,
+  'logOutgoingJoinRequest',
+  l.object({ rev: l.string(), convoId: l.string() }),
+)
+
+export { logOutgoingJoinRequest }

@@ -29,6 +29,7 @@ export class XrpcClient {
   readonly fetchHandler: FetchHandler
   readonly headers = new Map<string, Gettable<null | string>>()
   readonly lex: Lexicons
+  validateResponse = true
 
   constructor(
     fetchHandlerOpts: FetchHandler | FetchHandlerObject | FetchHandlerOptions,
@@ -106,14 +107,16 @@ export class XrpcClient {
         throw new XRPCError(resCode, error, message, resHeaders)
       }
 
-      try {
-        this.lex.assertValidXrpcOutput(methodNsid, resBody)
-      } catch (e: unknown) {
-        if (e instanceof ValidationError) {
-          throw new XRPCInvalidResponseError(methodNsid, e, resBody)
-        }
+      if (this.validateResponse) {
+        try {
+          this.lex.assertValidXrpcOutput(methodNsid, resBody)
+        } catch (e: unknown) {
+          if (e instanceof ValidationError) {
+            throw new XRPCInvalidResponseError(methodNsid, e, resBody)
+          }
 
-        throw e
+          throw e
+        }
       }
 
       return new XRPCResponse(resBody, resHeaders)

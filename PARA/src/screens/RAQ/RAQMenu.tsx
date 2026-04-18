@@ -63,7 +63,7 @@ export default function RAQMenuScreen() {
         </Layout.Header.Content>
       </Layout.Header.Outer>
 
-      <Layout.Center>
+      <Layout.Center style={[a.flex_1]}>
         <ScrollView
           contentContainerStyle={[
             styles.container,

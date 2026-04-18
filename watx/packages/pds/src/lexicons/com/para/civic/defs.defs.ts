@@ -154,6 +154,64 @@ const viewerContext = l.typedObject<ViewerContext>(
 
 export { viewerContext }
 
+type LiveSessionView = {
+  $type?: 'com.para.civic.defs#liveSessionView'
+  isLive: boolean
+  hostDid: l.DidString
+  activeParticipantCount: number
+  startedAt: l.DatetimeString
+  participantPreviewDids: l.DidString[]
+}
+
+export type { LiveSessionView }
+
+const liveSessionView = l.typedObject<LiveSessionView>(
+  $nsid,
+  'liveSessionView',
+  l.object({
+    isLive: l.boolean(),
+    hostDid: l.string({ format: 'did' }),
+    activeParticipantCount: l.integer({ minimum: 0 }),
+    startedAt: l.string({ format: 'datetime' }),
+    participantPreviewDids: l.array(l.string({ format: 'did' }), {
+      maxLength: 5,
+    }),
+  }),
+)
+
+export { liveSessionView }
+
+type CabildeoLive = {
+  $type?: 'com.para.civic.defs#cabildeoLive'
+  cabildeoUri: l.AtUriString
+  community: string
+  phase:
+    | 'draft'
+    | 'open'
+    | 'deliberating'
+    | 'voting'
+    | 'resolved'
+    | l.UnknownString
+  expiresAt: l.DatetimeString
+}
+
+export type { CabildeoLive }
+
+const cabildeoLive = l.typedObject<CabildeoLive>(
+  $nsid,
+  'cabildeoLive',
+  l.object({
+    cabildeoUri: l.string({ format: 'at-uri' }),
+    community: l.string({ maxLength: 100 }),
+    phase: l.string<{
+      knownValues: ['draft', 'open', 'deliberating', 'voting', 'resolved']
+    }>(),
+    expiresAt: l.string({ format: 'datetime' }),
+  }),
+)
+
+export { cabildeoLive }
+
 type CabildeoView = {
   $type?: 'com.para.civic.defs#cabildeoView'
   uri: l.AtUriString
@@ -183,6 +241,7 @@ type CabildeoView = {
   voteTotals: VoteTotals
   outcomeSummary?: OutcomeSummary
   viewerContext?: ViewerContext
+  liveSession?: LiveSessionView
 }
 
 export type { CabildeoView }
@@ -223,6 +282,9 @@ const cabildeoView = l.typedObject<CabildeoView>(
     ),
     viewerContext: l.optional(
       l.ref<ViewerContext>((() => viewerContext) as any),
+    ),
+    liveSession: l.optional(
+      l.ref<LiveSessionView>((() => liveSessionView) as any),
     ),
   }),
 )

@@ -7,6 +7,7 @@ import { BackgroundQueue } from '../../background'
 import { Database } from '../../db'
 import { DatabaseSchema, DatabaseSchemaType } from '../../db/database-schema'
 import { RecordProcessor } from '../processor'
+import { cidFromBlobJson } from '../../../../views/util'
 
 const lexId = lex.ids.AppBskyFeedGenerator
 type IndexedFeedGenerator = Selectable<DatabaseSchemaType['feed_generator']>
@@ -30,7 +31,7 @@ const insertFn = async (
       descriptionFacets: obj.descriptionFacets
         ? JSON.stringify(obj.descriptionFacets)
         : undefined,
-      avatarCid: obj.avatar?.ref.toString(),
+      avatarCid: obj.avatar ? cidFromBlobJson(obj.avatar) : undefined,
       createdAt: normalizeDatetimeAlways(obj.createdAt),
       indexedAt: timestamp,
     })

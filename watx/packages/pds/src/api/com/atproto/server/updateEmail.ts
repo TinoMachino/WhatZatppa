@@ -6,6 +6,7 @@ import { ACCESS_FULL } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.updateEmail({
@@ -33,8 +34,9 @@ export default function (server: Server, ctx: AppContext) {
         throw new InvalidRequestError('account not found')
       }
 
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.server.updateEmail(
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.server.updateEmail.main,
           input.body,
           await ctx.entrywayAuthHeaders(
             req,

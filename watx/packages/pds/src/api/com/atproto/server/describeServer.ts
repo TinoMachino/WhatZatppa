@@ -8,6 +8,18 @@ export default function (server: Server, ctx: AppContext) {
     const privacyPolicy = ctx.cfg.service.privacyPolicyUrl
     const termsOfService = ctx.cfg.service.termsOfServiceUrl
     const contactEmailAddress = ctx.cfg.service.contactEmailAddress
+    const links =
+      privacyPolicy || termsOfService
+        ? {
+            ...(privacyPolicy ? { privacyPolicy } : {}),
+            ...(termsOfService ? { termsOfService } : {}),
+          }
+        : undefined
+    const contact = contactEmailAddress
+      ? {
+          email: contactEmailAddress,
+        }
+      : undefined
 
     return {
       encoding: 'application/json',
@@ -15,10 +27,8 @@ export default function (server: Server, ctx: AppContext) {
         did: ctx.cfg.service.did,
         availableUserDomains,
         inviteCodeRequired,
-        links: { privacyPolicy, termsOfService },
-        contact: {
-          email: contactEmailAddress,
-        },
+        ...(links ? { links } : {}),
+        ...(contact ? { contact } : {}),
       },
     }
   })

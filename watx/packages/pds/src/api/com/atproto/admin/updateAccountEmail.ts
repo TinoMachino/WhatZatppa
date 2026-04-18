@@ -1,6 +1,7 @@
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.admin.updateAccountEmail({
@@ -16,9 +17,10 @@ export default function (server: Server, ctx: AppContext) {
         )
       }
 
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.admin.updateAccountEmail(
-          input.body,
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.admin.updateAccountEmail.main,
+          input.body as com.atproto.admin.updateAccountEmail.$InputBody,
           ctx.entrywayPassthruHeaders(req),
         )
         return

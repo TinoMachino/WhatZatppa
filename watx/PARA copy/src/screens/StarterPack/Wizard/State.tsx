@@ -25,6 +25,7 @@ type Action =
   | {type: 'RemoveFeed'; feedUri: string}
   | {type: 'SetProcessing'; processing: boolean}
   | {type: 'SetError'; error: string}
+  | {type: 'SetIsCommunitySeed'; isCommunitySeed: boolean}
 
 interface State {
   canNext: boolean
@@ -37,6 +38,7 @@ interface State {
   error?: string
   transitionDirection: 'Backward' | 'Forward'
   targetDid?: string
+  isCommunitySeed?: boolean
 }
 
 type TStateContext = [State, (action: Action) => void]
@@ -110,6 +112,9 @@ function reducer(state: State, action: Action): State {
     case 'SetProcessing':
       updatedState = {...state, processing: action.processing}
       break
+    case 'SetIsCommunitySeed':
+      updatedState = {...state, isCommunitySeed: action.isCommunitySeed}
+      break
   }
 
   return updatedState
@@ -119,11 +124,13 @@ export function Provider({
   starterPack,
   listItems,
   targetProfile,
+  isCommunitySeed,
   children,
 }: {
   starterPack?: AppBskyGraphDefs.StarterPackView
   listItems?: AppBskyGraphDefs.ListItemView[]
   targetProfile: bsky.profile.AnyProfileView
+  isCommunitySeed?: boolean
   children: React.ReactNode
 }) {
   const createInitialState = (): State => {
@@ -143,6 +150,7 @@ export function Provider({
         processing: false,
         transitionDirection: 'Forward',
         targetDid,
+        isCommunitySeed,
       }
     }
 
@@ -154,6 +162,7 @@ export function Provider({
       processing: false,
       transitionDirection: 'Forward',
       targetDid,
+      isCommunitySeed,
     }
   }
 

@@ -6,6 +6,7 @@ import activitySubscription from './activity-subscription'
 import blocks from './blocks'
 import bookmarks from './bookmarks'
 import cabildeo from './cabildeo'
+import community from './community'
 import drafts from './drafts'
 import discourse from './discourse'
 import feedGens from './feed-gens'
@@ -39,6 +40,7 @@ export default (db: Database, idResolver: IdResolver) =>
       ...blocks(db),
       ...bookmarks(db),
       ...cabildeo(db),
+      ...community(db),
       ...discourse(db),
       ...drafts(db),
       ...feedGens(db),

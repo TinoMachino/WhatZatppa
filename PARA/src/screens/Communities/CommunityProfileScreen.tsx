@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import {StickyTable} from 'react-native-sticky-table'
+import {AtUri} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -26,6 +27,10 @@ import {
   isGeographicGroupCommunity,
 } from '#/lib/strings/community-names'
 import {cleanError} from '#/lib/strings/errors'
+import {
+  useAcceptDraftInviteMutation,
+  useCommunityBoardQuery,
+} from '#/state/queries/community-boards'
 import {useCommunityGovernanceQuery} from '#/state/queries/community-governance'
 import {useSearchPostsQuery} from '#/state/queries/search-posts'
 // import {SettingsSliderVertical_Stroke2_Corner0_Rounded as SettingsIcon} from '#/components/icons/SettingsSlider'
@@ -78,9 +83,11 @@ export function CommunityProfileScreen() {
   const communityId =
     route.params?.communityId || route.params?._communityId || '1'
   const {communityName = 'Community'} = route.params || {}
+  const {data: fetchedBoard} = useCommunityBoardQuery({communityId})
+  const board = fetchedBoard?.board
   const formattedCommunity = useMemo(
-    () => formatCommunityName(communityName),
-    [communityName],
+    () => formatCommunityName(board?.name || communityName),
+    [board?.name, communityName],
   )
   const {
     data: fetchedGovernance,
@@ -94,20 +101,26 @@ export function CommunityProfileScreen() {
   const governance = fetchedGovernance || EMPTY_GOVERNANCE
   const communitySearchQuery = useMemo(
     () =>
-      buildCommunitySearchQuery(communityName, fetchedGovernance?.community),
-    [communityName, fetchedGovernance?.community],
+      buildCommunitySearchQuery(
+        board?.name || communityName,
+        fetchedGovernance?.community,
+      ),
+    [board?.name, communityName, fetchedGovernance?.community],
   )
   const governanceCommunity = fetchedGovernance?.community
+  const resolvedCommunityName = governanceCommunity || board?.name || communityName
   const isGeographicGroup = isGeographicGroupCommunity({
     communityId,
-    communityName: governanceCommunity || communityName,
+    communityName: resolvedCommunityName,
     slug: fetchedGovernance?.slug,
   })
   const formattedDisplayNameParts = isGeographicGroup
-    ? formatGeographicGroupName(governanceCommunity || communityName)
+    ? formatGeographicGroupName(resolvedCommunityName)
     : governanceCommunity
       ? formatCommunityName(governanceCommunity)
-      : formattedCommunity
+      : board?.name
+        ? formatCommunityName(board.name)
+        : formattedCommunity
   const displayCommunityName = formattedDisplayNameParts.displayName
   const plainCommunityName = formattedDisplayNameParts.plainName
   const featuredRepresentative = useMemo(
@@ -136,12 +149,37 @@ export function CommunityProfileScreen() {
     return data?.pages.flatMap(page => page.posts) || []
   }, [data])
 
-  const [activeTab, setActiveTab] = useState<'Feed' | 'about'>('Feed')
-  const [isJoined, setIsJoined] = useState(false)
+  const isDraft = board?.status === 'draft'
+  const quorumCount = board?.memberCount ?? 0
+  const membersToUnlock = Math.max(0, 9 - quorumCount)
+  const [activeTab, setActiveTab] = useState<'Feed' | 'about'>(
+    isDraft ? 'about' : 'Feed',
+  )
+  const displayedTab = isDraft ? 'about' : activeTab
+  const [joinOverride, setJoinOverride] = useState<boolean | null>(null)
   const [isPTR, setIsPTR] = useState(false)
+  const isJoined = joinOverride ?? (board?.viewerMembershipState === 'active')
+  const acceptInviteMutation = useAcceptDraftInviteMutation()
 
   const onPressJoin = () => {
-    setIsJoined(!isJoined)
+    setJoinOverride(prev => !(prev ?? board?.viewerMembershipState === 'active'))
+  }
+
+  const onPressAcceptFounderInvite = async () => {
+    if (!board?.uri) return
+    try {
+      await acceptInviteMutation.mutateAsync({communityUri: board.uri})
+      setJoinOverride(true)
+    } catch {}
+  }
+
+  const onPressFoundingStarterPack = () => {
+    if (!board?.founderStarterPackUri) return
+    const starterPackUri = new AtUri(board.founderStarterPackUri)
+    navigation.navigate('StarterPack', {
+      name: board.creatorHandle || board.creatorDid,
+      rkey: starterPackUri.rkey,
+    })
   }
 
   const onRefresh = useCallback(async () => {
@@ -196,7 +234,7 @@ export function CommunityProfileScreen() {
     }
   }, [posts])
 
-  const createdAt = fetchedGovernance?.createdAt || governance.createdAt
+  const createdAt = board?.createdAt || fetchedGovernance?.createdAt || governance.createdAt
 
   const onPressDocuments = () => {
     navigation.navigate('MemesAndDocuments', {mode: 'Documents'})
@@ -306,6 +344,7 @@ export function CommunityProfileScreen() {
 
                 <TouchableOpacity
                   accessibilityRole="button"
+                  disabled={isDraft}
                   style={[
                     styles.followButton,
                     {
@@ -324,7 +363,7 @@ export function CommunityProfileScreen() {
                         : 'transparent',
                     },
                   ]}
-                  onPress={onPressJoin}>
+                  onPress={isDraft ? undefined : onPressJoin}>
                   <Text
                     style={[
                       styles.followButtonText,
@@ -336,7 +375,13 @@ export function CommunityProfileScreen() {
                           : t.palette.primary_500,
                       },
                     ]}>
-                    {isJoined ? 'Joined' : 'Join'}
+                    {isDraft
+                      ? isJoined
+                        ? 'Founding member'
+                        : 'Draft quorum'
+                      : isJoined
+                        ? 'Joined'
+                        : 'Join'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -344,6 +389,7 @@ export function CommunityProfileScreen() {
               {/* Member Stats Row */}
               <View style={styles.memberStatsRow}>
                 <Text style={styles.memberStatsText}>
+                  {(board?.memberCount ?? 0).toLocaleString()} members,{' '}
                   {posts.length.toLocaleString()} indexed posts,{' '}
                   {communityStats.visiblePosters.toLocaleString()} visible
                   posters, {communityStats.policyPosts.toLocaleString()} policy
@@ -465,48 +511,78 @@ export function CommunityProfileScreen() {
             </TouchableOpacity>
           ) : null}
 
-          {/* Navigation Tabs */}
-          <View style={[styles.tabsContainer, pal.border]}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              style={[styles.tab, activeTab === 'Feed' && styles.activeTab]}
-              onPress={() => setActiveTab('Feed')}>
+          {/* Draft Banner */}
+          {isDraft ? (
+            <View
+              style={[
+                styles.draftBanner,
+                {backgroundColor: t.palette.primary_25,
+                 borderColor: t.palette.primary_200},
+              ]}>
               <Text
                 style={[
-                  styles.tabText,
-                  pal.text,
-                  activeTab === 'Feed' && {
-                    color: t.palette.primary_500,
-                    fontWeight: 'bold',
-                  },
+                  styles.draftBannerTitle,
+                  {color: t.palette.primary_700},
                 ]}>
-                <Trans>Posts</Trans>
+                🚧 Draft Community
               </Text>
-              {activeTab === 'Feed' && (
-                <View
+                <Text
                   style={[
-                    styles.tabIndicator,
-                    {backgroundColor: t.palette.primary_500},
-                  ]}
-                />
-              )}
-            </TouchableOpacity>
+                    styles.draftBannerBody,
+                    {color: t.palette.primary_600},
+                  ]}>
+                  This community needs {membersToUnlock} more founding members
+                  to become active. Until the quorum is reached, posts and
+                  governance actions stay locked while members can still review
+                  policies, matters, RAQ, and community information.
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Navigation Tabs */}
+          <View style={[styles.tabsContainer, pal.border]}>
+            {!isDraft ? (
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={[styles.tab, displayedTab === 'Feed' && styles.activeTab]}
+                onPress={() => setActiveTab('Feed')}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    pal.text,
+                    displayedTab === 'Feed' && {
+                      color: t.palette.primary_500,
+                      fontWeight: 'bold',
+                    },
+                  ]}>
+                  <Trans>Posts</Trans>
+                </Text>
+                {displayedTab === 'Feed' && (
+                  <View
+                    style={[
+                      styles.tabIndicator,
+                      {backgroundColor: t.palette.primary_500},
+                    ]}
+                  />
+                )}
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               accessibilityRole="button"
-              style={[styles.tab, activeTab === 'about' && styles.activeTab]}
+              style={[styles.tab, displayedTab === 'about' && styles.activeTab]}
               onPress={() => setActiveTab('about')}>
               <Text
                 style={[
                   styles.tabText,
                   pal.text,
-                  activeTab === 'about' && {
+                  displayedTab === 'about' && {
                     color: t.palette.primary_500,
                     fontWeight: 'bold',
                   },
                 ]}>
                 <Trans>About</Trans>
               </Text>
-              {activeTab === 'about' && (
+              {displayedTab === 'about' && (
                 <View
                   style={[
                     styles.tabIndicator,
@@ -519,7 +595,7 @@ export function CommunityProfileScreen() {
 
           {/* Content Area */}
           <View style={styles.contentArea}>
-            {activeTab === 'Feed' && (
+            {!isDraft && displayedTab === 'Feed' && (
               <View style={styles.feedScroll}>
                 {posts.length < 1 ? (
                   <ListMaybePlaceholder
@@ -568,9 +644,197 @@ export function CommunityProfileScreen() {
               </View>
             )}
 
-            {activeTab === 'about' && (
+            {displayedTab === 'about' && (
               <View style={styles.aboutContainer}>
-                {/* Rules Section (Moved from separate tab) */}
+                {/* Accept Founder Invite Card (Draft only, non-members) */}
+                {isDraft && !isJoined ? (
+                  <View
+                    style={[
+                      styles.sectionCard,
+                      pal.border,
+                      {backgroundColor: t.palette.primary_50},
+                    ]}>
+                    <Text
+                      style={[
+                        styles.sectionCardTitle,
+                        {color: t.palette.primary_700},
+                      ]}>
+                      🤝 Join as a Founding Member
+                    </Text>
+                    <Text
+                      style={[
+                        styles.civicActionsSubtitle,
+                        {color: t.palette.primary_600},
+                      ]}>
+                      This community is gathering its founding members. Accept
+                      the invite to become one of the first 9 and help bring
+                      this community to life.
+                    </Text>
+                    <View style={{gap: 8, marginTop: 4}}>
+                      <Text
+                        style={[
+                          styles.aboutHelperText,
+                          {color: t.palette.primary_600},
+                        ]}>
+                        Current founding members:{' '}
+                        {quorumCount} / 9
+                      </Text>
+                      <View
+                        style={[
+                          styles.quorumBar,
+                          {backgroundColor: t.palette.contrast_100},
+                        ]}>
+                        <View
+                          style={[
+                            styles.quorumBarFill,
+                            {
+                              backgroundColor: t.palette.primary_500,
+                              width: `${Math.min(100, (quorumCount / 9) * 100)}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    {acceptInviteMutation.error ? (
+                      <Text
+                        style={{
+                          color: t.palette.negative_500,
+                          fontSize: 13,
+                          marginTop: 4,
+                        }}>
+                        {cleanError(acceptInviteMutation.error)}
+                      </Text>
+                    ) : null}
+                    {acceptInviteMutation.isSuccess ? (
+                      <Text
+                        style={{
+                          color: t.palette.positive_500,
+                          fontSize: 14,
+                          fontWeight: '700',
+                          marginTop: 4,
+                        }}>
+                        ✅ You've joined as a founding member!
+                      </Text>
+                    ) : (
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        disabled={acceptInviteMutation.isPending}
+                        onPress={() => void onPressAcceptFounderInvite()}
+                        style={[
+                          styles.primaryButton,
+                          {
+                            backgroundColor: acceptInviteMutation.isPending
+                              ? t.palette.contrast_200
+                              : t.palette.primary_500,
+                            marginTop: 8,
+                          },
+                        ]}>
+                        <Text style={styles.primaryButtonText}>
+                          {acceptInviteMutation.isPending
+                            ? 'Joining...'
+                            : 'Accept Founder Invite'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : null}
+
+                {board?.founderStarterPackUri ? (
+                  <View
+                    style={[
+                      styles.sectionCard,
+                      pal.border,
+                      {
+                        backgroundColor: isDraft
+                          ? t.palette.primary_25
+                          : t.atoms.bg.backgroundColor,
+                      },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.sectionCardTitle,
+                        isDraft ? {color: t.palette.primary_700} : pal.text,
+                      ]}>
+                      Founding Starter Pack
+                    </Text>
+                    <Text
+                      style={[
+                        styles.aboutHelperText,
+                        isDraft
+                          ? {color: t.palette.primary_600}
+                          : pal.textLight,
+                      ]}>
+                      This internal starter pack tracks the founding quorum for
+                      the community and unlocks the full community experience at
+                      9 members.
+                    </Text>
+                    <View style={styles.aboutInfo}>
+                      <Text
+                        style={[
+                          styles.aboutLabel,
+                          isDraft ? {color: t.palette.primary_600} : pal.textLight,
+                        ]}>
+                        Progress:
+                      </Text>
+                      <Text style={[styles.aboutValue, pal.text]}>
+                        {quorumCount} / 9 founding members
+                      </Text>
+                    </View>
+                    <View style={styles.aboutInfo}>
+                      <Text
+                        style={[
+                          styles.aboutLabel,
+                          isDraft ? {color: t.palette.primary_600} : pal.textLight,
+                        ]}>
+                        Status:
+                      </Text>
+                      <Text style={[styles.aboutValue, pal.text]}>
+                        {isDraft ? 'Draft quorum in progress' : 'Community unlocked'}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.quorumBar,
+                        {
+                          backgroundColor: isDraft
+                            ? t.palette.contrast_100
+                            : t.palette.primary_100,
+                        },
+                      ]}>
+                      <View
+                        style={[
+                          styles.quorumBarFill,
+                          {
+                            backgroundColor: t.palette.primary_500,
+                            width: `${Math.min(100, (quorumCount / 9) * 100)}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      onPress={onPressFoundingStarterPack}
+                      style={[
+                        styles.secondaryButton,
+                        {
+                          backgroundColor: isDraft
+                            ? t.palette.primary_50
+                            : t.palette.contrast_25,
+                          borderColor: t.palette.primary_200,
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.secondaryButtonText,
+                          {color: t.palette.primary_700},
+                        ]}>
+                        Open founding starter pack
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+
+                {/* Civic Actions */}
                 <View style={[styles.sectionCard, pal.border, t.atoms.bg]}>
                   <View style={styles.civicActionsHeader}>
                     <Text style={[styles.sectionCardTitle, pal.text]}>
@@ -766,9 +1030,19 @@ export function CommunityProfileScreen() {
                     </View>
                   </View>
                   <Text style={[styles.aboutText, pal.text]}>
-                    {plainCommunityName} is a community space for governance,
-                    public coordination, and structured participation.
+                    {board?.description ||
+                      `${plainCommunityName} is a community space for governance, public coordination, and structured participation.`}
                   </Text>
+                  {board?.quadrant ? (
+                    <View style={styles.aboutInfo}>
+                      <Text style={[styles.aboutLabel, pal.textLight]}>
+                        Quadrant:
+                      </Text>
+                      <Text style={[styles.aboutValue, pal.text]}>
+                        {board.quadrant}
+                      </Text>
+                    </View>
+                  ) : null}
                   {createdAt ? (
                     <View style={styles.aboutInfo}>
                       <Text style={[styles.aboutLabel, pal.textLight]}>
@@ -776,6 +1050,16 @@ export function CommunityProfileScreen() {
                       </Text>
                       <Text style={[styles.aboutValue, pal.text]}>
                         {new Date(createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {typeof board?.memberCount === 'number' ? (
+                    <View style={styles.aboutInfo}>
+                      <Text style={[styles.aboutLabel, pal.textLight]}>
+                        Members:
+                      </Text>
+                      <Text style={[styles.aboutValue, pal.text]}>
+                        {board.memberCount}
                       </Text>
                     </View>
                   ) : null}
@@ -796,6 +1080,45 @@ export function CommunityProfileScreen() {
                         : 'Not published yet'}
                     </Text>
                   </View>
+
+                  {board ? (
+                    <View
+                      style={[
+                        styles.sectionCard,
+                        pal.border,
+                        t.atoms.bg,
+                        {backgroundColor: t.atoms.bg.backgroundColor},
+                      ]}>
+                      <Text style={[styles.sectionCardTitle, pal.text]}>
+                        Governance Setup
+                      </Text>
+                      <Text
+                        style={[
+                          styles.aboutHelperText,
+                          pal.textLight,
+                          {marginBottom: 8},
+                        ]}>
+                        Delegate and subdelegate chats exist as linked
+                        governance resources for this community.
+                      </Text>
+                      <View style={styles.aboutInfo}>
+                        <Text style={[styles.aboutLabel, pal.textLight]}>
+                          Delegates chat:
+                        </Text>
+                        <Text style={[styles.aboutValue, pal.text]}>
+                          {board.delegatesChatId}
+                        </Text>
+                      </View>
+                      <View style={styles.aboutInfo}>
+                        <Text style={[styles.aboutLabel, pal.textLight]}>
+                          Subdelegates chat:
+                        </Text>
+                        <Text style={[styles.aboutValue, pal.text]}>
+                          {board.subdelegatesChatId}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
 
                 <View
@@ -932,6 +1255,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
@@ -1007,6 +1331,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 22,
     borderWidth: 1,
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.08,
@@ -1126,6 +1451,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -1290,6 +1616,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -1374,6 +1701,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -1416,6 +1744,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -1702,6 +2031,57 @@ const styles = StyleSheet.create({
   },
   expandIcon: {
     fontSize: 24,
+  },
+  draftBanner: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 6,
+  },
+  draftBannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  draftBannerBody: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  quorumBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden' as const,
+  },
+  quorumBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  primaryButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 16,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  secondaryButton: {
+    minHeight: 44,
+    borderRadius: 14,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 })
 function TableContent({pal}: {pal: any}) {

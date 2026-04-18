@@ -65,6 +65,12 @@
             "description": "Optional para-specific post type (policy, matter, meme, etc).",
             "maxLength": 64
           },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "maxGraphemes": 300,
+            "description": "Optional title for policy or proposal posts, summarizing the content."
+          },
           "createdAt": {
             "type": "string",
             "format": "datetime",

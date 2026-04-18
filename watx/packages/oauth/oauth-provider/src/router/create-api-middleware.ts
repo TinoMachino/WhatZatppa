@@ -144,11 +144,15 @@ export function createApiMiddleware<
 
         // Remember when not in the context of a request by default
         const { remember = requestUri == null, ...input } = this.input
+        const clientId = requestUri
+          ? await server.requestManager.peekClientId(requestUri)
+          : undefined
 
         const account = await server.accountManager.authenticateAccount(
           deviceId,
           deviceMetadata,
           input,
+          clientId,
         )
 
         if (remember) {

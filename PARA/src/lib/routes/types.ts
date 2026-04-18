@@ -83,11 +83,12 @@ export type CommonNavigatorParams = {
   MessagesInbox: undefined
   Messages: {pushToConversation?: string; animation?: 'push' | 'pop'}
   Communities: undefined
+  CreateCommunity: undefined
   PoliciesDashboard: {
     filter?: 'Communities' | 'Parties' | 'Both'
     mode?: 'Policies' | 'Matters'
   }
-  PolicyDetails: {item: any}
+  PolicyDetails: {item?: any; cabildeoUri?: string}
   Representatives: {category?: string; q?: string}
   NotificationsActivityList: {posts: string}
   LegacyNotificationSettings: undefined
@@ -164,7 +165,7 @@ export type BaseTabNavigatorParams = CommonNavigatorParams & {
     filter?: 'Communities' | 'Parties' | 'Both'
     mode?: 'Policies' | 'Matters'
   }
-  PolicyDetails: {item: any}
+  PolicyDetails: {item?: any; cabildeoUri?: string}
   MemesAndDocuments: {mode?: 'Memes' | 'Documents'; view?: 'board' | 'deck'}
   DistrictProfile: {districtId: number; initialTab?: 'overview' | 'activity'}
 }
@@ -180,7 +181,7 @@ export type FlatNavigatorParams = CommonNavigatorParams & {
     filter?: 'Communities' | 'Parties' | 'Both'
     mode?: 'Policies' | 'Matters'
   }
-  PolicyDetails: {item: any}
+  PolicyDetails: {item?: any; cabildeoUri?: string}
   Representatives: {category?: string; q?: string}
   Base: undefined
   CreatePost: undefined
@@ -201,7 +202,7 @@ export type AllNavigatorParams = CommonNavigatorParams & {
     filter?: 'Communities' | 'Parties' | 'Both'
     mode?: 'Policies' | 'Matters'
   }
-  PolicyDetails: {item: any}
+  PolicyDetails: {item?: any; cabildeoUri?: string}
   Representatives: {category?: string; q?: string}
   SearchTab: undefined
   Search: {q?: string; tab?: 'user' | 'profile' | 'feed'}

@@ -11,6 +11,11 @@ import {
   streamSize,
 } from '@atproto/common'
 import { BlobRef } from '@atproto/lexicon'
+import {
+  BlobRef as LexDataBlobRef,
+  LegacyBlobRef,
+  getBlobCidString,
+} from '@atproto/lex-data'
 import { BlobNotFoundError, BlobStore, WriteOpAction } from '@atproto/repo'
 import { AtUri } from '@atproto/syntax'
 import { InvalidRequestError } from '@atproto/xrpc-server'
@@ -37,10 +42,10 @@ export class BlobTransactor extends BlobReader {
     super(db, blobstore)
   }
 
-  async insertBlobs(recordUri: string, blobs: Iterable<BlobRef>) {
-    const values = Array.from(blobs, (cid) => ({
+  async insertBlobs(recordUri: string, blobs: Iterable<StorableBlobRef>) {
+    const values = Array.from(blobs, (blob) => ({
       recordUri,
-      blobCid: cid.ref.toString(),
+      blobCid: blobCidString(blob),
     }))
 
     if (values.length) {
@@ -308,6 +313,13 @@ export class BlobTransactor extends BlobReader {
       .onConflict((oc) => oc.doNothing())
       .execute()
   }
+}
+
+type StorableBlobRef = BlobRef | LexDataBlobRef | LegacyBlobRef
+
+const blobCidString = (blob: StorableBlobRef): string => {
+  if (blob instanceof BlobRef) return blob.ref.toString()
+  return getBlobCidString(blob)
 }
 
 export class CidNotFound extends Error {

@@ -2,6 +2,7 @@ import { DAY, HOUR } from '@atproto/common'
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.requestPasswordReset({
@@ -24,8 +25,9 @@ export default function (server: Server, ctx: AppContext) {
       })
 
       if (!account?.email) {
-        if (ctx.entrywayAgent) {
-          await ctx.entrywayAgent.com.atproto.server.requestPasswordReset(
+        if (ctx.entrywayClient) {
+          await ctx.entrywayClient.call(
+            com.atproto.server.requestPasswordReset.main,
             input.body,
             ctx.entrywayPassthruHeaders(req),
           )

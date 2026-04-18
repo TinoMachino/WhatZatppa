@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -7,10 +8,21 @@ import {
 } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+import {
+  getPrimaryPoliticalAffiliation,
+  inferPoliticalAffiliation,
+  normalizePoliticalAffiliation,
+  normalizePoliticalAffiliations,
+  type PoliticalAffiliation,
+  upsertPoliticalAffiliation,
+} from '#/lib/political-affiliations'
+
 const STORAGE_KEY = 'para_political_affiliation'
 
 type PoliticalAffiliationContextValue = {
+  affiliations: PoliticalAffiliation[]
   affiliation: string | null
+  setAffiliations: (items: PoliticalAffiliation[]) => Promise<void>
   setAffiliation: (name: string | null) => Promise<void>
   isPublic: boolean
   setIsPublic: (isPublic: boolean) => Promise<void>
@@ -25,8 +37,10 @@ export function PoliticalAffiliationProvider({
 }: {
   children: React.ReactNode
 }) {
-  const [affiliation, setAffiliationState] = useState<string | null>(null)
-  const [isPublic, setIsPublicState] = useState<boolean>(false)
+  const [storedAffiliations, setStoredAffiliations] = useState<
+    PoliticalAffiliation[]
+  >([])
+  const [storedIsPublic, setStoredIsPublic] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -36,8 +50,24 @@ export function PoliticalAffiliationProvider({
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(STORAGE_KEY + '_is_public'),
         ])
-        setAffiliationState(storedAffiliation)
-        setIsPublicState(storedIsPublic === 'true')
+        const nextAffiliations = (() => {
+          if (!storedAffiliation) return []
+
+          try {
+            const parsed = JSON.parse(storedAffiliation) as unknown
+            if (Array.isArray(parsed)) {
+              return normalizePoliticalAffiliations(parsed)
+            }
+            const normalized = normalizePoliticalAffiliation(parsed)
+            return normalized ? [normalized] : []
+          } catch {
+            const inferred = inferPoliticalAffiliation(storedAffiliation)
+            return inferred ? [inferred] : []
+          }
+        })()
+
+        setStoredAffiliations(nextAffiliations)
+        setStoredIsPublic(storedIsPublic === 'true')
       } catch (e) {
         console.error('Failed to load political affiliation', e)
       } finally {
@@ -47,37 +77,72 @@ export function PoliticalAffiliationProvider({
     void loadAffiliation()
   }, [])
 
-  const setAffiliation = async (name: string | null) => {
+  const setAffiliations = useCallback(async (items: PoliticalAffiliation[]) => {
     try {
-      if (name === null) {
+      const normalized = normalizePoliticalAffiliations(items)
+      if (normalized.length === 0) {
         await AsyncStorage.removeItem(STORAGE_KEY)
       } else {
-        await AsyncStorage.setItem(STORAGE_KEY, name)
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
       }
-      setAffiliationState(name)
+      setStoredAffiliations(normalized)
     } catch (e) {
       console.error('Failed to save political affiliation', e)
     }
-  }
+  }, [])
 
-  const setIsPublic = async (val: boolean) => {
+  const setAffiliation = useCallback(
+    async (name: string | null) => {
+      if (name === null) {
+        await setAffiliations([])
+        return
+      }
+
+      const inferred = inferPoliticalAffiliation(name)
+      if (!inferred) return
+
+      await setAffiliations(
+        upsertPoliticalAffiliation(storedAffiliations, inferred),
+      )
+    },
+    [setAffiliations, storedAffiliations],
+  )
+
+  const setIsPublic = useCallback(async (val: boolean) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY + '_is_public', val ? 'true' : 'false')
-      setIsPublicState(val)
+      await AsyncStorage.setItem(
+        STORAGE_KEY + '_is_public',
+        val ? 'true' : 'false',
+      )
+      setStoredIsPublic(val)
     } catch (e) {
       console.error('Failed to save public status', e)
     }
-  }
+  }, [])
+
+  const affiliations = storedAffiliations
+  const isPublic = storedIsPublic
+  const affiliation = getPrimaryPoliticalAffiliation(affiliations)?.name ?? null
 
   const value = useMemo(
     () => ({
+      affiliations,
       affiliation,
+      setAffiliations,
       setAffiliation,
       isPublic,
       setIsPublic,
       isLoading,
     }),
-    [affiliation, isPublic, isLoading],
+    [
+      affiliations,
+      affiliation,
+      isLoading,
+      isPublic,
+      setAffiliation,
+      setAffiliations,
+      setIsPublic,
+    ],
   )
 
   return (

@@ -73,6 +73,7 @@ export function Wizard({
   const fromDialog = 'fromDialog' in params ? params.fromDialog : false
   const targetDid = 'targetDid' in params ? params.targetDid : undefined
   const onSuccess = 'onSuccess' in params ? params.onSuccess : undefined
+  const isCommunitySeed = 'isCommunitySeed' in params ? params.isCommunitySeed : undefined
   const {currentAccount} = useSession()
   const moderationOpts = useModerationOpts()
 
@@ -137,7 +138,8 @@ export function Wizard({
       <Provider
         starterPack={starterPack}
         listItems={listItems}
-        targetProfile={profile}>
+        targetProfile={profile}
+        isCommunitySeed={isCommunitySeed}>
         <WizardInner
           currentStarterPack={starterPack}
           currentListItems={listItems}
@@ -202,7 +204,20 @@ function WizardInner({
   const wizardUiStrings: Record<
     WizardStep,
     {header: string; nextBtn: string; subtitle?: string}
-  > = {
+  > = state.isCommunitySeed ? {
+    Details: {
+      header: _(msg`Community Seed`),
+      nextBtn: _(msg`Next`),
+    },
+    Profiles: {
+      header: _(msg`Founding Members`),
+      nextBtn: _(msg`Next`),
+    },
+    Feeds: {
+      header: _(msg`Community Feeds`),
+      nextBtn: state.feeds.length === 0 ? _(msg`Skip`) : _(msg`Launch Draft`),
+    },
+  } : {
     Details: {
       header: _(msg`Starter Pack`),
       nextBtn: _(msg`Next`),
@@ -230,9 +245,15 @@ function WizardInner({
     dispatch({type: 'SetProcessing', processing: false})
 
     if (fromDialog) {
+      if (state.isCommunitySeed) {
+        Toast.show(_(msg`Draft Community Created! Waiting for Aforo.`), 'check')
+      }
       navigation.goBack()
       onSuccess?.()
     } else {
+      if (state.isCommunitySeed) {
+        Toast.show(_(msg`Draft Community Created! Waiting for Aforo.`), 'check')
+      }
       navigation.replace('StarterPack', {
         name: profile.handle,
         rkey,
@@ -416,7 +437,9 @@ function Footer({
   const {currentAccount} = useSession()
   const items = state.currentStep === 'Profiles' ? state.profiles : state.feeds
 
-  const minimumItems = state.currentStep === 'Profiles' ? 8 : 0
+  const minimumItems = state.currentStep === 'Profiles' ? (state.isCommunitySeed ? 9 : 8) : 0
+
+  const itemsNeededForAforo = Math.max(0, 9 - items.length)
 
   const textStyles = [a.text_md]
 
@@ -601,14 +624,18 @@ function Footer({
           a.gap_2xl,
           IS_NATIVE ? a.mt_sm : a.mt_md,
         ]}>
-        {state.currentStep === 'Profiles' && items.length < 8 && (
+        {state.currentStep === 'Profiles' && items.length < minimumItems && (
           <Text
             style={[
               a.font_semi_bold,
               textStyles,
               t.atoms.text_contrast_medium,
             ]}>
-            <Trans>Add {8 - items.length} more to continue</Trans>
+            {state.isCommunitySeed ? (
+              <Trans>Add {itemsNeededForAforo} more to reach Aforo and unlock Community</Trans>
+            ) : (
+              <Trans>Add {minimumItems - items.length} more to continue</Trans>
+            )}
           </Text>
         )}
         <Button
@@ -620,7 +647,7 @@ function Footer({
           disabled={
             !state.canNext ||
             state.processing ||
-            (state.currentStep === 'Profiles' && items.length < 8)
+            (state.currentStep === 'Profiles' && items.length < minimumItems)
           }>
           <ButtonText>{nextBtnText}</ButtonText>
           {state.processing && <ButtonIcon icon={Loader} />}

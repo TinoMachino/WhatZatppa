@@ -1,8 +1,7 @@
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
-import {useRequireAuth} from '#/state/session'
-import {useSession} from '#/state/session'
+import {useRequireAuth, useSession} from '#/state/session'
 import {EventStopper} from '#/view/com/util/EventStopper'
 import {useTheme} from '#/alf'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
@@ -16,9 +15,7 @@ import {
 import {useFormatPostStatCount} from './util'
 
 interface Props {
-  isReposted: boolean
-  repostCount?: number
-  onRepost: () => void
+  quoteCount?: number
   onQuote: () => void
   onHighlight: () => void
   onRemoveAllHighlights: () => void
@@ -28,8 +25,7 @@ interface Props {
 }
 
 export const QuoteButton = ({
-  isReposted,
-  repostCount,
+  quoteCount,
   onQuote,
   onHighlight,
   onRemoveAllHighlights,
@@ -51,15 +47,15 @@ export const QuoteButton = ({
             return (
               <PostControlButton
                 testID="highlightBtn"
-                active={isReposted}
+                active={hasHighlights}
                 activeColor={t.palette.positive_500}
                 label={props.accessibilityLabel}
                 big={big}
                 {...props}>
                 <PostControlButtonIcon icon={QuoteIcon} />
-                {typeof repostCount !== 'undefined' && repostCount > 0 && (
-                  <PostControlButtonText testID="repostCount">
-                    {formatPostStatCount(repostCount)}
+                {typeof quoteCount !== 'undefined' && quoteCount > 0 && (
+                  <PostControlButtonText testID="quoteCount">
+                    {formatPostStatCount(quoteCount)}
                   </PostControlButtonText>
                 )}
               </PostControlButton>
@@ -104,14 +100,14 @@ export const QuoteButton = ({
   ) : (
     <PostControlButton
       onPress={() => requireAuth(() => {})}
-      active={isReposted}
+      active={hasHighlights}
       activeColor={t.palette.positive_500}
       label={_(msg`Highlight or quote post`)}
       big={big}>
       <PostControlButtonIcon icon={QuoteIcon} />
-      {typeof repostCount !== 'undefined' && repostCount > 0 && (
-        <PostControlButtonText testID="highlightCount">
-          {formatPostStatCount(repostCount)}
+      {typeof quoteCount !== 'undefined' && quoteCount > 0 && (
+        <PostControlButtonText testID="quoteCount">
+          {formatPostStatCount(quoteCount)}
         </PostControlButtonText>
       )}
     </PostControlButton>

@@ -2,6 +2,7 @@ import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { baseNormalizeAndValidate } from '../../../../handle'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.identity.resolveHandle(async ({ params }) => {
@@ -29,11 +30,14 @@ export default function (server: Server, ctx: AppContext) {
     // Either ask appview to resolve, or perform resolution, but don't do both.
     if (ctx.bskyAppView) {
       try {
-        const result =
-          await ctx.bskyAppView.agent.com.atproto.identity.resolveHandle({
+        const result = await ctx.bskyAppView.client.call(
+          com.atproto.identity.resolveHandle.main,
+          {
             handle,
-          })
-        did = result.data.did
+          },
+          { validateResponse: ctx.bskyAppView.validateResponse },
+        )
+        did = result.did
       } catch {
         // Ignore
       }

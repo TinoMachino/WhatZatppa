@@ -1,7 +1,6 @@
-import {useCallback, useState} from 'react'
+import {useCallback, useMemo, useState} from 'react'
 import {
   Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -13,15 +12,23 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useFocusEffect, useNavigation} from '@react-navigation/native'
 
+import {type CabildeoView} from '#/lib/cabildeo-client'
 import {
-  type CategoryData,
-  MATTER_CATEGORIES,
-  VOTED_POLICIES,
-} from '#/lib/constants/mockData'
+  type DebateKind,
+  getCabildeoBadge,
+  getCabildeoPhaseMeta,
+  getCabildeoTotalParticipants,
+  getViewerParticipation,
+} from '#/lib/cabildeo-display'
+import {
+  POLITICAL_AFFILIATION_TYPE_LABELS,
+  type PoliticalAffiliation,
+} from '#/lib/political-affiliations'
 import {type NavigationProp} from '#/lib/routes/types'
 import {USER_FLAIRS} from '#/lib/tags'
 import {deleteHighlight, getAllHighlights} from '#/state/highlights'
 import {type HighlightData} from '#/state/highlights'
+import {useCabildeosQuery} from '#/state/queries/cabildeo'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {usePoliticalAffiliation} from '#/state/shell/political-affiliation'
@@ -30,32 +37,47 @@ import {type FollowedItem} from '#/state/topics'
 import {Text} from '#/view/com/util/text/Text'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
-import {Button, ButtonIcon, ButtonText} from '#/components/Button'
-import {Bookmark as BookmarkIcon} from '#/components/icons/Bookmark'
+import {ColorStack} from '#/components/AvatarStack'
+import {Button, ButtonIcon} from '#/components/Button'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRight} from '#/components/icons/Chevron'
 import {SettingsGear2_Stroke2_Corner0_Rounded as SettingsIcon} from '#/components/icons/SettingsGear2'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import {Tree_Stroke2_Corner0_Rounded as TreeIcon} from '#/components/icons/Tree'
 import * as Layout from '#/components/Layout'
-import {PolicyCategoryModal} from '#/screens/Base/PolicyCategoryModal'
+import {toClout} from '#/analytics/metrics'
 
 // ---------------------------------------------------------------------------
 // MyBaseScreen
 // ---------------------------------------------------------------------------
+type MetricKey = 'Influence' | 'Votes' | 'Posts' | 'Followers' | 'Following'
+
+type MyBaseDebateCard = {
+  uri: string
+  title: string
+  description: string
+  kind: DebateKind
+  badgeLabel: string
+  badgeColor: string
+  badgeBackground: string
+  phaseLabel: string
+  phaseColor: string
+  participationLabel: string
+  optionLabel?: string
+  participationCount: number
+  communityLabel: string
+  createdAt: string
+}
+
 export function MyBaseScreen() {
-  const {_} = useLingui()
+  const {_, i18n} = useLingui()
   const t = useTheme()
   const {currentAccount} = useSession()
   const navigation = useNavigation<NavigationProp>()
-  const currentDid = currentAccount!.did
+  const currentDid = currentAccount?.did
   const {data: currentProfile} = useProfileQuery({did: currentDid})
-  const {affiliation} = usePoliticalAffiliation()
-  const [activeDetail, setActiveDetail] = useState<
-    'Influence' | 'Votes' | 'Posts' | null
-  >(null)
-  const [activeCategory, setActiveCategory] = useState<CategoryData | null>(
-    null,
-  )
+  const {data: cabildeos = [], isLoading: isCabildeosLoading} =
+    useCabildeosQuery()
+  const {affiliations} = usePoliticalAffiliation()
   const [myHighlights, setMyHighlights] = useState<HighlightData[]>([])
   const [selectedFlair, setSelectedFlair] = useState<
     (typeof USER_FLAIRS)[keyof typeof USER_FLAIRS]
@@ -78,29 +100,64 @@ export function MyBaseScreen() {
   // Followed topics/items
   const {items: followedItems, unfollow: unfollowItem} = useFollowedItems()
 
-  const onPressSaved = () => {
-    navigation.navigate('Bookmarks')
-  }
+  const participatedDebates = useMemo(
+    () => cabildeos.filter(item => getViewerParticipation(item)),
+    [cabildeos],
+  )
+
+  const votedPolicyCards = useMemo(
+    () => buildMyBaseDebateCards(participatedDebates, 'policy'),
+    [participatedDebates],
+  )
+
+  const votedMatterCards = useMemo(
+    () => buildMyBaseDebateCards(participatedDebates, 'matter'),
+    [participatedDebates],
+  )
+
+  const influenceScore = useMemo(() => {
+    const followerClout = toClout(currentProfile?.followersCount ?? 0) ?? 0
+    return followerClout + myHighlights.length + followedItems.length
+  }, [currentProfile?.followersCount, myHighlights.length, followedItems.length])
+
+  const formatCount = useCallback(
+    (value: number | undefined | null) => i18n.number(value ?? 0),
+    [i18n],
+  )
+
+  const profileHandle = currentProfile?.handle
+  const profileHandleText = profileHandle ? `@${profileHandle}` : '@para'
+  const profileDisplayName =
+    currentProfile?.displayName || currentProfile?.handle || 'User'
+
+  const affiliationSummary = useMemo(
+    () => summarizeAffiliations(affiliations),
+    [affiliations],
+  )
 
   const onPressPolicyTree = () => {
-    // TODO: navigate to Policy Tree screen
+    navigation.navigate('Compass')
   }
 
   const onPressRAQ = () => {
     navigation.navigate('RAQ')
   }
 
-  const onPressMetric = (metric: string) => {
+  const onPressMetric = (metric: MetricKey) => {
     if (metric === 'Followers') {
-      navigation.push('ProfileFollowers', {name: currentProfile?.handle || ''})
+      if (profileHandle) {
+        navigation.push('ProfileFollowers', {name: profileHandle})
+      }
     } else if (metric === 'Following') {
-      navigation.push('ProfileFollows', {name: currentProfile?.handle || ''})
+      if (profileHandle) {
+        navigation.push('ProfileFollows', {name: profileHandle})
+      }
     } else if (metric === 'Influence') {
       navigation.navigate('SeeInfluence', {})
     } else if (metric === 'Votes') {
       navigation.navigate('SeeVotes', {})
     } else if (metric === 'Posts') {
-      setActiveDetail('Posts')
+      navigation.navigate('SeePosts', {})
     }
   }
 
@@ -118,6 +175,10 @@ export function MyBaseScreen() {
 
   const onPressSettings = () => {
     navigation.navigate('AccountSettings')
+  }
+
+  if (!currentAccount) {
+    return null
   }
 
   return (
@@ -157,12 +218,10 @@ export function MyBaseScreen() {
               />
               <View style={styles.profileInfo}>
                 <Text style={[styles.profileName, t.atoms.text]}>
-                  {currentProfile?.displayName ||
-                    currentProfile?.handle ||
-                    'User'}
+                  {profileDisplayName}
                 </Text>
                 <Text style={[styles.profileHandle, t.atoms.text]}>
-                  @{currentProfile?.handle}
+                  {profileHandleText}
                 </Text>
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -193,27 +252,29 @@ export function MyBaseScreen() {
             <View style={styles.metricsContainer}>
               <MetricItem
                 label="Influence"
-                value="850"
+                value={formatCount(influenceScore)}
                 onPress={() => onPressMetric('Influence')}
               />
               <MetricItem
                 label="Votes"
-                value="124"
+                value={formatCount(
+                  votedPolicyCards.length + votedMatterCards.length,
+                )}
                 onPress={() => onPressMetric('Votes')}
               />
               <MetricItem
                 label="Posts"
-                value="42"
+                value={formatCount(currentProfile?.postsCount)}
                 onPress={() => onPressMetric('Posts')}
               />
               <MetricItem
                 label="Followers"
-                value="10.2k"
+                value={formatCount(currentProfile?.followersCount)}
                 onPress={() => onPressMetric('Followers')}
               />
               <MetricItem
                 label="Following"
-                value="234"
+                value={formatCount(currentProfile?.followsCount)}
                 onPress={() => onPressMetric('Following')}
               />
             </View>
@@ -224,23 +285,34 @@ export function MyBaseScreen() {
               style={styles.supportInfoContainer}
               onPress={() => navigation.navigate('PoliticalAffiliation')}>
               <View style={styles.supportInfoRow}>
-                <View
-                  style={[
-                    styles.supportAvatar,
-                    {
-                      backgroundColor: affiliation
-                        ? t.palette.primary_500
-                        : t.palette.contrast_300,
-                    },
-                  ]}
-                />
-                <Text
-                  style={[styles.supportInfoText, t.atoms.text_contrast_medium]}>
-                  <Trans>Political Affiliation:</Trans>{' '}
-                  <Text style={[styles.supportInfoValue, t.atoms.text]}>
-                    {affiliation || 'Not set'}
+                {affiliations.length > 0 ? (
+                  <ColorStack
+                    items={affiliations.map(item => ({
+                      id: item.id,
+                      color: item.color,
+                    }))}
+                    size={20}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.supportAvatar,
+                      {backgroundColor: t.palette.contrast_300},
+                    ]}
+                  />
+                )}
+                <View style={styles.supportInfoTextContainer}>
+                  <Text
+                    style={[
+                      styles.supportInfoLabel,
+                      t.atoms.text_contrast_medium,
+                    ]}>
+                    <Trans>Political Affiliation</Trans>
                   </Text>
-                </Text>
+                  <Text style={[styles.supportInfoValue, t.atoms.text]}>
+                    {affiliationSummary || 'Not set'}
+                  </Text>
+                </View>
                 <ChevronRight size="sm" style={t.atoms.text_contrast_medium} />
               </View>
             </TouchableOpacity>
@@ -252,95 +324,50 @@ export function MyBaseScreen() {
               <Text style={[styles.mainSectionTitle, t.atoms.text]}>
                 <Trans>Voted Policies</Trans>
               </Text>
-              <Button
-                label={_(msg`Saved`)}
-                onPress={onPressSaved}
-                size="small"
-                variant="ghost"
-                color="secondary"
-                shape="default"
-                style={styles.savedButton}>
-                <ButtonIcon icon={BookmarkIcon} />
-                <ButtonText>Saved</ButtonText>
-              </Button>
+              <Text style={[styles.highlightCount, t.atoms.text_contrast_medium]}>
+                {isCabildeosLoading && votedPolicyCards.length === 0
+                  ? _(msg`Loading`)
+                  : `${formatCount(votedPolicyCards.length)} on record`}
+              </Text>
             </View>
-
-            <View style={styles.gridContainer}>
-              {VOTED_POLICIES.map((category, index) => (
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  key={index}
-                  style={[
-                    styles.categoryCard,
-                    t.atoms.border_contrast_low,
-                    t.atoms.bg_contrast_25,
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={() => setActiveCategory(category)}>
-                  <Text style={[styles.categoryTitle, t.atoms.text]}>
-                    {category.title}
-                  </Text>
-                  {category.items.map((item, i) => (
-                    <Text
-                      key={i}
-                      style={[
-                        styles.categoryItem,
-                        t.atoms.text_contrast_medium,
-                      ]}>
-                      • {item}
-                    </Text>
-                  ))}
-                </TouchableOpacity>
-              ))}
-            </View>
+            <DebateCardList
+              cards={votedPolicyCards}
+              emptyIcon="🗳️"
+              emptyTitle={_(msg`No voted policies yet`)}
+              emptyMessage={_(
+                msg`When you vote in a policy debate, it will show up here with live participation data.`,
+              )}
+              isLoading={isCabildeosLoading}
+              onPressCard={card =>
+                navigation.navigate('PolicyDetails', {cabildeoUri: card.uri})
+              }
+            />
           </View>
 
           {/* Matters Section */}
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.mainSectionTitle, t.atoms.text]}>
-                Matters
+                <Trans>Voted Matters</Trans>
               </Text>
-              <Button
-                label={_(msg`Saved`)}
-                onPress={onPressSaved}
-                size="small"
-                variant="ghost"
-                color="secondary"
-                shape="default"
-                style={styles.savedButton}>
-                <ButtonIcon icon={BookmarkIcon} />
-                <ButtonText>Saved</ButtonText>
-              </Button>
+              <Text style={[styles.highlightCount, t.atoms.text_contrast_medium]}>
+                {isCabildeosLoading && votedMatterCards.length === 0
+                  ? _(msg`Loading`)
+                  : `${formatCount(votedMatterCards.length)} on record`}
+              </Text>
             </View>
-
-            <View style={styles.gridContainer}>
-              {MATTER_CATEGORIES.map((category, index) => (
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  key={index}
-                  style={[
-                    styles.categoryCard,
-                    t.atoms.border_contrast_low,
-                    t.atoms.bg_contrast_25,
-                  ]}
-                  activeOpacity={0.7}>
-                  <Text style={[styles.categoryTitle, t.atoms.text]}>
-                    {category.title}
-                  </Text>
-                  {category.items.map((item, i) => (
-                    <Text
-                      key={i}
-                      style={[
-                        styles.categoryItem,
-                        t.atoms.text_contrast_medium,
-                      ]}>
-                      {item}
-                    </Text>
-                  ))}
-                </TouchableOpacity>
-              ))}
-            </View>
+            <DebateCardList
+              cards={votedMatterCards}
+              emptyIcon="📌"
+              emptyTitle={_(msg`No voted matters yet`)}
+              emptyMessage={_(
+                msg`As soon as you participate in a matter debate, it will appear here with the live backend totals.`,
+              )}
+              isLoading={isCabildeosLoading}
+              onPressCard={card =>
+                navigation.navigate('PolicyDetails', {cabildeoUri: card.uri})
+              }
+            />
           </View>
 
           {/* My Highlights Section */}
@@ -525,22 +552,6 @@ export function MyBaseScreen() {
                 })}
               </View>
             )}
-            {followedItems.length > 8 && (
-              <TouchableOpacity
-                accessibilityRole="button"
-                style={[
-                  styles.viewAllHighlights,
-                  t.atoms.bg_contrast_25,
-                ]}>
-                <Text
-                  style={[
-                    styles.viewAllText,
-                    {color: t.palette.primary_500},
-                  ]}>
-                  View all {followedItems.length} topics →
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           {/* RAQ Section */}
@@ -552,8 +563,8 @@ export function MyBaseScreen() {
             ]}>
             <View>
               <Text style={[styles.raqTitle, t.atoms.text]}>RAQ</Text>
-              <Text style={[styles.raqProgress, t.atoms.text]}>
-                17/25 completed
+              <Text style={[styles.raqProgress, t.atoms.text_contrast_medium]}>
+                <Trans>Open your questionnaire and review your latest results.</Trans>
               </Text>
             </View>
             <Button
@@ -581,73 +592,6 @@ export function MyBaseScreen() {
           </TouchableOpacity>
         </ScrollView>
       </Layout.Center>
-
-      {/* Details Modal */}
-      {activeDetail && (
-        <DetailsDialog
-          title={
-            activeDetail === 'Influence'
-              ? 'Influence Breakdown'
-              : activeDetail === 'Votes'
-                ? 'Votes History'
-                : 'Posts Breakdown'
-          }
-          onClose={() => setActiveDetail(null)}>
-          {activeDetail === 'Influence' ? (
-            <>
-              <DetailRow label="Posts Influence" value="650" />
-              <DetailRow label="Comments Influence" value="200" />
-            </>
-          ) : activeDetail === 'Votes' ? (
-            <>
-              <DetailRow label="Votes in Policies" value="80" />
-              <DetailRow label="Votes in Matters" value="34" />
-              <DetailRow label="Votes in Posts" value="10" />
-            </>
-          ) : (
-            <>
-              <Text
-                style={[
-                  styles.modalSectionTitle,
-                  t.atoms.text_contrast_medium,
-                ]}>
-                Type
-              </Text>
-              <DetailRow label="Official" value="12" />
-              <DetailRow label="Not Official" value="30" />
-
-              <View
-                style={[styles.modalDivider, t.atoms.border_contrast_low]}
-              />
-
-              <Text
-                style={[
-                  styles.modalSectionTitle,
-                  t.atoms.text_contrast_medium,
-                ]}>
-                Tags
-              </Text>
-              <DetailRow label="Discussion" value="20" />
-              <DetailRow label="Survey" value="15" />
-              <DetailRow label="Meme" value="7" />
-            </>
-          )}
-        </DetailsDialog>
-      )}
-
-      {/* Policy Category Modal */}
-      {activeCategory && (
-        <Modal
-          animationType="slide"
-          transparent={false}
-          visible={true}
-          onRequestClose={() => setActiveCategory(null)}>
-          <PolicyCategoryModal
-            category={activeCategory}
-            onClose={() => setActiveCategory(null)}
-          />
-        </Modal>
-      )}
 
       {/* Flair Selection Modal */}
       <Modal
@@ -715,64 +659,159 @@ export function MyBaseScreen() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components — use useTheme() directly instead of prop-drilling `pal`
-// ---------------------------------------------------------------------------
+function buildMyBaseDebateCards(
+  debates: CabildeoView[],
+  kind: DebateKind,
+): MyBaseDebateCard[] {
+  return debates
+    .map(debate => {
+      const badge = getCabildeoBadge(debate)
+      if (badge.kind !== kind) return null
 
-function DetailRow({label, value}: {label: string; value: string}) {
+      const participation = getViewerParticipation(debate)
+      if (!participation) return null
+
+      const phase = getCabildeoPhaseMeta(debate.phase)
+      return {
+        uri: debate.uri,
+        title: debate.title,
+        description: debate.description,
+        kind,
+        badgeLabel: badge.label,
+        badgeColor: badge.color,
+        badgeBackground: badge.bgColor,
+        phaseLabel: phase.label,
+        phaseColor: phase.color,
+        participationLabel: participation.label,
+        optionLabel: participation.optionLabel,
+        participationCount: getCabildeoTotalParticipants(debate),
+        communityLabel: debate.community,
+        createdAt: debate.createdAt,
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)) as MyBaseDebateCard[]
+}
+
+function DebateCardList({
+  cards,
+  emptyIcon,
+  emptyTitle,
+  emptyMessage,
+  isLoading,
+  onPressCard,
+}: {
+  cards: MyBaseDebateCard[]
+  emptyIcon: string
+  emptyTitle: string
+  emptyMessage: string
+  isLoading: boolean
+  onPressCard: (card: MyBaseDebateCard) => void
+}) {
   const t = useTheme()
+
+  if (cards.length === 0) {
+    return (
+      <View style={[styles.emptyHighlights, t.atoms.bg_contrast_25]}>
+        <Text style={styles.emptyHighlightsIcon}>{emptyIcon}</Text>
+        <Text style={[styles.emptyHighlightsText, t.atoms.text]}>
+          {isLoading ? 'Loading your participation...' : emptyTitle}
+        </Text>
+        <Text
+          style={[
+            styles.emptyHighlightsSubtext,
+            t.atoms.text_contrast_medium,
+          ]}>
+          {isLoading
+            ? 'We are pulling your debate activity from the backend.'
+            : emptyMessage}
+        </Text>
+      </View>
+    )
+  }
+
   return (
-    <View style={styles.detailRow}>
-      <Text style={[styles.detailLabel, t.atoms.text_contrast_medium]}>
-        {label}
-      </Text>
-      <Text style={[styles.detailValue, t.atoms.text]}>{value}</Text>
+    <View style={styles.debateList}>
+      {cards.slice(0, 4).map(card => (
+        <TouchableOpacity
+          accessibilityRole="button"
+          key={card.uri}
+          onPress={() => onPressCard(card)}
+          activeOpacity={0.8}
+          style={[
+            styles.debateCard,
+            t.atoms.bg_contrast_25,
+            t.atoms.border_contrast_low,
+          ]}>
+          <View style={styles.debateCardHeader}>
+            <View
+              style={[
+                styles.debateBadge,
+                {backgroundColor: card.badgeBackground},
+              ]}>
+              <Text style={[styles.debateBadgeText, {color: card.badgeColor}]}>
+                {card.badgeLabel}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.debatePhase,
+                {color: card.phaseColor},
+              ]}>
+              {card.phaseLabel}
+            </Text>
+          </View>
+
+          <Text style={[styles.debateTitle, t.atoms.text]} numberOfLines={2}>
+            {card.title}
+          </Text>
+          <Text
+            style={[styles.debateDescription, t.atoms.text_contrast_medium]}
+            numberOfLines={2}>
+            {card.description}
+          </Text>
+
+          <View style={styles.debateMetaRow}>
+            <Text style={[styles.debateMetaText, t.atoms.text_contrast_medium]}>
+              {card.communityLabel}
+            </Text>
+            <Text style={[styles.debateMetaText, t.atoms.text_contrast_medium]}>
+              {card.participationCount} participants
+            </Text>
+          </View>
+
+          <View style={styles.debateFooter}>
+            <View
+              style={[
+                styles.debateParticipationPill,
+                {backgroundColor: card.kind === 'policy' ? '#DBEAFE' : '#FFEDD5'},
+              ]}>
+              <Text
+                style={[
+                  styles.debateParticipationText,
+                  {color: card.kind === 'policy' ? '#1D4ED8' : '#C2410C'},
+                ]}>
+                {card.optionLabel
+                  ? `${card.participationLabel}: ${card.optionLabel}`
+                  : card.participationLabel}
+              </Text>
+            </View>
+            <ChevronRight size="sm" style={t.atoms.text_contrast_medium} />
+          </View>
+        </TouchableOpacity>
+      ))}
     </View>
   )
 }
 
-function DetailsDialog({
-  title,
-  children,
-  onClose,
-}: {
-  title: string
-  children: React.ReactNode
-  onClose: () => void
-}) {
-  const t = useTheme()
-  return (
-    <Modal
-      transparent
-      visible={true}
-      animationType="fade"
-      onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.modalBackdrop}
-          onPress={onClose}
-        />
-        <View
-          style={[
-            styles.modalContent,
-            t.atoms.bg,
-            t.atoms.border_contrast_low,
-          ]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, t.atoms.text]}>{title}</Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={onClose}
-              hitSlop={10}>
-              <XIcon size="md" style={t.atoms.text} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.modalBody}>{children}</View>
-        </View>
-      </View>
-    </Modal>
-  )
+function summarizeAffiliations(affiliations: PoliticalAffiliation[]) {
+  if (affiliations.length === 0) {
+    return ''
+  }
+
+  return affiliations
+    .map(item => `${POLITICAL_AFFILIATION_TYPE_LABELS[item.type]}: ${item.name}`)
+    .join(' • ')
 }
 
 function MetricItem({
@@ -855,22 +894,29 @@ const styles = StyleSheet.create({
   // Political affiliation
   supportInfoContainer: {
     marginTop: 20,
-    gap: 8,
   },
   supportInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+  supportInfoTextContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  supportInfoLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   supportAvatar: {
     width: 20,
     height: 20,
     borderRadius: 10,
   },
-  supportInfoText: {
-    fontSize: 14,
-  },
   supportInfoValue: {
+    fontSize: 14,
     fontWeight: '600',
   },
   // Sections
@@ -890,6 +936,69 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  debateList: {
+    gap: 12,
+  },
+  debateCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  debateCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  debateBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  debateBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  debatePhase: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  debateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  debateDescription: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  debateMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  debateMetaText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  debateFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  debateParticipationPill: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  debateParticipationText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   // Category cards
   gridContainer: {
@@ -988,33 +1097,6 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     gap: 12,
-  },
-  modalSectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  modalDivider: {
-    height: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginVertical: 4,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  detailLabel: {
-    fontSize: 15,
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: '600',
   },
   // Highlights
   highlightCount: {

@@ -69,6 +69,7 @@ export type EmbedDraft = {
 export type PostDraft = {
   id: string
   richtext: RichText
+  title: string
   labels: SelfLabel[]
   embed: EmbedDraft
   flairs: ComposerFlair[]
@@ -80,6 +81,7 @@ export type PostDraft = {
 
 export type PostAction =
   | { type: 'update_richtext'; richtext: RichText }
+  | { type: 'update_title'; title: string }
   | { type: 'update_labels'; labels: SelfLabel[] }
   | {
     type: 'update_flairs'
@@ -217,6 +219,7 @@ export function composerReducer(
       nextPosts.splice(activePostIndex + 1, 0, {
         id: nanoid(),
         richtext: new RichText({ text: '' }),
+        title: '',
         shortenedGraphemeLength: 0,
         labels: [],
         flairs: [],
@@ -334,6 +337,12 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
         ...state,
         richtext: action.richtext,
         shortenedGraphemeLength: getShortenedLength(action.richtext),
+      }
+    }
+    case 'update_title': {
+      return {
+        ...state,
+        title: action.title,
       }
     }
     case 'update_labels': {
@@ -720,6 +729,7 @@ export function createComposerState({
         {
           id: nanoid(),
           richtext: initRichText,
+          title: '',
           shortenedGraphemeLength: getShortenedLength(initRichText),
           labels: [],
           flairs: [],

@@ -104,6 +104,7 @@ export function readEnv() {
     bskyAppViewUrl: envStr('PDS_BSKY_APP_VIEW_URL'),
     bskyAppViewDid: envStr('PDS_BSKY_APP_VIEW_DID'),
     bskyAppViewCdnUrlPattern: envStr('PDS_BSKY_APP_VIEW_CDN_URL_PATTERN'),
+    paraCommunityCreatorDids: envList('PDS_PARA_COMMUNITY_CREATOR_DIDS'),
 
     // mod service
     modServiceUrl: envStr('PDS_MOD_SERVICE_URL'),

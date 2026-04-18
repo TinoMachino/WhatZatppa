@@ -106,6 +106,7 @@ export function useProfilesQuery({
       return res.data
     },
     placeholderData: maintainData ? keepPreviousData : undefined,
+    enabled: handles.length > 0,
   })
 }
 

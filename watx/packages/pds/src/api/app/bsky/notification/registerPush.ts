@@ -1,10 +1,12 @@
 import { AtpAgent } from '@atproto/api'
 import { getNotif } from '@atproto/identity'
+import { DidString } from '@atproto/syntax'
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { app } from '../../../../lexicons/index.js'
 import { getDidDoc } from '../util/resolver'
 
 export default function (server: Server, ctx: AppContext) {
@@ -39,10 +41,17 @@ export default function (server: Server, ctx: AppContext) {
       )
 
       if (bskyAppView.did === serviceDid) {
-        await bskyAppView.agent.app.bsky.notification.registerPush(input.body, {
-          ...authHeaders,
-          encoding: 'application/json',
-        })
+        await bskyAppView.client.call(
+          app.bsky.notification.registerPush.main,
+          {
+            ...input.body,
+            serviceDid: input.body.serviceDid as DidString,
+          },
+          {
+            ...authHeaders,
+            validateResponse: bskyAppView.validateResponse,
+          },
+        )
         return
       }
 

@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef, useState} from 'react'
+import {type ComponentProps, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {
   Modal,
   ScrollView,
@@ -12,6 +12,10 @@ import {useNavigation} from '@react-navigation/native'
 import {COMMUNITY_DATA, type CommunityData} from '#/lib/constants/mockData'
 import {type NavigationProp} from '#/lib/routes/types'
 import {POST_FLAIRS, type PostFlair} from '#/lib/tags'
+import {
+  type CommunityBoardView,
+  useCommunityBoardsQuery,
+} from '#/state/queries/community-boards'
 import {useSession} from '#/state/session'
 import {Text} from '#/view/com/util/text/Text'
 import {useTheme} from '#/alf'
@@ -22,6 +26,7 @@ import {ListMagnifyingGlass_Stroke2_Corner0_Rounded as ListMagnifyingGlass} from
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import * as Layout from '#/components/Layout'
 import {WebScrollControls} from '#/components/WebScrollControls'
+import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
 
 type ThemeShape = ReturnType<typeof useTheme>
@@ -52,8 +57,10 @@ const FEATURED_STATE_NAMES = ['CDMX', 'Jalisco', 'Nuevo León']
 
 export function CommunitiesScreen() {
   const t = useTheme()
+  const analytics = useAnalytics()
   useSession()
   const navigation = useNavigation<NavigationProp>()
+  const trackedCreatorEntryMetric = useRef(false)
 
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<'Participation' | 'State'>(
@@ -70,6 +77,8 @@ export function CommunitiesScreen() {
     'pan',
     'mx-cdmx',
   ])
+  const {data: liveBoardsData, isLoading: isLiveBoardsLoading} =
+    useCommunityBoardsQuery({limit: 12})
 
   const civicScrollRef = useRef<ScrollView>(null)
   const politicalScrollRef = useRef<ScrollView>(null)
@@ -114,6 +123,19 @@ export function CommunitiesScreen() {
         .slice(0, 8),
     [],
   )
+  const canCreateCommunity = liveBoardsData?.canCreateCommunity ?? true
+  const liveBoards = liveBoardsData?.boards ?? []
+
+  useEffect(() => {
+    if (trackedCreatorEntryMetric.current || !liveBoardsData) return
+    trackedCreatorEntryMetric.current = true
+
+    if (liveBoardsData.canCreateCommunity) {
+      analytics.metric('community:create:ctaShown', {})
+    } else {
+      analytics.metric('community:create:eligibilityDenied', {})
+    }
+  }, [analytics, liveBoardsData])
 
   const navigateToCommunityProfile = useCallback(
     (community: CommunityData) => {
@@ -124,6 +146,21 @@ export function CommunitiesScreen() {
     },
     [navigation],
   )
+
+  const navigateToLiveCommunityProfile = useCallback(
+    (board: CommunityBoardView) => {
+      navigation.navigate('CommunityProfile', {
+        communityId: board.communityId,
+        communityName: board.name,
+      })
+    },
+    [navigation],
+  )
+
+  const navigateToCreateCommunity = useCallback(() => {
+    analytics.metric('community:create:ctaClicked', {})
+    navigation.navigate('CreateCommunity')
+  }, [analytics, navigation])
 
   const removeRecentlyVisited = useCallback((communityId: string) => {
     setRecentlyVisited(prev => prev.filter(item => item !== communityId))
@@ -193,6 +230,111 @@ export function CommunitiesScreen() {
                 ))}
               </View>
             </View>
+
+            <View style={styles.section}>
+              <Text
+                style={[styles.sectionEyebrow, {color: t.palette.primary_500}]}>
+                <Trans>Creator flow</Trans>
+              </Text>
+              <Text style={[styles.sectionHeading, t.atoms.text]}>
+                <Trans>Real community creation</Trans>
+              </Text>
+              <Text style={[styles.sectionLead, t.atoms.text_contrast_medium]}>
+                <Trans>
+                  Anyone can create a real community now. New communities begin
+                  in draft and unlock after 9 founding members join through the
+                  starter-pack quorum flow.
+                </Trans>
+              </Text>
+
+              <View
+                style={[
+                  styles.creatorEntryCard,
+                  {
+                    backgroundColor: canCreateCommunity
+                      ? t.palette.primary_500
+                      : t.palette.contrast_25,
+                  },
+                ]}>
+                <View style={styles.creatorEntryCopy}>
+                  <Text
+                    style={[
+                      styles.creatorEntryTitle,
+                      {color: canCreateCommunity ? '#fff' : t.atoms.text.color},
+                    ]}>
+                    {isLiveBoardsLoading
+                      ? 'Preparing community creation'
+                      : canCreateCommunity
+                        ? 'Create a community'
+                        : 'Creation temporarily unavailable'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.creatorEntryBody,
+                      canCreateCommunity
+                        ? styles.creatorEntryBodyOnPrimary
+                        : t.atoms.text_contrast_medium,
+                    ]}>
+                    {isLiveBoardsLoading
+                      ? 'Loading creation capabilities and live community data.'
+                      : canCreateCommunity
+                        ? 'Open the setup flow to draft a community, seed governance, and start tracking the 9-member founding quorum.'
+                        : 'Community creation should be open, but the directory could not confirm capability right now.'}
+                  </Text>
+                </View>
+                {canCreateCommunity ? (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={navigateToCreateCommunity}
+                    style={[
+                      styles.creatorEntryButton,
+                      {backgroundColor: t.palette.contrast_100},
+                    ]}>
+                    <Text
+                      style={[
+                        styles.creatorEntryButtonText,
+                        {color: t.palette.primary_600},
+                      ]}>
+                      Create community
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+
+            {liveBoards.length > 0 ? (
+              <View style={styles.section}>
+                <Text
+                  style={[
+                    styles.sectionEyebrow,
+                    {color: t.palette.primary_500},
+                  ]}>
+                  <Trans>Created in PARA</Trans>
+                </Text>
+                <Text style={[styles.sectionHeading, t.atoms.text]}>
+                  <Trans>Live community boards</Trans>
+                </Text>
+                <Text
+                  style={[styles.sectionLead, t.atoms.text_contrast_medium]}>
+                  <Trans>
+                    These boards come from the real community directory read
+                    path, so newly created communities can show up here without
+                    client-side fabrication.
+                  </Trans>
+                </Text>
+
+                <View style={styles.liveBoardsGrid}>
+                  {liveBoards.map(board => (
+                    <LiveCommunityCard
+                      key={board.uri}
+                      board={board}
+                      theme={t}
+                      onPress={() => navigateToLiveCommunityProfile(board)}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
 
             <View style={styles.section}>
               <Text
@@ -638,6 +780,54 @@ function ContinueExploringCard({
   )
 }
 
+function LiveCommunityCard({
+  board,
+  theme,
+  onPress,
+}: {
+  board: CommunityBoardView
+  theme: ThemeShape
+  onPress: () => void
+}) {
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[
+        styles.liveBoardCard,
+        {backgroundColor: theme.palette.contrast_25},
+      ]}>
+      <View style={styles.liveBoardHeader}>
+        <View
+          style={[
+            styles.liveBoardAvatar,
+            {backgroundColor: theme.palette.primary_100},
+          ]}>
+          <Text style={[styles.liveBoardAvatarText, {color: theme.palette.primary_600}]}>
+            {board.name.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <View style={styles.liveBoardMeta}>
+          <Text style={[styles.liveBoardTitle, theme.atoms.text]}>
+            {board.name}
+          </Text>
+          <Text style={[styles.liveBoardSubtitle, theme.atoms.text_contrast_medium]}>
+            {board.quadrant}
+          </Text>
+        </View>
+      </View>
+      <Text numberOfLines={3} style={[styles.liveBoardBody, theme.atoms.text]}>
+        {board.description ||
+          'Seeded community with live governance scaffolding and creator membership.'}
+      </Text>
+      <Text style={[styles.liveBoardFooter, theme.atoms.text_contrast_medium]}>
+        {board.memberCount} members • {board.governanceSummary?.moderatorCount ?? 0}{' '}
+        moderators
+      </Text>
+    </TouchableOpacity>
+  )
+}
+
 function DirectoryModule({
   title,
   description,
@@ -798,7 +988,7 @@ function RefinementPanel({
 }: {
   title: string
   description: string
-  icon: React.ComponentType<any>
+  icon: ComponentProps<typeof IconCircle>['icon']
   onPress: () => void
   theme: ThemeShape
   children: React.ReactNode
@@ -1157,6 +1347,83 @@ const styles = StyleSheet.create({
   resumeGridWeb: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  creatorEntryCard: {
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    gap: 16,
+  },
+  creatorEntryCopy: {
+    gap: 8,
+  },
+  creatorEntryTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
+  },
+  creatorEntryBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  creatorEntryBodyOnPrimary: {
+    color: 'rgba(255,255,255,0.88)',
+  },
+  creatorEntryButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  creatorEntryButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  liveBoardsGrid: {
+    gap: 12,
+  },
+  liveBoardCard: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  liveBoardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  liveBoardAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  liveBoardAvatarText: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  liveBoardMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  liveBoardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  liveBoardSubtitle: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  liveBoardBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  liveBoardFooter: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   resumeCard: {
     width: '100%',

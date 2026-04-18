@@ -1,11 +1,12 @@
-import { AtpAgent } from '@atproto/api'
 import { mapDefined } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { AppContext } from '../../../../context'
 import { DataPlaneClient } from '../../../../data-plane'
 import { HydrateCtx, Hydrator } from '../../../../hydration/hydrator'
 import { parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/actor/searchActors'
+import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
   PresentationFnInput,
@@ -26,12 +27,14 @@ export default function (server: Server, ctx: AppContext) {
   server.app.bsky.actor.searchActors({
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
-      const { viewer, includeTakedowns } = ctx.authVerifier.parseCreds(auth)
+      const { viewer, includeTakedowns, skipViewerBlocks } =
+        ctx.authVerifier.parseCreds(auth)
       const labelers = ctx.reqLabelers(req)
       const hydrateCtx = await ctx.hydrator.createContext({
         viewer,
         labelers,
         includeTakedowns,
+        skipViewerBlocks,
       })
       const results = await searchActors({ ...params, hydrateCtx }, ctx)
       return {
@@ -50,15 +53,16 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
   // @TODO
   // add hits total
 
-  if (ctx.searchAgent) {
-    // @NOTE cursors won't change on appview swap
-    const { data: res } =
-      await ctx.searchAgent.app.bsky.unspecced.searchActorsSkeleton({
+  if (ctx.searchClient) {
+    const res = await ctx.searchClient.call(
+      app.bsky.unspecced.searchActorsSkeleton,
+      {
         q: term,
         cursor: params.cursor,
         limit: params.limit,
         viewer: params.hydrateCtx.viewer ?? undefined,
-      })
+      } as app.bsky.unspecced.searchActorsSkeleton.$Params,
+    )
     return {
       dids: res.actors.map(({ did }) => did),
       cursor: parseString(res.cursor),
@@ -108,7 +112,7 @@ type Context = {
   dataplane: DataPlaneClient
   hydrator: Hydrator
   views: Views
-  searchAgent?: AtpAgent
+  searchClient?: Client
 }
 
 type Params = QueryParams & { hydrateCtx: HydrateCtx }

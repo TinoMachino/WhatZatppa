@@ -6,10 +6,10 @@ import {useNavigation} from '@react-navigation/native'
 import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
 import {useIntentHandler} from '#/lib/hooks/useIntentHandler'
+import {Provider as HotkeysProvider} from '#/lib/hotkeys'
 import {type NavigationProp} from '#/lib/routes/types'
 import {useSession} from '#/state/session'
 import {useIsDrawerOpen, useSetDrawerOpen} from '#/state/shell'
-import {useComposerKeyboardShortcut} from '#/state/shell/composer/useComposerKeyboardShortcut'
 import {useCloseAllActiveElements} from '#/state/util'
 import {Lightbox} from '#/view/com/lightbox/Lightbox'
 import {ModalsContainer} from '#/view/com/modals/Modal'
@@ -36,7 +36,7 @@ import {NoAccessScreen} from '#/ageAssurance/components/NoAccessScreen'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
 import {FlatNavigator, RoutesContainer} from '#/Navigation'
-import {Composer} from './Composer.web'
+import {Composer} from './Composer'
 import {DrawerContent} from './Drawer'
 
 function ShellInner() {
@@ -45,8 +45,6 @@ function ShellInner() {
 
   const {state: policyUpdateState} = usePolicyUpdateContext()
   const welcomeModalControl = useWelcomeModal()
-
-  useComposerKeyboardShortcut()
 
   useEffect(() => {
     const unsubscribe = navigator.addListener('state', () => {
@@ -66,29 +64,31 @@ function ShellInner() {
       <ErrorBoundary>
         <FlatNavigator layout={drawerLayout} />
       </ErrorBoundary>
-      <Composer winHeight={0} />
-      <ModalsContainer />
-      <MutedWordsDialog />
-      <SigninDialog />
-      <EmailDialog />
-      <AgeAssuranceRedirectDialog />
-      <LinkWarningDialog />
-      <Lightbox />
-      <NuxDialogs />
-      <GlobalReportDialog />
+      <HotkeysProvider>
+        <Composer winHeight={0} />
+        <ModalsContainer />
+        <MutedWordsDialog />
+        <SigninDialog />
+        <EmailDialog />
+        <AgeAssuranceRedirectDialog />
+        <LinkWarningDialog />
+        <Lightbox />
+        <NuxDialogs />
+        <GlobalReportDialog />
 
-      {welcomeModalControl.isOpen && (
-        <WelcomeModal control={welcomeModalControl} />
-      )}
+        {welcomeModalControl.isOpen && (
+          <WelcomeModal control={welcomeModalControl} />
+        )}
 
-      {/* Until policy update has been completed by the user, don't render anything that is portaled */}
-      {policyUpdateState.completed && (
-        <>
-          <PortalOutlet />
-        </>
-      )}
+        {/* Until policy update has been completed by the user, don't render anything that is portaled */}
+        {policyUpdateState.completed && (
+          <>
+            <PortalOutlet />
+          </>
+        )}
 
-      <PolicyUpdateOverlayPortalOutlet />
+        <PolicyUpdateOverlayPortalOutlet />
+      </HotkeysProvider>
     </>
   )
 }

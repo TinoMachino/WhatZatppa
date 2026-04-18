@@ -189,7 +189,10 @@ for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
     beforeAll(async () => {
       const server = await buildServer(LOOSE_PARAMS_LEXICONS, {
         'io.example.looseParamsTest': {
-          opts: { paramsParseLoose: true },
+          opts:
+            buildServer === buildAddLexicons
+              ? { paramsParseLoose: true }
+              : undefined,
           handler: (ctx: xrpcServer.HandlerContext) => ({
             encoding: 'application/json',
             body: ctx.params,
@@ -235,3 +238,20 @@ for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
     })
   })
 }
+
+describe('paramsParseLoose option', () => {
+  it('throws when used with method()', () => {
+    const server = xrpcServer.createServer(
+      structuredClone(LOOSE_PARAMS_LEXICONS),
+    )
+    expect(() => {
+      server.method('io.example.looseParamsTest', {
+        opts: { paramsParseLoose: true },
+        handler: (ctx: xrpcServer.HandlerContext) => ({
+          encoding: 'application/json',
+          body: ctx.params,
+        }),
+      })
+    }).toThrow('paramsParseLoose is not supported with method()')
+  })
+})

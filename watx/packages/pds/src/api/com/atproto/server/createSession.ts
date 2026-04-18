@@ -5,7 +5,7 @@ import { formatAccountStatus } from '../../../../account-manager/account-manager
 import { OLD_PASSWORD_MAX_LENGTH } from '../../../../account-manager/helpers/scrypt'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 import { didDocForSession } from './util'
 
 export default function (server: Server, ctx: AppContext) {
@@ -23,13 +23,16 @@ export default function (server: Server, ctx: AppContext) {
       },
     ],
     handler: async ({ input, req }) => {
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.server.createSession(
-            input.body,
-            ctx.entrywayPassthruHeaders(req),
-          ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.server.createSession.main,
+          input.body,
+          ctx.entrywayPassthruHeaders(req),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       if (input.body.password.length > OLD_PASSWORD_MAX_LENGTH) {
@@ -54,21 +57,21 @@ export default function (server: Server, ctx: AppContext) {
       ])
 
       const { status, active } = formatAccountStatus(user)
+      const body = {
+        accessJwt,
+        refreshJwt,
+        did: user.did,
+        handle: user.handle ?? INVALID_HANDLE,
+        emailConfirmed: !!user.emailConfirmedAt,
+        active,
+        ...(status ? { status } : {}),
+        ...(didDoc ? { didDoc } : {}),
+        ...(user.email ? { email: user.email } : {}),
+      }
 
       return {
         encoding: 'application/json',
-        body: {
-          accessJwt,
-          refreshJwt,
-
-          did: user.did,
-          didDoc,
-          handle: user.handle ?? INVALID_HANDLE,
-          email: user.email ?? undefined,
-          emailConfirmed: !!user.emailConfirmedAt,
-          active,
-          status,
-        },
+        body,
       }
     },
   })

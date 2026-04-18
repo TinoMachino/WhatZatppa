@@ -13,16 +13,32 @@ Idempotent seed CLI for civic demo data (governance, cabildeos, positions, votes
 Run from `/Users/mlv/Desktop/MASTER/PARA`:
 
 ```bash
-yarn seed:civic:apply
+yarn seed:civic:apply --introspect-url http://127.0.0.1:2581
 yarn seed:civic:reset
 yarn seed:civic:test
 ```
+
+For the local shared-demo stack, always include `--introspect-url http://127.0.0.1:2581` on `apply` so AppView catches up after the PDS writes.
+
+If you are logged into the built-in dev moderator account `mod.test`, use the bundled dev-env profile so the civic seed maps its main moderator role onto that existing account:
+
+```bash
+yarn seed:civic:apply --profile dev-env --introspect-url http://127.0.0.1:2581
+```
+
+That profile currently maps `mod_jalisco` to `mod.test`, which makes the civic demo feed and its notifications show up under the account you are already using.
 
 ### Targeting a different environment
 
 ```bash
 node ./scripts/civic-seed/index.mjs apply --service https://your-pds-or-gateway
 node ./scripts/civic-seed/index.mjs reset --service https://your-pds-or-gateway
+```
+
+You can also use a built-in profile:
+
+```bash
+node ./scripts/civic-seed/index.mjs apply --profile dev-env --introspect-url http://127.0.0.1:2581
 ```
 
 ### Credentials override file

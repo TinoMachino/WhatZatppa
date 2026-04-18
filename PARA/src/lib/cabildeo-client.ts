@@ -1,6 +1,9 @@
 import {
+  type CabildeoOptionSummary,
+  type CabildeoPositionCounts,
   type CabildeoPositionReadView,
   type CabildeoReadView,
+  type CabildeoVoteTotals,
 } from '#/lib/api/cabildeo'
 import {
   type CabildeoPhase,
@@ -12,6 +15,9 @@ const CABILDEO_COLLECTION = 'com.para.civic.cabildeo'
 
 export type CabildeoView = CabildeoRecord & {
   uri: string
+  optionSummary: CabildeoOptionSummary[]
+  positionCounts: CabildeoPositionCounts
+  voteTotals: CabildeoVoteTotals
 }
 
 export function getCabildeoUri(
@@ -90,10 +96,17 @@ export function mapCabildeoReadViewToView(
     minQuorum: view.minQuorum,
     phase: toKnownPhase(view.phase),
     phaseDeadline: view.phaseDeadline,
+    optionSummary: view.optionSummary,
+    positionCounts: view.positionCounts,
+    voteTotals: view.voteTotals,
     outcome,
     userContext:
-      hasDelegatedTo || delegateVoteEvent
+      typeof view.viewerContext?.currentVoteOption === 'number' ||
+      hasDelegatedTo ||
+      delegateVoteEvent
         ? {
+            viewerVoteOption: view.viewerContext?.currentVoteOption,
+            viewerVoteIsDirect: view.viewerContext?.currentVoteIsDirect,
             hasDelegatedTo,
             delegateVoteEvent,
           }

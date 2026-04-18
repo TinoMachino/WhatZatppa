@@ -23,7 +23,10 @@ import {
   createGetSuggestedFeedsQueryKey,
   useGetSuggestedFeedsQuery,
 } from '#/state/queries/trending/useGetSuggestedFeedsQuery'
-import {getSuggestedUsersQueryKeyRoot} from '#/state/queries/trending/useGetSuggestedUsersQuery'
+import {
+  getSuggestedUsersForExploreQueryKeyRoot,
+  useGetSuggestedUsersForExploreQuery,
+} from '#/state/queries/trending/useGetSuggestedUsersForExploreQuery'
 import {createGetTrendsQueryKey} from '#/state/queries/trending/useGetTrendsQuery'
 import {isThreadChildAt, isThreadParentAt} from '#/view/com/posts/PostFeed'
 import {PostFeedItem} from '#/view/com/posts/PostFeedItem'
@@ -35,7 +38,6 @@ import {ExploreInterestsCard} from '#/screens/Search/modules/ExploreInterestsCar
 import {ExploreRecommendations} from '#/screens/Search/modules/ExploreRecommendations'
 import {ExploreTrendingTopics} from '#/screens/Search/modules/ExploreTrendingTopics'
 import {ExploreTrendingVideos} from '#/screens/Search/modules/ExploreTrendingVideos'
-import {useSuggestedUsers} from '#/screens/Search/util/useSuggestedUsers'
 import {atoms as a, native, platform, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button} from '#/components/Button'
@@ -205,10 +207,9 @@ export function Explore({
     isLoading: suggestedUsersIsLoading,
     error: suggestedUsersError,
     isRefetching: suggestedUsersIsRefetching,
-  } = useSuggestedUsers({
+  } = useGetSuggestedUsersForExploreQuery({
     // Ignore Suggested Accounts interest filters for now.
     category: null,
-    search: false,
   })
   /* End special language handling */
 
@@ -271,7 +272,7 @@ export function Explore({
       }),
 
       qc.resetQueries({
-        queryKey: [getSuggestedUsersQueryKeyRoot],
+        queryKey: [getSuggestedUsersForExploreQueryKeyRoot],
       }),
       qc.resetQueries({
         queryKey: [useActorSearchQueryKeyRoot],

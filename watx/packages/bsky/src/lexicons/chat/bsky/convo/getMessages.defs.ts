@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.getMessages'
 
 export { $nsid }
 
+/** Returns a page of messages from a conversation. */
 const main = l.query(
   $nsid,
   l.params({
@@ -29,11 +30,15 @@ const main = l.query(
           l.typedRef<ConvoDefs.DeletedMessageView>(
             (() => ConvoDefs.deletedMessageView) as any,
           ),
+          l.typedRef<ConvoDefs.SystemMessageView>(
+            (() => ConvoDefs.systemMessageView) as any,
+          ),
         ],
         false,
       ),
     ),
   }),
+  ['InvalidConvo'],
 )
 export { main }
 

@@ -8,11 +8,13 @@ const $nsid = 'chat.bsky.convo.leaveConvo'
 
 export { $nsid }
 
+/** Leaves a conversation (direct or group). For group, this effectively removes membership. For direct, membership is never removed, only changed to remove from enumerations by the user who left. */
 const main = l.procedure(
   $nsid,
   l.params(),
   l.jsonPayload({ convoId: l.string() }),
   l.jsonPayload({ convoId: l.string(), rev: l.string() }),
+  ['InvalidConvo', 'OwnerCannotLeave'],
 )
 export { main }
 

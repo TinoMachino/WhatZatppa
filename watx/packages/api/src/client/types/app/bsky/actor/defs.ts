@@ -10,6 +10,7 @@ import {
   type OmitKey,
 } from '../../../../util'
 import type * as ComAtprotoLabelDefs from '../../../com/atproto/label/defs.js'
+import type * as ComParaCivicDefs from '../../../com/para/civic/defs.js'
 import type * as AppBskyGraphDefs from '../graph/defs.js'
 import type * as ComAtprotoRepoStrongRef from '../../../com/atproto/repo/strongRef.js'
 import type * as AppBskyNotificationDefs from '../notification/defs.js'
@@ -34,6 +35,7 @@ export interface ProfileViewBasic {
   createdAt?: string
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: ComParaCivicDefs.CabildeoLive
   /** Debug information for internal development */
   debug?: { [_ in string]: unknown }
 }
@@ -63,6 +65,7 @@ export interface ProfileView {
   labels?: ComAtprotoLabelDefs.Label[]
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: ComParaCivicDefs.CabildeoLive
   /** Debug information for internal development */
   debug?: { [_ in string]: unknown }
 }
@@ -99,6 +102,7 @@ export interface ProfileViewDetailed {
   pinnedPost?: ComAtprotoRepoStrongRef.Main
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: ComParaCivicDefs.CabildeoLive
   /** Debug information for internal development */
   debug?: { [_ in string]: unknown }
 }
@@ -137,6 +141,7 @@ export function validateProfileAssociated<V>(v: V) {
 export interface ProfileAssociatedChat {
   $type?: 'app.bsky.actor.defs#profileAssociatedChat'
   allowIncoming: 'all' | 'none' | 'following' | (string & {})
+  allowGroupInvites?: 'all' | 'none' | 'following' | (string & {})
 }
 
 const hashProfileAssociatedChat = 'profileAssociatedChat'
@@ -695,6 +700,7 @@ export interface StatusView {
   status: 'app.bsky.actor.status#live' | (string & {})
   record: { [_ in string]: unknown }
   embed?: $Typed<AppBskyEmbedExternal.View> | { $type: string }
+  labels?: ComAtprotoLabelDefs.Label[]
   /** The date when this status will expire. The application might choose to no longer return the status after expiration. */
   expiresAt?: string
   /** True if the status is not expired, false if it is expired. Only present if expiration was set. */

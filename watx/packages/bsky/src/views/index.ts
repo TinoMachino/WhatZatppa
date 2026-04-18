@@ -1,5 +1,6 @@
 import { HOUR, MINUTE, mapDefined } from '@atproto/common'
 import { AtUri, INVALID_HANDLE, normalizeDatetimeAlways } from '@atproto/syntax'
+import { Gate } from '../feature-gates/gates'
 import { Actor, ProfileViewerState } from '../hydration/actor'
 import { FeedItem, Like, Post, Repost } from '../hydration/feed'
 import { Follow, Verification } from '../hydration/graph'
@@ -11,6 +12,7 @@ import { ids } from '../lexicons.js'
 import {
   KnownFollowers,
   ProfileAssociatedActivitySubscription,
+  ProfileAssociatedChat,
   ProfileView,
   ProfileViewBasic,
   ProfileViewDetailed,
@@ -184,6 +186,7 @@ export class Views {
   }
 
   viewerBlockExists(did: string, state: HydrationState): boolean {
+    if (state.ctx?.skipViewerBlocks) return false
     const viewer = state.profileViewers?.get(did)
     if (!viewer) return false
     return !!(
@@ -292,10 +295,7 @@ export class Views {
         feedgens: profileAggs?.feeds,
         starterPacks: profileAggs?.starterPacks,
         labeler: actor.isLabeler,
-        // @TODO apply default chat policy?
-        chat: actor.allowIncomingChatsFrom
-          ? { allowIncoming: actor.allowIncomingChatsFrom }
-          : undefined,
+        chat: this.profileAssociatedChat(actor),
         activitySubscription: this.profileAssociatedActivitySubscription(actor),
         germ: actor.germ?.record.messageMe
           ? {
@@ -308,6 +308,7 @@ export class Views {
         ? this.starterPackBasic(actor.profile.joinedViaStarterPack.uri, state)
         : undefined,
       pinnedPost: safePinnedPost(actor.profile?.pinnedPost),
+      cabildeoLive: this.cabildeoLive(did, state),
     }
   }
   profile(
@@ -328,6 +329,7 @@ export class Views {
               indexedAt: actor.indexedAt,
             }).toISOString()
           : undefined,
+      cabildeoLive: this.cabildeoLive(did, state),
     }
   }
 
@@ -368,10 +370,7 @@ export class Views {
       // on profile and profile-basic views, but should be on profile-detailed.
       associated: {
         labeler: actor.isLabeler ? true : undefined,
-        // @TODO apply default chat policy?
-        chat: actor.allowIncomingChatsFrom
-          ? { allowIncoming: actor.allowIncomingChatsFrom }
-          : undefined,
+        chat: this.profileAssociatedChat(actor),
         activitySubscription: this.profileAssociatedActivitySubscription(actor),
         germ: actor.germ?.record.messageMe
           ? {
@@ -385,6 +384,7 @@ export class Views {
       createdAt: actor.createdAt?.toISOString(),
       verification: this.verification(did, state),
       status: this.status(did, state),
+      cabildeoLive: this.cabildeoLive(did, state),
       debug: state.ctx?.includeDebugField ? actor.debug : undefined,
     }
   }
@@ -393,6 +393,14 @@ export class Views {
     actor: Actor,
   ): ProfileAssociatedActivitySubscription {
     return { allowSubscriptions: actor.allowActivitySubscriptionsFrom }
+  }
+
+  profileAssociatedChat(actor: Actor): ProfileAssociatedChat | undefined {
+    if (!actor.allowIncomingChatsFrom) return undefined
+    return {
+      allowIncoming: actor.allowIncomingChatsFrom,
+      allowGroupInvites: actor.allowGroupChatInvitesFrom,
+    }
   }
 
   profileKnownFollowers(
@@ -439,6 +447,30 @@ export class Views {
         did,
         state,
       ),
+    }
+  }
+
+  cabildeoLive(did: string, state: HydrationState) {
+    const actor = state.actors?.get(did)
+    if (!actor?.cabildeoLive) return undefined
+    if (this.actorIsNoHosted(did, state)) return undefined
+
+    const statusView = this.status(did, state)
+    if (statusView?.isActive) {
+      const statusLiveUri =
+        actor.status && isExternalEmbed(actor.status.record.embed)
+          ? actor.status.record.embed.external.uri
+          : undefined
+      if (statusLiveUri !== actor.cabildeoLive.liveUri) {
+        return undefined
+      }
+    }
+
+    return {
+      cabildeoUri: actor.cabildeoLive.cabildeoUri,
+      community: actor.cabildeoLive.community,
+      phase: actor.cabildeoLive.phase,
+      expiresAt: actor.cabildeoLive.expiresAt,
     }
   }
 
@@ -576,6 +608,7 @@ export class Views {
     }
 
     const uri = AtUri.make(did, ids.AppBskyActorStatus, 'self').toString()
+    const labels = state.labels?.getBySubject(uri)
 
     const minDuration = 5 * MINUTE
     const maxDuration = 4 * HOUR
@@ -601,6 +634,7 @@ export class Views {
       embed: isExternalEmbed(record.embed)
         ? this.externalEmbed(did, record.embed, state)
         : undefined,
+      labels,
       expiresAt,
       isActive,
     }
@@ -1423,9 +1457,7 @@ export class Views {
         threadTagsHide: this.threadTagsHide,
         visibilityTagRankPrefix: this.visibilityTagRankPrefix,
       },
-      state.ctx?.featureGatesMap.get(
-        'threads:reply_ranking_exploration:enable',
-      ),
+      state.ctx?.features.checkGate(Gate.ThreadsReplyRankingExplorationEnable),
     )
 
     return {
@@ -1796,9 +1828,7 @@ export class Views {
         threadTagsHide: this.threadTagsHide,
         visibilityTagRankPrefix: this.visibilityTagRankPrefix,
       },
-      state.ctx?.featureGatesMap.get(
-        'threads:reply_ranking_exploration:enable',
-      ),
+      state.ctx?.features.checkGate(Gate.ThreadsReplyRankingExplorationEnable),
     )
   }
 
@@ -1994,7 +2024,7 @@ export class Views {
 
     let hiddenByTag = false
     if (
-      state.ctx?.featureGatesMap.get('threads:reply_ranking_exploration:enable')
+      state.ctx?.features.checkGate(Gate.ThreadsReplyRankingExplorationEnable)
     ) {
       hiddenByTag = authorDid !== opDid && post.tags.has(this.visibilityTagHide)
     } else {

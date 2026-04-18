@@ -10,6 +10,7 @@ import {
   resetSeedOperations,
   resolveCliConfig,
   summarizeOperations,
+  syncAppViewFromIntrospection,
   toResetOperations,
 } from './lib.mjs'
 
@@ -28,6 +29,9 @@ async function main() {
   console.log(`Manifest: ${config.manifestPath}`)
   if (config.credentialsPath) {
     console.log(`Credentials: ${config.credentialsPath}`)
+  }
+  if (config.introspectUrl) {
+    console.log(`Introspection: ${config.introspectUrl}`)
   }
   if (config.dryRun) {
     console.log('Mode: dry-run')
@@ -72,23 +76,32 @@ async function main() {
       if (!client) {
         throw new Error(`No client for actor alias "${op.actorAlias}"`)
       }
-      const response = await client.agent.com.atproto.repo.putRecord({
-        repo: client.did,
-        collection: op.collection,
-        rkey: op.rkey,
-        record: op.record,
+      return callRepoXrpc({
+        service,
+        accessJwt: client.accessJwt,
+        nsid: 'com.atproto.repo.putRecord',
+        body: {
+          repo: client.did,
+          collection: op.collection,
+          rkey: op.rkey,
+          record: op.record,
+        },
       })
-      return response.data
     },
     async deleteRecord(op) {
       const client = clientsByAlias[op.actorAlias]
       if (!client) {
         throw new Error(`No client for actor alias "${op.actorAlias}"`)
       }
-      await client.agent.com.atproto.repo.deleteRecord({
-        repo: client.did,
-        collection: op.collection,
-        rkey: op.rkey,
+      await callRepoXrpc({
+        service,
+        accessJwt: client.accessJwt,
+        nsid: 'com.atproto.repo.deleteRecord',
+        body: {
+          repo: client.did,
+          collection: op.collection,
+          rkey: op.rkey,
+        },
       })
     },
   }
@@ -98,12 +111,51 @@ async function main() {
     console.log(
       `Apply done. attempted=${result.attempted} written=${result.written} failed=${result.failed}`,
     )
+    if (!config.dryRun && config.introspectUrl && result.failed === 0) {
+      const sync = await syncAppViewFromIntrospection(
+        config.introspectUrl,
+        manifest.actors.map((actor) => actor.handle),
+      )
+      console.log(
+        `AppView sync done. before_cursor=${sync.before?.runnerCursor ?? 'null'} after_cursor=${sync.after?.runnerCursor ?? 'null'} last_seq=${sync.after?.lastSeq ?? sync.before?.lastSeq ?? 'null'}`,
+      )
+    }
   } else {
     const resetOps = toResetOperations(operations)
     const result = await resetSeedOperations(resetOps, writer, config)
     console.log(
       `Reset done. attempted=${result.attempted} deleted=${result.deleted} missing=${result.missing} failed=${result.failed}`,
     )
+  }
+}
+
+async function callRepoXrpc({service, accessJwt, nsid, body}) {
+  const response = await fetch(`${service}/xrpc/${nsid}`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${accessJwt}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  const payloadText = await response.text()
+  const payload = payloadText ? safeJsonParse(payloadText) : null
+
+  if (!response.ok) {
+    const errorMessage =
+      payload?.message || payload?.error || payloadText || `HTTP ${response.status}`
+    throw new Error(errorMessage)
+  }
+
+  return payload
+}
+
+function safeJsonParse(value) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
   }
 }
 
@@ -123,6 +175,7 @@ async function ensureActorSession({service, actor, createAccounts, verbose}) {
       agent,
       did: agent.session.did,
       handle: agent.session.handle,
+      accessJwt: agent.session.accessJwt,
     }
   } catch (loginErr) {
     if (!createAccounts || actor.createAccount === false) {
@@ -177,6 +230,7 @@ async function ensureActorSession({service, actor, createAccounts, verbose}) {
     agent,
     did: agent.session.did,
     handle: agent.session.handle,
+    accessJwt: agent.session.accessJwt,
   }
 }
 

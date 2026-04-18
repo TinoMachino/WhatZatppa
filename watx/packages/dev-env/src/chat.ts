@@ -6,7 +6,7 @@ import getPort from 'get-port'
 import {
   AtpAgent,
   type $Typed,
-  type ChatBskyActorDefs,
+  ChatBskyActorDefs,
   ChatBskyConvoDefs,
 } from '@atproto/api'
 import { Secp256k1Keypair } from '@atproto/crypto'
@@ -63,6 +63,7 @@ type InternalConvo = {
   memberDids: string[]
   memberStates: Map<string, InternalMemberState>
   messages: InternalMessage[]
+  sizeLimit?: number
 }
 
 type InternalLog =
@@ -562,6 +563,62 @@ export class TestChat {
       }
     })
 
+    if (lexServer.com.para.community) {
+      lexServer.com.para.community.createBoard(async (args) => {
+        const auth = await chat.requireAuth(args.req)
+        
+        // MOCK: Generate the two specific groups required for PARA communities
+        const delConvo = chat.createGroupConvo(auth.did, 270)
+        const subConvo = chat.createGroupConvo(auth.did, 30)
+
+        // Normally would insert com.para.community.board to repo, just returning mock for now
+        return {
+          encoding: 'application/json',
+          body: {
+            uri: `at://${auth.did}/com.para.community.board/mocktest`,
+            cid: 'bafyreimocktest',
+            delegatesChatId: delConvo.id,
+            subdelegatesChatId: subConvo.id,
+          },
+        }
+      })
+    }
+
+    if (lexServer.chat.bsky.group) {
+      lexServer.chat.bsky.group.addMembers(async (args) => {
+        const auth = await chat.requireAuth(args.req)
+        const convo = chat.requireAccessibleConvo(args.input.body.convoId, auth.did)
+        
+        const newMembers = args.input.body.members
+        const totalSize = convo.memberDids.length + newMembers.length
+        
+        if (convo.sizeLimit && totalSize > convo.sizeLimit) {
+           return {
+             status: 400,
+             error: 'MemberLimitReached',
+             message: `Group size limit exceeded. Max is ${convo.sizeLimit}`
+           }
+        }
+        
+        for (const did of newMembers) {
+          if (!convo.memberDids.includes(did)) {
+            convo.memberDids.push(did)
+            convo.memberStates.set(did, {
+              status: 'request',
+              muted: false,
+              left: false,
+              deletedMessageIds: new Set(),
+            })
+          }
+        }
+        
+        return {
+          encoding: 'application/json',
+          body: { convo: await chat.toConvoView(convo, auth.did) }
+        }
+      })
+    }
+
     app.use(lexServer.xrpc.router)
     server.listen(port)
     await events.once(server, 'listening')
@@ -649,6 +706,35 @@ export class TestChat {
     }
     this.convos.set(id, convo)
     this.convoKeys.set(key, id)
+    this.logs.push({
+      type: 'begin',
+      rev,
+      convoId: id,
+    })
+    return convo
+  }
+
+  createGroupConvo(ownerDid: string, sizeLimit: number): InternalConvo {
+    const id = `group-${++this.convoSeq}`
+    const rev = this.nextRev()
+    const memberStates = new Map<string, InternalMemberState>()
+    memberStates.set(ownerDid, {
+      status: 'accepted',
+      muted: false,
+      left: false,
+      deletedMessageIds: new Set(),
+    })
+    const convo: InternalConvo = {
+      id,
+      key: id, // unique key, bypassing member based key deduplication
+      rev,
+      memberDids: [ownerDid],
+      memberStates,
+      messages: [],
+      sizeLimit,
+    }
+    this.convos.set(id, convo)
+    this.convoKeys.set(id, id)
     this.logs.push({
       type: 'begin',
       rev,

@@ -65,6 +65,12 @@ export type ClientOptions = {
   headers?: HeadersInit
   /** Service proxy identifier for routing requests through a specific service. */
   service?: Service
+  /** Enables request validation by default for all XRPC calls made by this client. */
+  validateRequest?: boolean
+  /** Enables response validation by default for all XRPC calls made by this client. */
+  validateResponse?: boolean
+  /** Enables strict Lex JSON parsing by default for all XRPC calls made by this client. */
+  strictResponseProcessing?: boolean
 }
 
 /**
@@ -314,11 +320,22 @@ export class Client implements Agent {
   /** Set of labeler DIDs specific to this client instance. */
   public readonly labelers: Set<DidString>
 
+  public readonly xrpcDefaults: {
+    readonly validateRequest: boolean
+    readonly validateResponse: boolean
+    readonly strictResponseProcessing: boolean
+  }
+
   constructor(agent: Agent | AgentOptions, options: ClientOptions = {}) {
     this.agent = buildAgent(agent)
     this.service = options.service
     this.labelers = new Set(options.labelers)
     this.headers = new Headers(options.headers)
+    this.xrpcDefaults = Object.freeze({
+      validateRequest: options.validateRequest ?? false,
+      validateResponse: options.validateResponse ?? true,
+      strictResponseProcessing: options.strictResponseProcessing ?? true,
+    })
   }
 
   /**
@@ -446,7 +463,10 @@ export class Client implements Agent {
     ns: Main<M>,
     options: XrpcOptions<M> = {} as XrpcOptions<M>,
   ): Promise<XrpcResponse<M>> {
-    return xrpc(this, ns, options)
+    return xrpc(this, ns, {
+      ...this.xrpcDefaults,
+      ...options,
+    })
   }
 
   /**
@@ -485,7 +505,10 @@ export class Client implements Agent {
     ns: Main<M>,
     options: XrpcOptions<M> = {} as XrpcOptions<M>,
   ): Promise<XrpcResponse<M> | XrpcFailure<M>> {
-    return xrpcSafe(this, ns, options)
+    return xrpcSafe(this, ns, {
+      ...this.xrpcDefaults,
+      ...options,
+    })
   }
 
   /**
@@ -789,6 +812,7 @@ export class Client implements Agent {
   ): Promise<CreateOutput> {
     const schema: T = getMain(ns)
     const record = schema.build(input) as TypedLexMap<NsidString>
+    if (options?.validateRequest) schema.validate(record)
     const rkey = options.rkey ?? getDefaultRecordKey(schema)
     if (rkey !== undefined) schema.keySchema.assert(rkey)
     const response = await this.createRecord(record, rkey, options)
@@ -885,6 +909,7 @@ export class Client implements Agent {
   ): Promise<PutOutput> {
     const schema: T = getMain(ns)
     const record = schema.build(input) as TypedLexMap<NsidString>
+    if (options?.validateRequest) schema.validate(record)
     const rkey = options.rkey ?? getLiteralRecordKey(schema)
     const response = await this.putRecord(record, rkey, options)
     return response.body

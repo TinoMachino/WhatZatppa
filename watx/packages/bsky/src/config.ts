@@ -109,6 +109,7 @@ export interface ServerConfigValues {
   kws?: KwsConfig
   debugFieldAllowedDids: Set<string>
   draftsLimit: number
+  communityCreatorDids: string[]
 }
 
 export class ServerConfig {
@@ -329,6 +330,9 @@ export class ServerConfig {
     const draftsLimit = process.env.BSKY_DRAFTS_LIMIT
       ? parseInt(process.env.BSKY_DRAFTS_LIMIT || '', 10)
       : 500
+    const communityCreatorDids = envList(
+      process.env.BSKY_PARA_COMMUNITY_CREATOR_DIDS,
+    )
 
     return new ServerConfig({
       version,
@@ -398,6 +402,7 @@ export class ServerConfig {
       kws,
       debugFieldAllowedDids,
       draftsLimit,
+      communityCreatorDids,
       ...noUndefinedVals(overrides ?? {}),
     })
   }
@@ -673,6 +678,10 @@ export class ServerConfig {
 
   get draftsLimit() {
     return this.cfg.draftsLimit
+  }
+
+  get communityCreatorDids() {
+    return this.cfg.communityCreatorDids
   }
 }
 

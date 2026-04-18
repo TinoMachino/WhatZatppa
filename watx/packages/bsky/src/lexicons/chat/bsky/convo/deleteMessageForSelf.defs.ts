@@ -9,6 +9,7 @@ const $nsid = 'chat.bsky.convo.deleteMessageForSelf'
 
 export { $nsid }
 
+/** Marks a message as deleted for the viewer, so they won't see that message in future enumerations. */
 const main = l.procedure(
   $nsid,
   l.params(),
@@ -19,6 +20,7 @@ const main = l.procedure(
       (() => ConvoDefs.deletedMessageView) as any,
     ),
   ),
+  ['InvalidConvo', 'MessageDeleteNotAllowed'],
 )
 export { main }
 

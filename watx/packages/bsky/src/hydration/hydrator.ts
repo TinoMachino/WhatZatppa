@@ -2,8 +2,7 @@ import assert from 'node:assert'
 import { mapDefined } from '@atproto/common'
 import { AtUri } from '@atproto/syntax'
 import { DataPlaneClient } from '../data-plane/client'
-import { FeatureGatesClient } from '../feature-gates'
-import { type CheckedFeatureGatesMap } from '../feature-gates/types'
+import { FeatureGatesClient, ScopedFeatureGatesClient } from '../feature-gates'
 import { ids } from '../lexicons.js'
 import { Record as ProfileRecord } from '../lexicon/types/app/bsky/actor/profile'
 import { isMain as isEmbedRecord } from '../lexicon/types/app/bsky/embed/record'
@@ -84,17 +83,12 @@ export class HydrateCtx {
   includeTakedowns = this.vals.includeTakedowns
   overrideIncludeTakedownsForActor = this.vals.overrideIncludeTakedownsForActor
   include3pBlocks = this.vals.include3pBlocks
+  skipViewerBlocks = this.vals.skipViewerBlocks
   includeDebugField = this.vals.includeDebugField
-
+  features = this.vals.features!
+  // TODO: remove after image format rollout.
   featureGatesClient = this.vals.featureGatesClient
 
-  /**
-   * Cache of evaluated feature gates to be used in a given request lifecycle.
-   * The actual evaluations happen at the top of the route handler and the
-   * results are stored in this map.
-   */
-  featureGatesMap: CheckedFeatureGatesMap =
-    this.vals.featureGatesMap || new Map()
   constructor(private vals: HydrateCtxVals) {}
   // Convenience with use with dataplane.getActors cache control
   get skipCacheForViewer() {
@@ -112,8 +106,9 @@ export type HydrateCtxVals = {
   includeTakedowns?: boolean
   overrideIncludeTakedownsForActor?: boolean
   include3pBlocks?: boolean
+  skipViewerBlocks?: boolean
   includeDebugField?: boolean
-  featureGatesMap?: CheckedFeatureGatesMap
+  features?: ScopedFeatureGatesClient
   // TODO: remove after image format rollout.
   featureGatesClient?: FeatureGatesClient
 }
@@ -771,8 +766,8 @@ export class Hydrator {
     ctx: HydrateCtx,
   ): Promise<HydrationState> {
     const postsState = await this.hydratePosts(refs, ctx, undefined, {
-      processDynamicTagsForView: ctx.featureGatesMap.get(
-        'threads:reply_ranking_exploration:enable',
+      processDynamicTagsForView: ctx.features.checkGate(
+        ctx.features.Gate.ThreadsReplyRankingExplorationEnable,
       )
         ? 'thread'
         : undefined,
@@ -1361,8 +1356,9 @@ export class Hydrator {
       viewer: vals.viewer,
       includeTakedowns: vals.includeTakedowns,
       include3pBlocks: vals.include3pBlocks,
+      skipViewerBlocks: vals.skipViewerBlocks,
       includeDebugField,
-      featureGatesMap: vals.featureGatesMap,
+      features: vals.features || this.featureGatesClient.scope({}),
       featureGatesClient: this.featureGatesClient,
     })
   }
@@ -1426,6 +1422,9 @@ const labelSubjectsForDid = (dids: string[]) => {
     ...dids,
     ...dids.map((did) =>
       AtUri.make(did, ids.AppBskyActorProfile, 'self').toString(),
+    ),
+    ...dids.map((did) =>
+      AtUri.make(did, ids.AppBskyActorStatus, 'self').toString(),
     ),
   ]
 }

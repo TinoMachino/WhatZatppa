@@ -98,6 +98,7 @@ export type CommonNavigatorParams = {
     fromDialog?: boolean
     targetDid?: string
     onSuccess?: () => void
+    isCommunitySeed?: boolean
   }
   StarterPackEdit: {rkey?: string}
   VideoFeed: VideoFeedSourceContext

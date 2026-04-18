@@ -1,9 +1,9 @@
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
-import { DataPlaneClient } from '../../../../data-plane'
 import { parseCid, parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/com/para/civic/getCabildeo'
+import { getVisibleParticipantDids } from './util'
 import { resHeaders } from '../../../util'
 
 export default function (server: Server, ctx: AppContext) {
@@ -16,6 +16,7 @@ export default function (server: Server, ctx: AppContext) {
         ctx,
         params,
         viewer: viewer ?? undefined,
+        labelers,
       })
       const repoRev = await ctx.hydrator.actor.getRepoRevSafe(viewer)
 
@@ -29,11 +30,12 @@ export default function (server: Server, ctx: AppContext) {
 }
 
 const getCabildeo = async (inputs: {
-  ctx: Context
+  ctx: AppContext
   params: QueryParams
   viewer?: string
+  labelers: ReturnType<AppContext['reqLabelers']>
 }) => {
-  const { ctx, params, viewer } = inputs
+  const { ctx, params, viewer, labelers } = inputs
   const res = await ctx.dataplane.getParaCabildeo({
     cabildeoUri: params.cabildeo,
     viewerDid: viewer ?? '',
@@ -43,8 +45,27 @@ const getCabildeo = async (inputs: {
     throw new InvalidRequestError('Cabildeo not found', 'NotFound')
   }
 
+  const cabildeo = mapCabildeoView(res.cabildeo)
+  const visiblePreviewDids = await getVisibleParticipantDids({
+    ctx,
+    dids: cabildeo.liveSession?.participantPreviewDids ?? [],
+    viewer,
+    labelers,
+  })
+
   return {
-    cabildeo: mapCabildeoView(res.cabildeo),
+    cabildeo: {
+      ...cabildeo,
+      liveSession: cabildeo.liveSession
+        ? {
+            ...cabildeo.liveSession,
+            participantPreviewDids:
+              cabildeo.liveSession.participantPreviewDids.filter((did) =>
+                visiblePreviewDids.has(did),
+              ),
+          }
+        : undefined,
+    },
   }
 }
 
@@ -110,6 +131,13 @@ const mapCabildeoView = (view: {
     gracePeriodEndsAt: string
     delegateVoteDismissed: boolean
   }
+  liveSession?: {
+    isLive: boolean
+    hostDid: string
+    activeParticipantCount: number
+    startedAt: string
+    participantPreviewDids: string[]
+  }
 }) => ({
   uri: view.uri,
   cid: parseCidOrThrow(view.cid),
@@ -165,6 +193,15 @@ const mapCabildeoView = (view: {
         delegateVoteDismissed: view.viewerContext.delegateVoteDismissed,
       }
     : undefined,
+  liveSession: view.liveSession
+    ? {
+        isLive: view.liveSession.isLive,
+        hostDid: view.liveSession.hostDid,
+        activeParticipantCount: view.liveSession.activeParticipantCount,
+        startedAt: view.liveSession.startedAt,
+        participantPreviewDids: view.liveSession.participantPreviewDids,
+      }
+    : undefined,
 })
 
 const parseCidOrThrow = (cidStr: string) => {
@@ -173,9 +210,4 @@ const parseCidOrThrow = (cidStr: string) => {
     throw new Error(`Invalid CID in cabildeo view: ${cidStr}`)
   }
   return cid
-}
-
-type Context = {
-  dataplane: DataPlaneClient
-  hydrator: AppContext['hydrator']
 }

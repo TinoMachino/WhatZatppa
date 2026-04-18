@@ -87,20 +87,20 @@ describe('image uri builder', () => {
     const base = `https://example.com/img/avatar/plain/${testDid}`
 
     const mockFeatureGates = {
-      checkGates: jest.fn(),
+      scope: jest.fn(),
     } as unknown as FeatureGatesClient
-    const mockCheckGates = mockFeatureGates.checkGates as jest.Mock
+    const mockScope = mockFeatureGates.scope as jest.Mock
+    const mockCheckGate = jest.fn()
 
-    mockCheckGates.mockImplementation(() => {
-      return new Map([['image:remove_format_from_url', false]])
+    mockScope.mockImplementation(() => {
+      return { checkGate: mockCheckGate }
     })
+    mockCheckGate.mockReturnValue(false)
     expect(
       uriBuilder.getPresetUri('avatar', testDid, testCid, mockFeatureGates),
     ).toBe(`${base}/${testCid}@jpeg`)
 
-    mockCheckGates.mockReturnValue(
-      new Map([['image:remove_format_from_url', true]]),
-    )
+    mockCheckGate.mockReturnValue(true)
     expect(
       uriBuilder.getPresetUri('avatar', testDid, testCid, mockFeatureGates),
     ).toBe(`${base}/${testCid}`)

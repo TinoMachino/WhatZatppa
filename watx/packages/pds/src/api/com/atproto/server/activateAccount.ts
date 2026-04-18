@@ -3,6 +3,7 @@ import { ForbiddenError, InvalidRequestError } from '@atproto/xrpc-server'
 import { ACCESS_FULL } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 import { assertValidDidDocumentForService } from './util'
 
 export default function (server: Server, ctx: AppContext) {
@@ -17,8 +18,9 @@ export default function (server: Server, ctx: AppContext) {
     }),
     handler: async ({ req, auth }) => {
       // in the case of entryway, the full flow is activateAccount (PDS) -> activateAccount (Entryway) -> updateSubjectStatus(PDS)
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.server.activateAccount(
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.server.activateAccount.main,
           undefined,
           ctx.entrywayPassthruHeaders(req),
         )

@@ -34,6 +34,12 @@ export const TAG_LABELS = {
 // Post Type definitions for the unified tag sheet
 export const POST_TYPES = {
   NONE: {id: 'none', label: 'Ninguna', tag: null, color: '#6B7280'},
+  POLICY: {
+    id: 'policy',
+    label: 'Propuesta de Política',
+    tag: '||#Policy',
+    color: '#059669',
+  },
   MEME: {id: 'meme', label: 'Meme', tag: '#Meme', color: '#B45309'}, // Muted Amber
   RAQ: {id: 'raq', label: 'RAQ', tag: '|#!RAQ', color: '#B91C1C'}, // Muted Red
   OPEN_QUESTION: {

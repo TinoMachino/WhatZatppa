@@ -75,6 +75,52 @@ export function AvatarStack({
   )
 }
 
+export function ColorStack({
+  items,
+  size = 26,
+  backgroundColor,
+}: {
+  items: Array<{id: string; color: string}>
+  size?: number
+  backgroundColor?: string
+}) {
+  const translation = size / 3
+  const t = useTheme()
+
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <View
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.relative,
+        {width: size + (items.length - 1) * (size - translation)},
+      ]}>
+      {items.map((item, i) => (
+        <View
+          key={item.id}
+          style={[
+            a.relative,
+            {
+              width: size,
+              height: size,
+              left: i * -translation,
+              borderWidth: 1,
+              borderColor: backgroundColor ?? t.atoms.bg.backgroundColor,
+              borderRadius: 999,
+              zIndex: items.length - i,
+              backgroundColor: item.color,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  )
+}
+
 export function AvatarStackWithFetch({
   profiles,
   size,

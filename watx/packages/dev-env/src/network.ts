@@ -1,6 +1,7 @@
 import assert from 'node:assert'
 import getPort from 'get-port'
 import * as uint8arrays from 'uint8arrays'
+import { AtpAgent } from '@atproto/api'
 import { wait } from '@atproto/common-web'
 import { createServiceJwt } from '@atproto/xrpc-server'
 import { TestBsky } from './bsky'
@@ -162,17 +163,6 @@ export class TestNetwork extends TestNetworkNoAppView {
       ozone.daemon.ctx.cfg.verifier.password = ozoneVerifierPassword
     }
 
-    let introspect: IntrospectServer | undefined = undefined
-    if (params.introspect?.port) {
-      introspect = await IntrospectServer.start(
-        params.introspect.port,
-        plc,
-        pds,
-        bsky,
-        ozone,
-      )
-    }
-
     return new TestNetwork(
       plc,
       pds,
@@ -180,7 +170,7 @@ export class TestNetwork extends TestNetworkNoAppView {
       chat,
       chatPublicUrl,
       ozone,
-      introspect,
+      undefined,
     )
   }
 
@@ -206,6 +196,141 @@ export class TestNetwork extends TestNetworkNoAppView {
     await this.pds.processAll()
     await this.ozone.processAll()
     await this.processFullSubscription(timeout)
+  }
+
+  async getSyncState() {
+    const [lastSeq, runnerCursor] = await Promise.all([
+      this.pds.ctx.sequencer.curr(),
+      this.bsky.sub.runner.getCursor(),
+    ])
+
+    return {
+      lastSeq: lastSeq ?? null,
+      runnerCursor: runnerCursor ?? null,
+    }
+  }
+
+  async reindexAllRepos() {
+    const agent = new AtpAgent({ service: this.pds.url })
+    const indexedAt = new Date().toISOString()
+    let cursor: string | undefined
+    let reposIndexed = 0
+    let reposSkipped = 0
+    const failures: Array<{ did: string; error: string }> = []
+
+    do {
+      const { data } = await agent.api.com.atproto.sync.listRepos({
+        limit: 500,
+        cursor,
+      })
+
+      for (const repo of data.repos) {
+        if (!repo.active) continue
+
+        try {
+          await this.bsky.sub.indexingSvc.indexHandle(repo.did, indexedAt, true)
+          await this.bsky.sub.indexingSvc.updateActorStatus(repo.did, true)
+          await this.bsky.sub.indexingSvc.indexRepo(repo.did, repo.head)
+          reposIndexed += 1
+        } catch (error) {
+          reposSkipped += 1
+          failures.push({
+            did: repo.did,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+
+      cursor = data.cursor
+    } while (cursor)
+
+    await this.bsky.sub.background.processAll()
+
+    return {
+      reposIndexed,
+      reposSkipped,
+      failures: failures.slice(0, 10),
+    }
+  }
+
+  async reindexRepo(did: string) {
+    const agent = new AtpAgent({ service: this.pds.url })
+    const { data } = await agent.api.com.atproto.sync.listRepos({ limit: 1000 })
+    const repo = data.repos.find((candidate) => candidate.did === did)
+    if (!repo) {
+      throw new Error(`Repo not found in PDS: ${did}`)
+    }
+    if (!repo.active) {
+      throw new Error(`Repo is not active: ${did}`)
+    }
+
+    const indexedAt = new Date().toISOString()
+    await this.bsky.sub.indexingSvc.indexHandle(did, indexedAt, true)
+    await this.bsky.sub.indexingSvc.updateActorStatus(did, true)
+    await this.bsky.sub.indexingSvc.indexRepo(did, repo.head)
+    await this.bsky.sub.background.processAll()
+
+    return { did }
+  }
+
+  async upsertActorsByHandle(handles: string[]) {
+    const indexedAt = new Date().toISOString()
+    const uniqueHandles = [...new Set(handles.map((handle) => handle.trim()))]
+      .filter(Boolean)
+      .map((handle) => handle.toLowerCase())
+    let actorsUpserted = 0
+    const failures: Array<{ handle: string; error: string }> = []
+
+    for (const handle of uniqueHandles) {
+      try {
+        const response = await fetch(
+          `${this.pds.url}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
+        )
+        if (!response.ok) {
+          throw new Error(`resolveHandle failed with ${response.status}`)
+        }
+        const payload = (await response.json()) as { did?: string }
+        if (!payload.did) {
+          throw new Error('resolveHandle response missing did')
+        }
+
+        await this.bsky.db.db
+          .updateTable('actor')
+          .set({ handle: null })
+          .where('handle', '=', handle)
+          .where('did', '!=', payload.did)
+          .execute()
+
+        await this.bsky.db.db
+          .insertInto('actor')
+          .values({
+            did: payload.did,
+            handle,
+            indexedAt,
+            upstreamStatus: null,
+          })
+          .onConflict((oc) =>
+            oc.column('did').doUpdateSet({
+              handle,
+              indexedAt,
+              upstreamStatus: null,
+            }),
+          )
+          .execute()
+
+        actorsUpserted += 1
+      } catch (error) {
+        failures.push({
+          handle,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    return {
+      actorsUpserted,
+      failures,
+    }
   }
 
   async serviceHeaders(did: string, lxm: string, aud?: string) {

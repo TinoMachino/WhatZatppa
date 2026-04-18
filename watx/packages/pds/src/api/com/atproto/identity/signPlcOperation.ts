@@ -5,7 +5,7 @@ import { ACCESS_FULL, AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.identity.signPlcOperation({
@@ -18,17 +18,20 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ auth, input, req }) => {
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.identity.signPlcOperation(
-            input.body,
-            await ctx.entrywayAuthHeaders(
-              req,
-              auth.credentials.did,
-              ids.ComAtprotoIdentitySignPlcOperation,
-            ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.identity.signPlcOperation.main,
+          input.body as com.atproto.identity.signPlcOperation.$InputBody,
+          await ctx.entrywayAuthHeaders(
+            req,
+            auth.credentials.did,
+            ids.ComAtprotoIdentitySignPlcOperation,
           ),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       const did = auth.credentials.did

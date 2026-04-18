@@ -2,6 +2,7 @@ import {type AtpAgent, type AtpSessionEvent} from '@atproto/api'
 
 import {unregisterPushToken} from '#/lib/notifications/notifications'
 import {logger} from '#/lib/notifications/util'
+import {dedupeAccounts} from './account-utils'
 import {createPublicAgent} from './agent'
 import {wrapSessionReducerForLogging} from './logging'
 import {type SessionAccount} from './types'
@@ -71,9 +72,12 @@ function createPublicAgentState(): AgentState {
   }
 }
 
-export function getInitialState(persistedAccounts: SessionAccount[]): State {
+export function getInitialState(
+  persistedAccounts: SessionAccount[],
+  preferredDid?: string,
+): State {
   return {
-    accounts: persistedAccounts,
+    accounts: dedupeAccounts(persistedAccounts, preferredDid),
     currentAgentState: createPublicAgentState(),
     needsPersist: false,
   }
@@ -130,10 +134,10 @@ let reducer = (state: State, action: Action): State => {
     case 'switched-to-account': {
       const {newAccount, newAgent} = action
       return {
-        accounts: [
-          newAccount,
-          ...state.accounts.filter(a => a.did !== newAccount.did),
-        ],
+        accounts: dedupeAccounts(
+          [newAccount, ...state.accounts.filter(a => a.did !== newAccount.did)],
+          newAccount.did,
+        ),
         currentAgentState: {
           did: newAccount.did,
           agent: newAgent,
@@ -226,7 +230,7 @@ let reducer = (state: State, action: Action): State => {
     case 'synced-accounts': {
       const {syncedAccounts, syncedCurrentDid} = action
       return {
-        accounts: syncedAccounts,
+        accounts: dedupeAccounts(syncedAccounts, syncedCurrentDid),
         currentAgentState:
           syncedCurrentDid === state.currentAgentState.did
             ? state.currentAgentState

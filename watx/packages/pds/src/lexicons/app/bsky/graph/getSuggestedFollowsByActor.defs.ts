@@ -17,9 +17,9 @@ const main = l.query(
     suggestions: l.array(
       l.ref<ActorDefs.ProfileView>((() => ActorDefs.profileView) as any),
     ),
+    recIdStr: l.optional(l.string()),
     isFallback: l.optional(l.withDefault(l.boolean(), false)),
     recId: l.optional(l.integer()),
-    recIdStr: l.optional(l.string()),
   }),
 )
 export { main }

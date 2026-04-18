@@ -2,6 +2,7 @@ import { ForbiddenError } from '@atproto/xrpc-server'
 import { ACCESS_FULL, AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.deactivateAccount({
@@ -16,9 +17,10 @@ export default function (server: Server, ctx: AppContext) {
     }),
     handler: async ({ req, auth, input }) => {
       // in the case of entryway, the full flow is deactivateAccount (PDS) -> deactivateAccount (Entryway) -> updateSubjectStatus(PDS)
-      if (ctx.entrywayAgent) {
-        await ctx.entrywayAgent.com.atproto.server.deactivateAccount(
-          input.body,
+      if (ctx.entrywayClient) {
+        await ctx.entrywayClient.call(
+          com.atproto.server.deactivateAccount.main,
+          input.body as com.atproto.server.deactivateAccount.$InputBody,
           ctx.entrywayPassthruHeaders(req),
         )
         return

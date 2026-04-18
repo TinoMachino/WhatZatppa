@@ -1,11 +1,12 @@
-import { AtpAgent } from '@atproto/api'
 import { mapDefined } from '@atproto/common'
+import { Client } from '@atproto/lex'
 import { AppContext } from '../../../../context'
 import { DataPlaneClient } from '../../../../data-plane'
 import { HydrateCtx, Hydrator } from '../../../../hydration/hydrator'
 import { parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/app/bsky/graph/searchStarterPacks'
+import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
   PresentationFnInput,
@@ -27,12 +28,14 @@ export default function (server: Server, ctx: AppContext) {
   server.app.bsky.graph.searchStarterPacks({
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
-      const { viewer, includeTakedowns } = ctx.authVerifier.parseCreds(auth)
+      const { viewer, includeTakedowns, skipViewerBlocks } =
+        ctx.authVerifier.parseCreds(auth)
       const labelers = ctx.reqLabelers(req)
       const hydrateCtx = await ctx.hydrator.createContext({
         viewer,
         labelers,
         includeTakedowns,
+        skipViewerBlocks,
       })
       const results = await searchStarterPacks({ ...params, hydrateCtx }, ctx)
       return {
@@ -48,15 +51,16 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
   const { ctx, params } = inputs
   const { q } = params
 
-  if (ctx.searchAgent) {
-    // @NOTE cursors won't change on appview swap
-    const { data: res } =
-      await ctx.searchAgent.app.bsky.unspecced.searchStarterPacksSkeleton({
+  if (ctx.searchClient) {
+    const res = await ctx.searchClient.call(
+      app.bsky.unspecced.searchStarterPacksSkeleton,
+      {
         q,
         cursor: params.cursor,
         limit: params.limit,
         viewer: params.hydrateCtx.viewer ?? undefined,
-      })
+      } as app.bsky.unspecced.searchStarterPacksSkeleton.$Params,
+    )
     return {
       uris: res.starterPacks.map(({ uri }) => uri),
       cursor: parseString(res.cursor),
@@ -107,7 +111,7 @@ type Context = {
   dataplane: DataPlaneClient
   hydrator: Hydrator
   views: Views
-  searchAgent?: AtpAgent
+  searchClient?: Client
 }
 
 type Params = QueryParams & { hydrateCtx: HydrateCtx }

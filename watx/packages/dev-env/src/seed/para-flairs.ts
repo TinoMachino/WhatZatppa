@@ -28,6 +28,7 @@ export default async (sc: SeedClient) => {
     collection: 'com.para.post',
     record: {
       $type: 'com.para.post',
+      title: "Creación de Empresa Pública de Agua",
       text: aliceText1,
       createdAt: createdAt(),
       postType: 'policy',
@@ -63,6 +64,7 @@ export default async (sc: SeedClient) => {
     collection: 'com.para.post',
     record: {
       $type: 'com.para.post',
+      title: "Ampliación de la Red de Transporte Público",
       text: bobText1,
       createdAt: createdAt(),
       postType: 'policy',
@@ -118,6 +120,7 @@ export default async (sc: SeedClient) => {
     collection: 'com.para.post',
     record: {
       $type: 'com.para.post',
+      title: "Modernización de Escuelas Públicas",
       text: carlaText1,
       createdAt: createdAt(),
       postType: 'policy',
@@ -153,6 +156,7 @@ export default async (sc: SeedClient) => {
     collection: 'com.para.post',
     record: {
       $type: 'com.para.post',
+      title: "Instalación de Paneles Solares en Parques",
       text: carlaText3,
       createdAt: createdAt(),
       postType: 'policy',

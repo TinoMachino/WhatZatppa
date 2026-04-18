@@ -2,7 +2,7 @@ import { ForbiddenError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
   server.com.atproto.server.listAppPasswords({
@@ -14,17 +14,20 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ auth, req }) => {
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.server.listAppPasswords(
-            undefined,
-            await ctx.entrywayAuthHeaders(
-              req,
-              auth.credentials.did,
-              ids.ComAtprotoServerListAppPasswords,
-            ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.server.listAppPasswords.main,
+          {},
+          await ctx.entrywayAuthHeaders(
+            req,
+            auth.credentials.did,
+            ids.ComAtprotoServerListAppPasswords,
           ),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       const passwords = await ctx.accountManager.listAppPasswords(

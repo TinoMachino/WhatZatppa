@@ -19,9 +19,7 @@ import {
   PostControlButtonText,
 } from './PostControlButton'
 interface Props {
-  isReposted: boolean
-  repostCount?: number
-  onRepost: () => void
+  quoteCount?: number
   onQuote: () => void
   onHighlight: () => void
   onRemoveAllHighlights: () => void
@@ -31,8 +29,7 @@ interface Props {
 }
 
 let QuoteButton = ({
-  isReposted,
-  repostCount,
+  quoteCount,
   onQuote,
   onHighlight,
   onRemoveAllHighlights,
@@ -40,8 +37,6 @@ let QuoteButton = ({
   big,
   embeddingDisabled,
 }: Props): React.ReactNode => {
-  const isHighlighted = isReposted
-  const highlightCount = repostCount
   const t = useTheme()
   const {_} = useLingui()
   const requireAuth = useRequireAuth()
@@ -63,38 +58,25 @@ let QuoteButton = ({
     <>
       <PostControlButton
         testID="highlightBtn"
-        active={isHighlighted}
+        active={hasHighlights}
         activeColor={t.palette.positive_500}
         big={big}
         onPress={onPress}
         onLongPress={onLongPress}
-        label={
-          isHighlighted
-            ? _(
-                msg({
-                  message: `Remove highlight (${plural(highlightCount || 0, {
-                    one: '# highlight',
-                    other: '# highlights',
-                  })})`,
-                  comment:
-                    'Accessibility label for the highlight button when the post has been highlighted',
-                }),
-              )
-            : _(
-                msg({
-                  message: `Highlight (${plural(highlightCount || 0, {
-                    one: '# highlight',
-                    other: '# highlights',
-                  })})`,
-                  comment:
-                    'Accessibility label for the highlight button when the post has not been highlighted',
-                }),
-              )
-        }>
+        label={_(
+          msg({
+            message: `Highlight or quote post (${plural(quoteCount || 0, {
+              one: '# quote',
+              other: '# quotes',
+            })})`,
+            comment:
+              'Accessibility label for the combined highlight and quote button',
+          }),
+        )}>
         <PostControlButtonIcon icon={QuoteIcon} />
-        {typeof highlightCount !== 'undefined' && highlightCount > 0 && (
-          <PostControlButtonText testID="highlightCount">
-            {formatPostStatCount(highlightCount)}
+        {typeof quoteCount !== 'undefined' && quoteCount > 0 && (
+          <PostControlButtonText testID="quoteCount">
+            {formatPostStatCount(quoteCount)}
           </PostControlButtonText>
         )}
       </PostControlButton>

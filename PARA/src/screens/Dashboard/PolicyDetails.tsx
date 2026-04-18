@@ -1,36 +1,176 @@
-import {useMemo, useState} from 'react'
-import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native'
+import {useMemo} from 'react'
+import {ScrollView, StyleSheet, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {Trans} from '@lingui/react/macro'
+import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
-import {useBaseFilter} from '#/state/shell/base-filter'
+import {type CabildeoPositionRecord} from '#/lib/api/para-lexicons'
+import {type CabildeoView} from '#/lib/cabildeo-client'
+import {
+  getCabildeoBadge,
+  getCabildeoCommunities,
+  getCabildeoPhaseMeta,
+  getCabildeoTotalParticipants,
+  getViewerParticipation,
+} from '#/lib/cabildeo-display'
+import {type CommonNavigatorParams} from '#/lib/routes/types'
+import {
+  useCabildeoPositionsQuery,
+  useCabildeoQuery,
+} from '#/state/queries/cabildeo'
 import {Text} from '#/view/com/util/text/Text'
 import {atoms as a, useTheme} from '#/alf'
+import {Button, ButtonText} from '#/components/Button'
 import * as Layout from '#/components/Layout'
+import {ListMaybePlaceholder} from '#/components/Lists'
 import {type PolicyItem} from './types'
 
-export function PolicyDetailsScreen({
-  route,
-}: {
-  route: {params: {item: PolicyItem}}
-}) {
-  const {item} = route.params
+type Props = NativeStackScreenProps<CommonNavigatorParams, 'PolicyDetails'>
+
+type DetailMetric = {
+  label: string
+  value: string
+}
+
+type DetailOptionRow = {
+  key: string
+  label: string
+  description?: string
+  valueLabel: string
+  secondaryLabel?: string
+  share: number
+  isLeading?: boolean
+}
+
+type DetailPositionRow = {
+  id: string
+  stanceLabel: string
+  stanceColor: string
+  stanceBackground: string
+  text: string
+  optionLabel?: string
+}
+
+type DetailSummaryChip = {
+  label: string
+  value: string
+  color: string
+  background: string
+}
+
+type DetailModel = {
+  eyebrow: string
+  title: string
+  phaseLabel?: string
+  phaseColor?: string
+  categoryLabel: string
+  categoryColor: string
+  categoryBackground: string
+  summary: string
+  metrics: DetailMetric[]
+  communities: string[]
+  summaryChips: DetailSummaryChip[]
+  viewerParticipation?: ReturnType<typeof getViewerParticipation>
+  options: DetailOptionRow[]
+  positions: DetailPositionRow[]
+  cabildeoUri?: string
+}
+
+const STANCE_META: Record<
+  CabildeoPositionRecord['stance'],
+  {label: string; color: string; background: string}
+> = {
+  for: {label: 'For', color: '#166534', background: '#DCFCE7'},
+  against: {label: 'Against', color: '#991B1B', background: '#FEE2E2'},
+  amendment: {label: 'Amendment', color: '#9A3412', background: '#FFEDD5'},
+}
+
+export function PolicyDetailsScreen({route, navigation}: Props) {
   const t = useTheme()
   const insets = useSafeAreaInsets()
-  const {activeFilters, activeState} = useBaseFilter()
+  const cabildeoUri = route.params?.cabildeoUri
+  const legacyItem = route.params?.item as PolicyItem | undefined
 
-  const [activeView, setActiveView] = useState('General')
+  const {
+    data: cabildeo = null,
+    isFetched,
+    isLoading,
+    isError,
+    refetch,
+  } = useCabildeoQuery(cabildeoUri)
+  const {
+    data: positions = [],
+    isLoading: isPositionsLoading,
+    isError: isPositionsError,
+    refetch: refetchPositions,
+  } = useCabildeoPositionsQuery(cabildeoUri)
 
-  // Available views: General + Global Selected Filters + Selected State
-  const viewOptions = useMemo(() => {
-    const opts = ['General']
-    activeFilters.forEach(f => opts.push(f))
-    if (activeState && activeState !== 'None') {
-      opts.push(activeState)
+  const formatCount = (value: number) =>
+    new Intl.NumberFormat().format(Math.round(value))
+
+  const model = useMemo(() => {
+    if (cabildeo) {
+      return buildLiveDetailModel({
+        cabildeo,
+        positions,
+        formatCount,
+      })
     }
-    // Dedupe just in case
-    return Array.from(new Set(opts))
-  }, [activeFilters, activeState])
+    if (legacyItem) {
+      return buildFallbackDetailModel({
+        item: legacyItem,
+        formatCount,
+      })
+    }
+    return null
+  }, [cabildeo, legacyItem, positions])
+
+  if (cabildeoUri && !cabildeo && (isLoading || !isFetched || isError)) {
+    return (
+      <Layout.Screen>
+        <Layout.Header.Outer>
+          <Layout.Header.BackButton />
+          <Layout.Header.Content>
+            <Layout.Header.TitleText>
+              <Trans>Details</Trans>
+            </Layout.Header.TitleText>
+          </Layout.Header.Content>
+        </Layout.Header.Outer>
+        <ListMaybePlaceholder
+          isLoading={isLoading || !isFetched}
+          isError={isError}
+          emptyType="page"
+          emptyTitle="Debate unavailable"
+          emptyMessage="We could not load this debate."
+          onRetry={async () => {
+            await Promise.all([refetch(), refetchPositions()])
+          }}
+        />
+      </Layout.Screen>
+    )
+  }
+
+  if (!model) {
+    return (
+      <Layout.Screen>
+        <Layout.Header.Outer>
+          <Layout.Header.BackButton />
+          <Layout.Header.Content>
+            <Layout.Header.TitleText>
+              <Trans>Details</Trans>
+            </Layout.Header.TitleText>
+          </Layout.Header.Content>
+        </Layout.Header.Outer>
+        <ListMaybePlaceholder
+          isLoading={false}
+          isError={false}
+          emptyType="page"
+          emptyTitle="No detail available"
+          emptyMessage="There is no policy or matter detail to show here yet."
+        />
+      </Layout.Screen>
+    )
+  }
 
   return (
     <Layout.Screen>
@@ -40,6 +180,7 @@ export function PolicyDetailsScreen({
           <Layout.Header.TitleText>
             <Trans>Details</Trans>
           </Layout.Header.TitleText>
+          <Layout.Header.SubtitleText>{model.eyebrow}</Layout.Header.SubtitleText>
         </Layout.Header.Content>
       </Layout.Header.Outer>
 
@@ -47,394 +188,689 @@ export function PolicyDetailsScreen({
         style={styles.container}
         contentContainerStyle={[
           styles.contentContainer,
-          {paddingBottom: insets.bottom + 120},
+          {paddingBottom: insets.bottom + 48},
         ]}>
         <Layout.Center>
-          <View style={[styles.headerSection, t.atoms.bg_contrast_25]}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
-              }}>
-              <Text style={[styles.category, t.atoms.text_contrast_medium]}>
-                {item.category.toUpperCase()}
-              </Text>
-              {item.verified && (
-                <View
-                  style={[
-                    a.px_sm,
-                    a.py_xs,
-                    a.rounded_full,
-                    {backgroundColor: '#474652'},
-                  ]}>
-                  <Text style={[a.font_bold, {color: 'white', fontSize: 10}]}>
-                    Verified
-                  </Text>
-                </View>
-              )}
+          <View
+            style={[
+              styles.heroCard,
+              t.atoms.bg_contrast_25,
+              t.atoms.border_contrast_low,
+            ]}>
+            <View style={styles.heroTopRow}>
+              <View
+                style={[
+                  styles.heroBadge,
+                  {backgroundColor: model.categoryBackground},
+                ]}>
+                <Text style={[styles.heroBadgeText, {color: model.categoryColor}]}>
+                  {model.categoryLabel}
+                </Text>
+              </View>
+              {model.phaseLabel ? (
+                <Text style={[styles.heroPhase, {color: model.phaseColor}]}>
+                  {model.phaseLabel}
+                </Text>
+              ) : null}
             </View>
-            <Text style={[styles.title, t.atoms.text]}>{item.title}</Text>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{
-                marginTop: 16,
-                marginHorizontal: -24,
-                paddingHorizontal: 24,
-              }}>
-              {viewOptions.map(viewName => (
-                <TagPill
-                  key={viewName}
-                  label={viewName}
-                  t={t}
-                  active={activeView === viewName}
-                  onPress={() => setActiveView(viewName)}
-                />
-              ))}
-            </ScrollView>
+            <Text style={[styles.heroTitle, t.atoms.text]}>{model.title}</Text>
+            <Text style={[styles.heroSummary, t.atoms.text_contrast_medium]}>
+              {model.summary}
+            </Text>
+
+            {model.viewerParticipation ? (
+              <View
+                style={[
+                  styles.viewerChip,
+                  {backgroundColor: model.viewerParticipation.accentBackground},
+                ]}>
+                <Text
+                  style={[
+                    styles.viewerChipText,
+                    {color: model.viewerParticipation.accentColor},
+                  ]}>
+                  {model.viewerParticipation.optionLabel
+                    ? `${model.viewerParticipation.label}: ${model.viewerParticipation.optionLabel}`
+                    : model.viewerParticipation.label}
+                </Text>
+              </View>
+            ) : null}
+
+            {model.communities.length > 0 ? (
+              <View style={styles.communityWrap}>
+                {model.communities.map(value => (
+                  <View
+                    key={value}
+                    style={[
+                      styles.communityChip,
+                      {backgroundColor: t.palette.contrast_100},
+                    ]}>
+                    <Text style={[styles.communityChipText, t.atoms.text]}>
+                      {value}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
 
-          <StatisticsSection item={item} activeView={activeView} />
+          <View style={styles.metricGrid}>
+            {model.metrics.map(metric => (
+              <View
+                key={metric.label}
+                style={[
+                  styles.metricCard,
+                  t.atoms.bg_contrast_25,
+                  t.atoms.border_contrast_low,
+                ]}>
+                <Text style={[styles.metricCardLabel, t.atoms.text_contrast_medium]}>
+                  {metric.label}
+                </Text>
+                <Text style={[styles.metricCardValue, t.atoms.text]}>
+                  {metric.value}
+                </Text>
+              </View>
+            ))}
+          </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, t.atoms.text]}>Description</Text>
-            <Text style={[styles.bodyText, t.atoms.text]}>
-              This is a placeholder description for {item.title}. In a real app,
-              this would include the full text of the policy proposal or the key
-              talking points regarding this matter.
+            <Text style={[styles.sectionTitle, t.atoms.text]}>
+              <Trans>Discussion snapshot</Trans>
             </Text>
-            <View
-              style={{
-                marginTop: 16,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}>
-              <Text
-                style={[
-                  t.atoms.text_contrast_medium,
-                  {fontWeight: 'bold', fontSize: 16},
-                ]}>
-                Total Votes:{' '}
-                {Math.floor((item.support || 50) * 12.5 + 430).toLocaleString()}
-              </Text>
+            <View style={styles.summaryChipRow}>
+              {model.summaryChips.map(chip => (
+                <View
+                  key={chip.label}
+                  style={[
+                    styles.summaryChip,
+                    {backgroundColor: chip.background},
+                  ]}>
+                  <Text style={[styles.summaryChipLabel, {color: chip.color}]}>
+                    {chip.label}
+                  </Text>
+                  <Text style={[styles.summaryChipValue, {color: chip.color}]}>
+                    {chip.value}
+                  </Text>
+                </View>
+              ))}
             </View>
           </View>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, t.atoms.text]}>
-              Related Content
+              <Trans>Option breakdown</Trans>
             </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{marginHorizontal: -24, paddingHorizontal: 24}}>
-              {[1, 2, 3].map(i => (
-                <View
-                  key={i}
+            {model.options.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyStateCard,
+                  t.atoms.bg_contrast_25,
+                  t.atoms.border_contrast_low,
+                ]}>
+                <Text style={[styles.emptyStateTitle, t.atoms.text]}>
+                  No option analytics yet
+                </Text>
+                <Text
                   style={[
-                    styles.infoCard,
-                    t.atoms.bg_contrast_25,
-                    {
-                      marginRight: 12,
-                      width: 200,
-                      height: 120,
-                      justifyContent: 'center',
-                      borderColor: 'rgba(255,255,255,0.05)',
-                      shadowColor: '#000',
-                      shadowOpacity: 0.14,
-                      shadowRadius: 18,
-                      shadowOffset: {width: 0, height: 8},
-                      elevation: 6,
-                    },
+                    styles.emptyStateText,
+                    t.atoms.text_contrast_medium,
                   ]}>
-                  <Text style={[t.atoms.text, {fontWeight: 'bold'}]}>
-                    Related Policy #{i}
-                  </Text>
-                  <Text style={t.atoms.text_contrast_medium}>
-                    More on {item.category}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
+                  Once the backend publishes option-level vote totals, the
+                  breakdown will appear here automatically.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.optionList}>
+                {model.options.map(option => (
+                  <View
+                    key={option.key}
+                    style={[
+                      styles.optionCard,
+                      t.atoms.bg_contrast_25,
+                      t.atoms.border_contrast_low,
+                    ]}>
+                    <View style={styles.optionHeader}>
+                      <View style={a.flex_1}>
+                        <View style={styles.optionTitleRow}>
+                          <Text style={[styles.optionTitle, t.atoms.text]}>
+                            {option.label}
+                          </Text>
+                          {option.isLeading ? (
+                            <View
+                              style={[
+                                styles.leadingBadge,
+                                {backgroundColor: '#DCFCE7'},
+                              ]}>
+                              <Text
+                                style={[
+                                  styles.leadingBadgeText,
+                                  {color: '#166534'},
+                                ]}>
+                                Leading
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        {option.description ? (
+                          <Text
+                            style={[
+                              styles.optionDescription,
+                              t.atoms.text_contrast_medium,
+                            ]}>
+                            {option.description}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Text style={[styles.optionValue, t.atoms.text]}>
+                        {option.valueLabel}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.optionBarTrack,
+                        {backgroundColor: t.palette.contrast_100},
+                      ]}>
+                      <View
+                        style={[
+                          styles.optionBarFill,
+                          {
+                            width: `${Math.max(
+                              option.share * 100,
+                              option.share > 0 ? 8 : 0,
+                            )}%`,
+                            backgroundColor: model.categoryColor,
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    {option.secondaryLabel ? (
+                      <Text
+                        style={[
+                          styles.optionSecondary,
+                          t.atoms.text_contrast_medium,
+                        ]}>
+                        {option.secondaryLabel}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, t.atoms.text]}>
+              <Trans>Recent positions</Trans>
+            </Text>
+            {model.positions.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyStateCard,
+                  t.atoms.bg_contrast_25,
+                  t.atoms.border_contrast_low,
+                ]}>
+                <Text style={[styles.emptyStateTitle, t.atoms.text]}>
+                  {cabildeoUri && isPositionsLoading
+                    ? 'Loading positions...'
+                    : 'No positions yet'}
+                </Text>
+                <Text
+                  style={[
+                    styles.emptyStateText,
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  {cabildeoUri && isPositionsError
+                    ? 'We could not load the latest written positions for this debate.'
+                    : 'As people publish positions, the latest ones will appear here.'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.positionList}>
+                {model.positions.map(position => (
+                  <View
+                    key={position.id}
+                    style={[
+                      styles.positionCard,
+                      t.atoms.bg_contrast_25,
+                      t.atoms.border_contrast_low,
+                    ]}>
+                    <View style={styles.positionHeader}>
+                      <View
+                        style={[
+                          styles.positionBadge,
+                          {backgroundColor: position.stanceBackground},
+                        ]}>
+                        <Text
+                          style={[
+                            styles.positionBadgeText,
+                            {color: position.stanceColor},
+                          ]}>
+                          {position.stanceLabel}
+                        </Text>
+                      </View>
+                      {position.optionLabel ? (
+                        <Text
+                          style={[
+                            styles.positionOptionLabel,
+                            t.atoms.text_contrast_medium,
+                          ]}>
+                          {position.optionLabel}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.positionText, t.atoms.text]}>
+                      {position.text}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {model.cabildeoUri ? (
+            <View style={styles.section}>
+              <Button
+                label="Open full debate"
+                onPress={() =>
+                  navigation.navigate('CabildeoDetail', {
+                    cabildeoUri: model.cabildeoUri!,
+                  })
+                }
+                size="large"
+                variant="solid"
+                color="primary"
+                shape="default">
+                <ButtonText>
+                  <Trans>Open full debate</Trans>
+                </ButtonText>
+              </Button>
+            </View>
+          ) : null}
         </Layout.Center>
       </ScrollView>
     </Layout.Screen>
   )
 }
 
-function StatisticsSection({
+function buildLiveDetailModel({
+  cabildeo,
+  positions,
+  formatCount,
+}: {
+  cabildeo: CabildeoView
+  positions: CabildeoPositionRecord[]
+  formatCount: (value: number) => string
+}): DetailModel {
+  const badge = getCabildeoBadge(cabildeo)
+  const phase = getCabildeoPhaseMeta(cabildeo.phase)
+  const communities = getCabildeoCommunities(cabildeo)
+  const participants = getCabildeoTotalParticipants(cabildeo)
+  const optionBase =
+    cabildeo.outcome?.effectiveTotalPower ||
+    cabildeo.voteTotals.total ||
+    cabildeo.positionCounts.total ||
+    1
+  const leadingOptionIndex =
+    cabildeo.outcome?.winningOption ??
+    [...cabildeo.optionSummary].sort(
+      (a, b) => b.votes - a.votes || b.positions - a.positions,
+    )[0]?.optionIndex
+
+  return {
+    eyebrow: badge.kind === 'policy' ? 'Policy debate' : 'Matter debate',
+    title: cabildeo.title,
+    phaseLabel: phase.label,
+    phaseColor: phase.color,
+    categoryLabel: badge.label,
+    categoryColor: badge.color,
+    categoryBackground: badge.bgColor,
+    summary: cabildeo.description,
+    metrics: [
+      {label: 'Participants', value: formatCount(participants)},
+      {label: 'Votes', value: formatCount(cabildeo.voteTotals.total)},
+      {label: 'Positions', value: formatCount(cabildeo.positionCounts.total)},
+      {label: 'Delegated', value: formatCount(cabildeo.voteTotals.delegated)},
+    ],
+    communities,
+    summaryChips: [
+      {
+        label: 'For',
+        value: formatCount(cabildeo.positionCounts.for),
+        color: '#166534',
+        background: '#DCFCE7',
+      },
+      {
+        label: 'Against',
+        value: formatCount(cabildeo.positionCounts.against),
+        color: '#991B1B',
+        background: '#FEE2E2',
+      },
+      {
+        label: 'Amendment',
+        value: formatCount(cabildeo.positionCounts.amendment),
+        color: '#9A3412',
+        background: '#FFEDD5',
+      },
+    ],
+    viewerParticipation: getViewerParticipation(cabildeo) || undefined,
+    options: cabildeo.options.map((option, index) => {
+      const summary = cabildeo.optionSummary.find(
+        item => item.optionIndex === index,
+      )
+      const resolved = cabildeo.outcome?.breakdown.find(
+        item => item.optionIndex === index,
+      )
+      const primaryValue =
+        typeof resolved?.effectiveVotes === 'number'
+          ? resolved.effectiveVotes
+          : summary?.votes || 0
+      return {
+        key: `${cabildeo.uri}:${index}`,
+        label: option.label,
+        description: option.description,
+        valueLabel:
+          cabildeo.outcome?.breakdown.length && resolved
+            ? `${formatCount(resolved.effectiveVotes)} effective votes`
+            : `${formatCount(summary?.votes || 0)} votes`,
+        secondaryLabel:
+          summary?.positions || 0
+            ? `${formatCount(summary?.positions || 0)} positions`
+            : undefined,
+        share: primaryValue / optionBase,
+        isLeading: leadingOptionIndex === index,
+      }
+    }),
+    positions: [...positions]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 4)
+      .map((position, index) => {
+      const meta = STANCE_META[position.stance]
+      return {
+        id: `${position.createdAt}:${index}`,
+        stanceLabel: meta.label,
+        stanceColor: meta.color,
+        stanceBackground: meta.background,
+        text: position.text,
+        optionLabel:
+          typeof position.optionIndex === 'number'
+            ? cabildeo.options[position.optionIndex]?.label
+            : undefined,
+      }
+    }),
+    cabildeoUri: cabildeo.uri,
+  }
+}
+
+function buildFallbackDetailModel({
   item,
-  activeView,
+  formatCount,
 }: {
   item: PolicyItem
-  activeView: string
-}) {
-  // Policy = Spectrum, Matter = Binary
+  formatCount: (value: number) => string
+}): DetailModel {
   const isPolicy = item.type === 'Policy'
+  const categoryColor = item.color || (isPolicy ? '#2563EB' : '#EA580C')
+  const categoryBackground = `${categoryColor}20`
+  const metrics: DetailMetric[] = []
 
-  if (isPolicy) {
-    return (
-      <View>
-        <SpectrumStats item={item} activeView={activeView} />
-      </View>
-    )
+  if (typeof item.support === 'number') {
+    metrics.push({label: 'Support', value: `${formatCount(item.support)}%`})
   }
-
-  return (
-    <View>
-      <BinaryStats item={item} activeView={activeView} />
-    </View>
-  )
-}
-
-function BinaryStats({
-  item,
-  activeView,
-}: {
-  item: PolicyItem
-  activeView: string
-}) {
-  const t = useTheme()
-  const support = item.support || 50
-  const oppose = 100 - support
-
-  return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, t.atoms.text]}>
-        Voting Statistics ({activeView})
-      </Text>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 12,
-        }}>
-        <Text style={t.atoms.text_contrast_medium}>
-          Measure of Support vs Opposition
-        </Text>
-      </View>
-      <View style={styles.binaryBarContainer}>
-        <View
-          style={[
-            styles.binaryBarSegment,
-            {backgroundColor: '#34C759', flex: support},
-          ]}>
-          {support > 15 && (
-            <Text style={styles.binaryBarLabel}>{support}%</Text>
-          )}
-        </View>
-        <View
-          style={[
-            styles.binaryBarSegment,
-            {backgroundColor: '#FF3B30', flex: oppose},
-          ]}>
-          {oppose > 15 && <Text style={styles.binaryBarLabel}>{oppose}%</Text>}
-        </View>
-      </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginTop: 8,
-        }}>
-        <Text style={{color: '#34C759', fontWeight: 'bold'}}>Support</Text>
-        <Text style={{color: '#FF3B30', fontWeight: 'bold'}}>Oppose</Text>
-      </View>
-    </View>
-  )
-}
-
-// Generate deterministic bell-curve-ish distribution based on support value
-function getMockDistribution(support: number, viewSeed: string) {
-  // Support 0-100 maps to mean roughly -3 to +3
-  let shift = 0
-  if (viewSeed !== 'General') {
-    // Deterministic shift based on view name length to make it look different
-    shift = (viewSeed.length % 2 === 0 ? 1 : -1) * (viewSeed.length % 3)
+  if (typeof item.mentions === 'number') {
+    metrics.push({label: 'Mentions', value: formatCount(item.mentions)})
   }
+  if (typeof item.match === 'number') {
+    metrics.push({label: 'Match', value: `${formatCount(item.match)}%`})
+  }
+  metrics.push({label: 'Source', value: item.promotedBy})
 
-  const normalizedMean = (support / 100) * 6 - 3 + shift
-
-  const bins = [-3, -2, -1, 0, 1, 2, 3]
-  const data = bins.map(bin => {
-    // Simple Gaussian-ish distance
-    const dist = Math.abs(bin - normalizedMean)
-    const val = Math.max(5, 100 * Math.exp(-(dist * dist) / 2)) // rudimentary bell curve
-    return {bin, val}
-  })
-
-  // Normalize to 100% total roughly for display height
-  const maxVal = Math.max(...data.map(d => d.val))
-  return data.map(d => ({...d, heightPercent: (d.val / maxVal) * 100}))
-}
-
-function SpectrumStats({
-  item,
-  activeView,
-}: {
-  item: PolicyItem
-  activeView: string
-}) {
-  const t = useTheme()
-  const support = item.support || 50
-  const distribution = getMockDistribution(support, activeView)
-
-  return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, t.atoms.text]}>
-        Opinion Spectrum ({activeView})
-      </Text>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}>
-        <Text style={t.atoms.text_contrast_medium}>
-          Distribution from Strongly Disagree (-3) to Strongly Agree (+3)
-        </Text>
-      </View>
-
-      <View style={styles.spectrumContainer}>
-        {distribution.map(d => (
-          <View key={d.bin} style={styles.spectrumBarWrapper}>
-            <View
-              style={[
-                styles.spectrumBar,
-                {
-                  height: `${d.heightPercent}%`,
-                  backgroundColor:
-                    d.bin < 0 ? '#FF3B30' : d.bin > 0 ? '#34C759' : '#8E8E93',
-                },
-              ]}
-            />
-            <Text style={[t.atoms.text_contrast_medium, styles.spectrumLabel]}>
-              {d.bin > 0 ? `+${d.bin}` : d.bin}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <View style={styles.spectrumAxisRaw} />
-    </View>
-  )
+  return {
+    eyebrow: isPolicy ? 'Policy summary' : 'Matter summary',
+    title: item.title,
+    categoryLabel: item.category,
+    categoryColor,
+    categoryBackground,
+    summary:
+      item.type === 'Policy'
+        ? 'This view is using feed-level summary data. Full debate analytics will appear automatically once this item is linked to a live backend debate record.'
+        : 'This view is using feed-level matter summary data. Full backend debate details will appear here once a live record is available.',
+    metrics,
+    communities: [item.party, item.community, item.state].filter(
+      (value): value is string => Boolean(value),
+    ),
+    summaryChips: [
+      {
+        label: 'Promoted by',
+        value: item.promotedBy,
+        color: categoryColor,
+        background: categoryBackground,
+      },
+    ],
+    options: [],
+    positions: [],
+  }
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
-  contentContainer: {paddingBottom: 40},
-  headerSection: {padding: 24, marginBottom: 24},
-  category: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  title: {fontSize: 28, fontWeight: '800', lineHeight: 34},
-  section: {paddingHorizontal: 24, marginBottom: 32},
-  sectionTitle: {fontSize: 20, fontWeight: '800', marginBottom: 8},
-  infoCard: {
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  bodyText: {fontSize: 16, lineHeight: 24, opacity: 0.8},
-
-  // Binary Stats
-  binaryBarContainer: {
-    flexDirection: 'row',
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  binaryBarSegment: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  binaryBarLabel: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-
-  // Spectrum Stats
-  spectrumContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 150,
-    marginBottom: 8,
-  },
-  spectrumBarWrapper: {
+  container: {
     flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  heroCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    gap: 12,
+    marginBottom: 16,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: '100%',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  spectrumBar: {
-    width: 20,
-    borderRadius: 4,
-    minHeight: 4,
-    marginBottom: 8,
+  heroBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  spectrumLabel: {
+  heroBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroPhase: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 34,
+  },
+  heroSummary: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  viewerChip: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+  },
+  viewerChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  communityWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  communityChip: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  communityChipText: {
     fontSize: 12,
     fontWeight: '600',
   },
-  spectrumAxisRaw: {
-    height: 1,
-    backgroundColor: '#C7C7CC',
-    marginBottom: 8,
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
   },
-  tagPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
+  metricCard: {
+    width: '48%',
+    borderRadius: 18,
     borderWidth: 1,
+    padding: 16,
+    gap: 6,
+  },
+  metricCardLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  metricCardValue: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  summaryChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  summaryChip: {
+    minWidth: '31%',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 4,
+  },
+  summaryChipLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  summaryChipValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  optionList: {
+    gap: 12,
+  },
+  optionCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  optionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  optionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  optionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    flex: 1,
+  },
+  optionDescription: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  optionValue: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  optionBarTrack: {
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  optionBarFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  optionSecondary: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  leadingBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  leadingBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  positionList: {
+    gap: 12,
+  },
+  positionCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  positionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  positionBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  positionBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  positionOptionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  positionText: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  emptyStateCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    gap: 6,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 })
-
-function TagPill({
-  label,
-  t,
-  active,
-  onPress,
-}: {
-  label: string
-  t: any
-  active?: boolean
-  onPress?: () => void
-}) {
-  return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      onPress={onPress}
-      disabled={!onPress}
-      style={[
-        styles.tagPill,
-        active
-          ? {
-              backgroundColor: t.palette.primary_500,
-              borderColor: t.palette.primary_500,
-            }
-          : {
-              borderColor: t.atoms.border_contrast_low.borderColor,
-              backgroundColor: t.atoms.bg_contrast_25.backgroundColor,
-            },
-      ]}>
-      <Text
-        style={{
-          color: active ? 'white' : t.atoms.text.color,
-          fontWeight: '600',
-          fontSize: 12,
-        }}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  )
-}

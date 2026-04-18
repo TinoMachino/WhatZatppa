@@ -9,12 +9,14 @@ const $nsid = 'chat.bsky.convo.getConvo'
 
 export { $nsid }
 
+/** Gets an existing conversation by its ID. */
 const main = l.query(
   $nsid,
   l.params({ convoId: l.string() }),
   l.jsonPayload({
     convo: l.ref<ConvoDefs.ConvoView>((() => ConvoDefs.convoView) as any),
   }),
+  ['InvalidConvo'],
 )
 export { main }
 

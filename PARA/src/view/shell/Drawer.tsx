@@ -48,8 +48,7 @@ import {
   HomeOpen_Filled_Corner0_Rounded as HomeFilled,
   HomeOpen_Stoke2_Corner0_Rounded as Home,
 } from '#/components/icons/HomeOpen'
-import {MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilled} from '#/components/icons/MagnifyingGlass'
-import {MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlass} from '#/components/icons/MagnifyingGlass'
+import {MagnifyingGlass_Filled_Stroke2_Corner0_Rounded as MagnifyingGlassFilled,MagnifyingGlass_Stroke2_Corner0_Rounded as MagnifyingGlass} from '#/components/icons/MagnifyingGlass'
 import {
   Message_Stroke2_Corner0_Rounded as Message,
   Message_Stroke2_Corner0_Rounded_Filled as MessageFilled,
@@ -676,7 +675,6 @@ let CommunitiesMenuItem = ({
   isActive: boolean // Add this type
   onPress: () => void
 }): React.ReactNode => {
-  const {_} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
@@ -687,7 +685,7 @@ let CommunitiesMenuItem = ({
           <Community style={[t.atoms.text]} width={iconWidth} />
         )
       }
-      label={_(msg`Communities`)}
+      label="Communities"
       bold={isActive} // Add bold state
       onPress={onPress}
     />
@@ -702,7 +700,6 @@ let BaseMenuItem = ({
   isActive: boolean
   onPress: () => void
 }): React.ReactNode => {
-  const {_} = useLingui()
   const t = useTheme()
   return (
     <MenuItem
@@ -713,7 +710,7 @@ let BaseMenuItem = ({
           <Book style={[t.atoms.text]} width={iconWidth} />
         )
       }
-      label={_(msg`Base`)}
+      label="Base"
       bold={isActive}
       onPress={onPress}
     />

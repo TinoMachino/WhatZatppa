@@ -3,9 +3,15 @@ import {
   utf8FromBase64Node,
   utf8FromBase64Ponyfill,
 } from './utf8-from-base64.js'
+import { utf8FromBytesNative, utf8FromBytesNode } from './utf8-from-bytes.js'
 import { graphemeLenNative, graphemeLenPonyfill } from './utf8-grapheme-len.js'
 import { utf8LenCompute, utf8LenNode } from './utf8-len.js'
 import { utf8ToBase64Node, utf8ToBase64Ponyfill } from './utf8-to-base64.js'
+
+/**
+ * Converts a Uint8Array to a UTF-8 string.
+ */
+export const utf8FromBytes = utf8FromBytesNode ?? utf8FromBytesNative
 
 /**
  * Counts the number of grapheme clusters (user-perceived characters) in a string.

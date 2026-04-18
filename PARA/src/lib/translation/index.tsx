@@ -6,14 +6,17 @@ import {
 } from 'react'
 import {LayoutAnimation, Platform} from 'react-native'
 import {getLocales} from 'expo-localization'
+import {onTranslateTask} from '@bsky.app/expo-translate-text'
 import {type TranslationTaskResult} from '@bsky.app/expo-translate-text/build/ExpoTranslateText.types'
 import {useLingui} from '@lingui/react/macro'
 import {useFocusEffect} from '@react-navigation/native'
 
 import {useGoogleTranslate} from '#/lib/hooks/useGoogleTranslate'
+import {codeToLanguageName} from '#/locale/helpers'
 import {logger} from '#/logger'
+import {useLanguagePrefs} from '#/state/preferences'
 import {useAnalytics} from '#/analytics'
-import {IS_ANDROID, IS_IOS} from '#/env'
+import {IS_ANDROID, IS_IOS, IS_TRANSLATION_SUPPORTED} from '#/env'
 import {
   type TranslationFunctionParams,
   type TranslationOptions,
@@ -23,6 +26,11 @@ import {guessLanguage} from './utils'
 
 export * from './types'
 export * from './utils'
+
+const E_SAME_AS_SOURCE_LANGUAGE =
+  'Translation result is the same as the source text.'
+const E_EMPTY_RESULT = 'Translation result is empty.'
+const E_INVALID_SOURCE_LANGUAGE = 'Invalid source language'
 
 const translationStateStore: Record<string, TranslationState> = {}
 const refCountsStore: Record<string, number> = {}
@@ -60,8 +68,6 @@ function acquireTranslation(key: string) {
 
 /**
  * Attempts on-device translation via @bsky.app/expo-translate-text.
- * Uses a lazy import to avoid crashing if the native module isn't linked into
- * the current build.
  */
 async function attemptTranslation(
   input: string,
@@ -97,7 +103,6 @@ async function attemptTranslation(
     }
   }
 
-  const {onTranslateTask} = await import('@bsky.app/expo-translate-text')
   const result = await onTranslateTask({
     input,
     targetLangCode,
@@ -108,11 +113,11 @@ async function attemptTranslation(
     typeof result.translatedTexts === 'string' ? result.translatedTexts : ''
 
   if (translatedText === input) {
-    throw new Error('Translation result is the same as the source text.')
+    throw new Error(E_SAME_AS_SOURCE_LANGUAGE)
   }
 
   if (translatedText === '') {
-    throw new Error('Translation result is empty.')
+    throw new Error(E_EMPTY_RESULT)
   }
 
   return {
@@ -123,17 +128,13 @@ async function attemptTranslation(
   }
 }
 
-async function isOnDeviceTranslationSupported() {
-  const {isTranslationSupported} = await import('@bsky.app/expo-translate-text')
-  return isTranslationSupported()
-}
-
 export function useTranslate({
   key,
   forceGoogleTranslate = false,
 }: TranslationOptions) {
   const [, setVersion] = useState(0)
   const ax = useAnalytics()
+  const langPrefs = useLanguagePrefs()
   const {t: l} = useLingui()
   const googleTranslate = useGoogleTranslate()
 
@@ -173,10 +174,7 @@ export function useTranslate({
         googleTranslate: shouldForceGoogleTranslate,
       })
 
-      if (
-        shouldForceGoogleTranslate ||
-        !(await isOnDeviceTranslationSupported())
-      ) {
+      if (shouldForceGoogleTranslate || !IS_TRANSLATION_SUPPORTED) {
         await googleTranslate(
           text,
           expectedTargetLanguage,
@@ -219,7 +217,8 @@ export function useTranslate({
           targetLanguage: result.targetLanguage,
           postLanguages: possibleSourceLanguages,
         })
-      } catch (e) {
+      } catch (err) {
+        const e = err as Error
         logger.error('Failed to translate text on device', {safeMessage: e})
 
         ax.metric('translate:result', {
@@ -233,7 +232,22 @@ export function useTranslate({
           textLength: text.length,
         })
 
-        const errorMessage = l`Device failed to translate :(`
+        let errorMessage = l`Device failed to translate :(`
+        if (e.message === E_SAME_AS_SOURCE_LANGUAGE) {
+          errorMessage = l`Translation to the same language is unavailable on your device.`
+        }
+        if (e.message === E_EMPTY_RESULT) {
+          errorMessage = l`No translation received from your device.`
+        }
+        if (
+          expectedSourceLanguage &&
+          e.message.includes(E_INVALID_SOURCE_LANGUAGE)
+        ) {
+          errorMessage = l`${codeToLanguageName(
+            expectedSourceLanguage,
+            langPrefs.appLanguage,
+          )} is not supported by your device.`
+        }
 
         if (!IS_ANDROID) {
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -245,7 +259,7 @@ export function useTranslate({
         })
       }
     },
-    [ax, forceGoogleTranslate, googleTranslate, key, l],
+    [ax, forceGoogleTranslate, googleTranslate, key, l, langPrefs.appLanguage],
   )
 
   const clearTranslation = useCallback(() => {

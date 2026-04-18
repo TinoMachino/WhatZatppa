@@ -4,7 +4,9 @@ import PQueue from 'p-queue'
 import AtpAgent from '@atproto/api'
 import { Keypair } from '@atproto/crypto'
 import { IdResolver } from '@atproto/identity'
+import { Client } from '@atproto/lex'
 import { ActorStore } from '../actor-store/actor-store'
+import { com } from '../lexicons/index.js'
 import { SyncEvtData } from '../repo'
 import { Sequencer } from '../sequencer'
 import { getRecoveryDbFromSequencerLoc } from './sequencer-recovery/recovery-db'
@@ -16,6 +18,7 @@ export type RotateKeysContext = {
   idResolver: IdResolver
   plcClient: plc.Client
   plcRotationKey: Keypair
+  entrywayAdminClient?: Client
   entrywayAdminAgent?: AtpAgent
 }
 
@@ -126,7 +129,15 @@ const updatePlcSigningKey = async (ctx: RotateKeysContext, did: string) => {
     // already up to date
     return
   }
-  if (ctx.entrywayAdminAgent) {
+  if (ctx.entrywayAdminClient) {
+    await ctx.entrywayAdminClient.call(
+      com.atproto.admin.updateAccountSigningKey.main,
+      {
+        did,
+        signingKey: updateTo.did(),
+      } as com.atproto.admin.updateAccountSigningKey.$InputBody,
+    )
+  } else if (ctx.entrywayAdminAgent) {
     await ctx.entrywayAdminAgent.api.com.atproto.admin.updateAccountSigningKey({
       did,
       signingKey: updateTo.did(),

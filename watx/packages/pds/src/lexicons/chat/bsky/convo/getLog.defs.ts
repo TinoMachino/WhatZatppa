@@ -47,6 +47,57 @@ const main = l.query(
           l.typedRef<ConvoDefs.LogRemoveReaction>(
             (() => ConvoDefs.logRemoveReaction) as any,
           ),
+          l.typedRef<ConvoDefs.LogReadConvo>(
+            (() => ConvoDefs.logReadConvo) as any,
+          ),
+          l.typedRef<ConvoDefs.LogAddMember>(
+            (() => ConvoDefs.logAddMember) as any,
+          ),
+          l.typedRef<ConvoDefs.LogRemoveMember>(
+            (() => ConvoDefs.logRemoveMember) as any,
+          ),
+          l.typedRef<ConvoDefs.LogMemberJoin>(
+            (() => ConvoDefs.logMemberJoin) as any,
+          ),
+          l.typedRef<ConvoDefs.LogMemberLeave>(
+            (() => ConvoDefs.logMemberLeave) as any,
+          ),
+          l.typedRef<ConvoDefs.LogLockConvo>(
+            (() => ConvoDefs.logLockConvo) as any,
+          ),
+          l.typedRef<ConvoDefs.LogUnlockConvo>(
+            (() => ConvoDefs.logUnlockConvo) as any,
+          ),
+          l.typedRef<ConvoDefs.LogLockConvoPermanently>(
+            (() => ConvoDefs.logLockConvoPermanently) as any,
+          ),
+          l.typedRef<ConvoDefs.LogEditGroup>(
+            (() => ConvoDefs.logEditGroup) as any,
+          ),
+          l.typedRef<ConvoDefs.LogCreateJoinLink>(
+            (() => ConvoDefs.logCreateJoinLink) as any,
+          ),
+          l.typedRef<ConvoDefs.LogEditJoinLink>(
+            (() => ConvoDefs.logEditJoinLink) as any,
+          ),
+          l.typedRef<ConvoDefs.LogEnableJoinLink>(
+            (() => ConvoDefs.logEnableJoinLink) as any,
+          ),
+          l.typedRef<ConvoDefs.LogDisableJoinLink>(
+            (() => ConvoDefs.logDisableJoinLink) as any,
+          ),
+          l.typedRef<ConvoDefs.LogIncomingJoinRequest>(
+            (() => ConvoDefs.logIncomingJoinRequest) as any,
+          ),
+          l.typedRef<ConvoDefs.LogApproveJoinRequest>(
+            (() => ConvoDefs.logApproveJoinRequest) as any,
+          ),
+          l.typedRef<ConvoDefs.LogRejectJoinRequest>(
+            (() => ConvoDefs.logRejectJoinRequest) as any,
+          ),
+          l.typedRef<ConvoDefs.LogOutgoingJoinRequest>(
+            (() => ConvoDefs.logOutgoingJoinRequest) as any,
+          ),
         ],
         false,
       ),

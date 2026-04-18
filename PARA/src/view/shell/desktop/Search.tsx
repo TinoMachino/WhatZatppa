@@ -107,6 +107,7 @@ export function DesktopSearch() {
   return (
     <View style={[styles.container, pal.view]}>
       <SearchInput
+        hotkey={true}
         value={query}
         onChangeText={onChangeText}
         onClearText={onPressCancelSearch}

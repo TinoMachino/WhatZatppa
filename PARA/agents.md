@@ -19,6 +19,12 @@ PARA is a React Native mobile application built on the **AT Protocol (atproto)**
 
 ## 🛠️ Local Development & Environment Quirks
 
+### React Query Notes
+
+- **Persistence:** In Para, persisted React Query entries are still keyed off `PERSISTED_QUERY_ROOT` in [src/state/queries/index.ts](/Users/mlv/Desktop/MASTER/PARA/src/state/queries/index.ts). If a query should survive app restarts, its query key needs that root at index `0`, and it should usually pair with `PERSISTED_QUERY_GCTIME`.
+- **Refresh behavior:** For paginated feeds and similar infinite queries, prefer `truncateAndInvalidate` from [src/state/queries/util.ts](/Users/mlv/Desktop/MASTER/PARA/src/state/queries/util.ts) over a bare `refetch()` when the goal is “reload from the top.” That trims cached pages back to the first page before invalidation so pull-to-refresh actually fetches fresh leading data.
+- **Invalidation safety:** When a query key includes params, pass the full key shape during invalidation or truncation. Refresh bugs in feed surfaces often come from invalidating only the root feed descriptor while the live query also depends on `feedParams`.
+
 ### iOS Provisioning & App Clips
 
 - **Issue:** The project includes an Apple App Clip target (`PARAAppClip`).
@@ -119,8 +125,19 @@ Raise the full local demo with the current workspace split:
 - **Important**:
   - This is the only backend launcher to use for the demo runbook.
   - Do not use `make run-dev-env` here.
+  - This backend also exposes a local-only introspection server at `http://127.0.0.1:2581`.
   - If `.env.shared-demo` points to `pds.paramx.social.ngrok.pro` and `appview.paramx.social.ngrok.pro`, both ngrok terminals must already be running before `make run-dev-env-persistent`.
   - If the tunnels are not up first, dev-env bootstrap can fail with `XRPCError: fetch failed` and `UND_ERR_CONNECT_TIMEOUT` while creating the Ozone service profile.
+
+### Seed Demo Data
+- **Commands**:
+  ```bash
+  cd /Users/mlv/Desktop/MASTER/PARA
+  yarn seed:civic:apply --introspect-url http://127.0.0.1:2581
+  ```
+- **Important**:
+  - Use the introspection URL on `apply` so AppView catches up after the seed writes.
+  - If this command fails, do not continue to the demo UI until AppView responds for `active-a.test`.
 
 ### Terminal 6: PARA BSKYWEB FRONTEND
 - **Profile color**: Blue Ocean
@@ -147,6 +164,7 @@ Raise the full local demo with the current workspace split:
 2. Confirm the backend prints:
    - `Main PDS https://pds.paramx.social.ngrok.pro`
    - `Bsky Appview https://appview.paramx.social.ngrok.pro`
+   - `Dev-env introspection server http://127.0.0.1:2581`
 3. Check health:
    ```bash
    curl http://localhost:2583/xrpc/_health
@@ -154,8 +172,13 @@ Raise the full local demo with the current workspace split:
    curl https://pds.paramx.social.ngrok.pro/xrpc/_health
    curl https://appview.paramx.social.ngrok.pro/xrpc/_health
    ```
-4. Open `http://localhost:8100`.
-5. Only send the `bskyweb` URL to demo users, not the raw AppView URL.
+4. Confirm AppView sees seeded demo actors and posts:
+   ```bash
+   curl 'http://localhost:2584/xrpc/app.bsky.actor.getProfile?actor=active-a.test'
+   curl 'http://localhost:2584/xrpc/app.bsky.feed.getAuthorFeed?actor=active-a.test&limit=3'
+   ```
+5. Open `http://localhost:8100` and verify Home/Base are not empty.
+6. Only send the `bskyweb` URL to demo users, not the raw AppView URL.
 
 ---
 

@@ -4,7 +4,7 @@ import { ACCESS_FULL } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
-import { resultPassthru } from '../../../proxy'
+import { com } from '../../../../lexicons/index.js'
 import { genInvCodes } from './util'
 
 export default function (server: Server, ctx: AppContext) {
@@ -19,17 +19,20 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async ({ params, auth, req }) => {
-      if (ctx.entrywayAgent) {
-        return resultPassthru(
-          await ctx.entrywayAgent.com.atproto.server.getAccountInviteCodes(
-            params,
-            await ctx.entrywayAuthHeaders(
-              req,
-              auth.credentials.did,
-              ids.ComAtprotoServerGetAccountInviteCodes,
-            ),
+      if (ctx.entrywayClient) {
+        const body = await ctx.entrywayClient.call(
+          com.atproto.server.getAccountInviteCodes.main,
+          params,
+          await ctx.entrywayAuthHeaders(
+            req,
+            auth.credentials.did,
+            ids.ComAtprotoServerGetAccountInviteCodes,
           ),
         )
+        return {
+          encoding: 'application/json',
+          body,
+        }
       }
 
       const requester = auth.credentials.did

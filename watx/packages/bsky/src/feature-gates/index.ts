@@ -1,11 +1,17 @@
 import { GrowthBookClient } from '@growthbook/growthbook'
+import type express from 'express'
 import { featureGatesLogger } from '../logger'
-import { FeatureGate } from './gates'
+import { Gate, IGNORE_METRICS_FOR_GATES } from './gates'
 import { MetricsClient } from './metrics'
-import { CheckedFeatureGatesMap, RawUserContext } from './types'
 import {
-  extractParsedUserContextFromGrowthBookUserContext,
-  parseRawUserContext,
+  CheckedFeatureGatesMap,
+  ScopedFeatureGatesClient,
+  UserContext,
+} from './types'
+import {
+  extractUserContextFromGrowthbookUserContext,
+  mergeUserContexts,
+  normalizeUserContext,
   parsedUserContextToTrackingMetadata,
 } from './utils'
 
@@ -17,15 +23,29 @@ import {
 const FETCH_TIMEOUT = 3e3 // 3 seconds
 
 /**
- * StatSig used to default to every 10s, but I think 1m is fine
+ * StatSig used to default to every 10s, but I think 1m is fine.
  */
 const REFETCH_INTERVAL = 60e3 // 1 minute
 
+/**
+ * These need to match what the client sends.
+ */
+const ANALYTICS_HEADER_DEVICE_ID = 'X-Bsky-Device-Id'
+const ANALYTICS_HEADER_SESSION_ID = 'X-Bsky-Session-Id'
+
+export { type ScopedFeatureGatesClient } from './types'
+
 export class FeatureGatesClient {
-  ready = false
-  client: GrowthBookClient | undefined = undefined
-  refreshInterval: NodeJS.Timeout | undefined = undefined
-  metrics: MetricsClient
+  private ready = false
+  private client: GrowthBookClient | undefined = undefined
+  private refreshInterval: NodeJS.Timeout | undefined = undefined
+  private metrics: MetricsClient
+
+  /**
+   * Easy access to the `Gate` enum for consumers of this class, so they don't
+   * need to import it separately.
+   */
+  Gate = Gate
 
   constructor(
     private config: {
@@ -53,10 +73,7 @@ export class FeatureGatesClient {
         apiHost: this.config.growthBookApiHost,
         clientKey: this.config.growthBookClientKey,
         onFeatureUsage: (feature, result, userContext) => {
-          // This is too high-volume, we don't want to track.
-          if (feature === 'image:remove_format_from_url') {
-            return
-          }
+          if (IGNORE_METRICS_FOR_GATES.has(feature as Gate)) return
 
           this.metrics.track(
             'feature:viewed',
@@ -67,11 +84,23 @@ export class FeatureGatesClient {
               variationId: result.experimentResult?.key,
             },
             parsedUserContextToTrackingMetadata(
-              extractParsedUserContextFromGrowthBookUserContext(userContext),
+              extractUserContextFromGrowthbookUserContext(userContext),
             ),
           )
         },
         trackingCallback: (experiment, result, userContext) => {
+          /**
+           * Experiments are only fired if a feature gate has an experiment
+           * attached in GrowthBook. Still, protect against noisy misconfigured
+           * experiments here.
+           */
+          if (
+            result.featureId &&
+            IGNORE_METRICS_FOR_GATES.has(result.featureId as Gate)
+          ) {
+            return
+          }
+
           this.metrics.track(
             'experiment:viewed',
             {
@@ -79,7 +108,7 @@ export class FeatureGatesClient {
               variationId: result.key,
             },
             parsedUserContextToTrackingMetadata(
-              extractParsedUserContextFromGrowthBookUserContext(userContext),
+              extractUserContextFromGrowthbookUserContext(userContext),
             ),
           )
         },
@@ -104,7 +133,7 @@ export class FeatureGatesClient {
       }
 
       /**
-       * Set up periodic refresh of feature definitions
+       * Set up periodic refresh of feature definitions.
        *
        * @see https://docs.growthbook.io/lib/node#refreshing-features
        */
@@ -118,7 +147,7 @@ export class FeatureGatesClient {
         }
       }, REFETCH_INTERVAL)
 
-      /* Ready or not, here we come */
+      /* Ready or not, here we come. */
       this.ready = true
     } catch (err) {
       featureGatesLogger.error({ err }, 'Client initialization failed')
@@ -140,12 +169,63 @@ export class FeatureGatesClient {
    * ID to boolean result.
    */
   checkGates(
-    gates: FeatureGate[],
-    rawUserContext: RawUserContext,
+    gates: Gate[],
+    userContext: UserContext,
   ): CheckedFeatureGatesMap {
     const gb = this.client
-    const attributes = parseRawUserContext(rawUserContext)
+    const attributes = normalizeUserContext(userContext)
     if (!gb || !this.ready) return new Map(gates.map((g) => [g, false]))
     return new Map(gates.map((g) => [g, gb.isOn(g, { attributes })]))
+  }
+
+  scope(scopedUserContext: UserContext): ScopedFeatureGatesClient {
+    /*
+     * Create initial deviceId and sessionId values for the scoped client, to
+     * be used throughout this request lifecycle.
+     */
+    const base = normalizeUserContext(scopedUserContext)
+    return {
+      Gate: this.Gate,
+      checkGates: (
+        gates: Gate[],
+        userContextOverrides?: Pick<UserContext, 'did'>,
+      ) => {
+        const userContext = mergeUserContexts(base, userContextOverrides)
+        return this.checkGates(gates, userContext)
+      },
+      checkGate: (gate: Gate, userContextOverrides?: UserContext) => {
+        const userContext = mergeUserContexts(base, userContextOverrides)
+        return this.checkGates([gate], userContext).get(gate) || false
+      },
+    }
+  }
+
+  /**
+   * Parse properties available in XRPC handlers to `UserContext`. The returned
+   * properties are used as GrowthBook attributes as well as the metadata
+   * payload for analytics events.
+   */
+  parseUserContextFromHandler({
+    viewer,
+    req,
+  }: {
+    /**
+     * The user's DID.
+     */
+    viewer: string | null
+    /**
+     * The express request object, used to extract analytics headers for the
+     * user context.
+     */
+    req: express.Request
+  }): UserContext {
+    const deviceId = req.header(ANALYTICS_HEADER_DEVICE_ID)
+    const sessionId = req.header(ANALYTICS_HEADER_SESSION_ID)
+
+    return normalizeUserContext({
+      did: viewer,
+      deviceId,
+      sessionId,
+    })
   }
 }

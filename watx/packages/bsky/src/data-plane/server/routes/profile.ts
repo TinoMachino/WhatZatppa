@@ -6,6 +6,12 @@ import {
   ChatBskyActorDeclaration,
 } from '@atproto/api'
 import { keyBy } from '@atproto/common'
+import {
+  LIVE_CABILDEO_ALLOWED_PHASES,
+  activeHostPresenceExistsSql,
+  mapActorCabildeoLive,
+} from '../cabildeo-live'
+import * as ComParaCommunityGovernance from '../../../lexicon/types/com/para/community/governance'
 import { app, chat } from '../../../lexicons.js'
 import { parseJsonBytes } from '../../../hydration/util'
 import { Service } from '../../../proto/bsky_connect'
@@ -27,6 +33,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     if (dids.length === 0) {
       return { actors: [] }
     }
+    const now = new Date()
     const profileUris = dids.map(
       (did) => `at://${did}/app.bsky.actor.profile/self`,
     )
@@ -51,6 +58,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       chatDeclarations,
       notifDeclarations,
       germDeclarations,
+      cabildeoLiveRows,
     ] = await Promise.all([
       db.db
         .selectFrom('actor')
@@ -79,6 +87,35 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       getRecords(db)({ uris: chatDeclarationUris }),
       getRecords(db)({ uris: notifDeclarationUris }),
       getRecords(db)({ uris: germDeclarationUris }),
+      db.db
+        .selectFrom('cabildeo_live_presence as live_presence')
+        .innerJoin(
+          'cabildeo_live_session as live_session',
+          'live_session.cabildeo',
+          'live_presence.cabildeo',
+        )
+        .innerJoin(
+          'cabildeo_cabildeo as live_cabildeo',
+          'live_cabildeo.uri',
+          'live_presence.cabildeo',
+        )
+        .where('live_presence.actorDid', 'in', dids)
+        .where(
+          sql<boolean>`"live_presence"."expiresAt" > ${now}`,
+        )
+        .where('live_session.endedAt', 'is', null)
+        .where('live_cabildeo.phase', 'in', [...LIVE_CABILDEO_ALLOWED_PHASES])
+        .where(activeHostPresenceExistsSql('live_session', now))
+        .select([
+          'live_presence.actorDid as actorDid',
+          'live_presence.cabildeo as cabildeo',
+          'live_presence.expiresAt as expiresAt',
+          'live_cabildeo.community as community',
+          'live_cabildeo.phase as phase',
+          'live_session.liveUri as liveUri',
+        ])
+        .orderBy('live_presence.expiresAt', 'desc')
+        .execute(),
     ])
 
     const verificationsBySubjectDid = verificationsReceived.reduce(
@@ -92,6 +129,12 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     )
 
     const byDid = keyBy(handlesRes, 'did')
+    const cabildeoLiveByDid = cabildeoLiveRows.reduce((acc, row) => {
+      if (!acc.has(row.actorDid)) {
+        acc.set(row.actorDid, mapActorCabildeoLive(row))
+      }
+      return acc
+    }, new Map<string, ReturnType<typeof mapActorCabildeoLive>>())
     const actors = dids.map((did, i) => {
       const row = byDid.get(did)
 
@@ -178,6 +221,10 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
           typeof chatDeclaration?.['allowIncoming'] === 'string'
             ? chatDeclaration['allowIncoming']
             : undefined,
+        allowGroupChatInvitesFrom:
+          typeof chatDeclaration?.['allowGroupInvites'] === 'string'
+            ? chatDeclaration['allowGroupInvites']
+            : undefined,
         upstreamStatus: row?.upstreamStatus ?? '',
         createdAt: profiles.records[i].createdAt, // @NOTE profile creation date not trusted in production
         priorityNotifications: row?.priorityNotifs ?? false,
@@ -189,6 +236,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
         profileTags: [],
         allowActivitySubscriptionsFrom: activitySubscription(),
         ageAssuranceStatus: ageAssuranceStatus(),
+        cabildeoLive: cabildeoLiveByDid.get(did),
       }
     })
     return { actors }
@@ -538,97 +586,13 @@ const getPublishedGovernanceRecord = async ({
 
 const parseGovernanceRecord = (json: string): GovernanceRecord | null => {
   try {
-    const parsed = JSON.parse(json) as Record<string, unknown>
-    return {
-      community: stringOr(parsed.community),
-      communityId: stringOr(parsed.communityId),
-      slug: stringOr(parsed.slug),
-      moderators: normalizeModerators(parsed.moderators),
-      officials: normalizeOfficials(parsed.officials),
-      deputies: normalizeDeputies(parsed.deputies),
-      metadata: normalizeGovernanceMetadata(parsed.metadata),
-      editHistory: normalizeGovernanceHistory(parsed.editHistory),
-    }
+    const parsed = JSON.parse(json)
+    const validated = ComParaCommunityGovernance.validateRecord(parsed)
+    if (!validated.success) return null
+    return parsed
   } catch {
     return null
   }
-}
-
-const normalizeModerators = (raw: unknown): GovernancePersonWithRole[] => {
-  if (!Array.isArray(raw)) return []
-  const out: GovernancePersonWithRole[] = []
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue
-    const value = item as Record<string, unknown>
-    out.push({
-      did: stringOr(value.did),
-      handle: stringOr(value.handle),
-      displayName: stringOr(value.displayName) || stringOr(value.name),
-      avatar: stringOr(value.avatar),
-      role: stringOr(value.role),
-      badge: stringOr(value.badge),
-    })
-  }
-  return out
-}
-
-const normalizeOfficials = (raw: unknown): GovernanceOfficial[] => {
-  if (!Array.isArray(raw)) return []
-  const out: GovernanceOfficial[] = []
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue
-    const value = item as Record<string, unknown>
-    out.push({
-      did: stringOr(value.did),
-      handle: stringOr(value.handle),
-      displayName: stringOr(value.displayName) || stringOr(value.name),
-      avatar: stringOr(value.avatar),
-      office: stringOr(value.office),
-      mandate: stringOr(value.mandate),
-    })
-  }
-  return out
-}
-
-const normalizeDeputies = (raw: unknown): GovernanceDeputyRole[] => {
-  if (!Array.isArray(raw)) return []
-  const out: GovernanceDeputyRole[] = []
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue
-    const value = item as Record<string, unknown>
-    out.push({
-      key: stringOr(value.key),
-      tier: stringOr(value.tier),
-      role: stringOr(value.role) || stringOr(value.title),
-      activeHolder: normalizePerson(value.activeHolder),
-      votes: numberOr(value.votes),
-      applicants: normalizeApplicants(value.applicants),
-    })
-  }
-  return out
-}
-
-const normalizeApplicants = (raw: unknown): GovernanceApplicant[] => {
-  if (!Array.isArray(raw)) return []
-  return raw
-    .map((item) => {
-      if (typeof item === 'string') {
-        return { displayName: item }
-      }
-      return normalizePerson(item)
-    })
-    .filter((item): item is GovernanceApplicant => !!item)
-}
-
-const normalizePerson = (raw: unknown): GovernancePerson | undefined => {
-  if (!raw || typeof raw !== 'object') return undefined
-  const value = raw as Record<string, unknown>
-  const displayName = stringOr(value.displayName) || stringOr(value.name)
-  const handle = stringOr(value.handle)
-  const did = stringOr(value.did)
-  const avatar = stringOr(value.avatar)
-  if (!displayName && !handle && !did && !avatar) return undefined
-  return { did, handle, displayName, avatar }
 }
 
 const resolveGovernanceMember = (
@@ -651,53 +615,7 @@ const resolveGovernanceMember = (
   }
 }
 
-const normalizeGovernanceMetadata = (
-  raw: unknown,
-): GovernanceMetadata | undefined => {
-  if (!raw || typeof raw !== 'object') return undefined
-  const value = raw as Record<string, unknown>
-  return {
-    termLengthDays: numberOr(value.termLengthDays),
-    reviewCadence: stringOr(value.reviewCadence),
-    escalationPath: stringOr(value.escalationPath),
-    publicContact: stringOr(value.publicContact),
-    lastPublishedAt: stringOr(value.lastPublishedAt),
-    state: stringOr(value.state),
-    matterFlairIds: optionalStringList(value.matterFlairIds),
-    policyFlairIds: optionalStringList(value.policyFlairIds),
-  }
-}
-
-const normalizeGovernanceHistory = (raw: unknown): GovernanceHistoryEntry[] => {
-  if (!Array.isArray(raw)) return []
-  return raw.reduce<GovernanceHistoryEntry[]>((acc, item) => {
-    if (!item || typeof item !== 'object') return acc
-    const value = item as Record<string, unknown>
-    acc.push({
-      id:
-        stringOr(value.id) ||
-        `${stringOr(value.action) || 'publish-governance-updates'}-history`,
-      action: stringOr(value.action) || 'publish_governance_updates',
-      actorDid: stringOr(value.actorDid),
-      actorHandle: stringOr(value.actorHandle),
-      createdAt: stringOr(value.createdAt) || new Date().toISOString(),
-      summary: stringOr(value.summary) || 'Governance update published.',
-    })
-    return acc
-  }, [])
-}
-
 const stringOr = (value: unknown) =>
   typeof value === 'string' && value.trim().length > 0
     ? value.trim()
-    : undefined
-
-const numberOr = (value: unknown) =>
-  typeof value === 'number' && Number.isFinite(value) ? value : 0
-
-const optionalStringList = (value: unknown) =>
-  Array.isArray(value)
-    ? value
-        .map((item) => (typeof item === 'string' ? item.trim() : ''))
-        .filter(Boolean)
     : undefined

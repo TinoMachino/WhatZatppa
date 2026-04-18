@@ -177,6 +177,7 @@ export async function post(
       ...(opts.collection === 'com.para.post' && {
         flairs: buildFlairsArray(draft),
         postType: derivePostTypeId(draft),
+        title: draft.title || undefined,
       }),
     }
     writes.push({

@@ -7,7 +7,6 @@ import {Trans} from '@lingui/react/macro'
 import {logEvent} from '#/lib/statsig/statsig'
 import {logger} from '#/logger'
 import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
-import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {atoms as a, web} from '#/alf'
 import {AccountList} from '#/components/AccountList'
 import {Button, ButtonText} from '#/components/Button'
@@ -26,7 +25,6 @@ export const ChooseAccountForm = ({
   const {_} = useLingui()
   const {currentAccount} = useSession()
   const {resumeSession} = useSessionApi()
-  const {setShowLoggedOut} = useLoggedOutViewControls()
 
   const onSelect = useCallback(
     async (account: SessionAccount) => {
@@ -40,7 +38,6 @@ export const ChooseAccountForm = ({
         return
       }
       if (account.did === currentAccount?.did) {
-        setShowLoggedOut(false)
         Toast.show(_(msg`Already signed in as @${account.handle}`))
         return
       }
@@ -67,7 +64,6 @@ export const ChooseAccountForm = ({
       resumeSession,
       pendingDid,
       onSelectAccount,
-      setShowLoggedOut,
       _,
     ],
   )

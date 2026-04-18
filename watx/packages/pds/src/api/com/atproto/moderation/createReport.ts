@@ -1,8 +1,9 @@
-import { AtpAgent } from '@atproto/api'
+import { xrpc } from '@atproto/lex'
 import { AuthScope } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
+import { com } from '../../../../lexicons/index.js'
 import { computeProxyTo, parseProxyInfo } from '../../../../pipethrough'
 
 export default function (server: Server, ctx: AppContext) {
@@ -21,20 +22,22 @@ export default function (server: Server, ctx: AppContext) {
         req,
         ids.ComAtprotoModerationCreateReport,
       )
-      const agent = new AtpAgent({ service: url })
-      const serviceAuth = await ctx.serviceAuthHeaders(
+      const { headers } = await ctx.serviceAuthHeaders(
         auth.credentials.did,
         aud,
         ids.ComAtprotoModerationCreateReport,
       )
-      const res = await agent.com.atproto.moderation.createReport(input.body, {
-        ...serviceAuth,
-        encoding: 'application/json',
+      const result = await xrpc(url, com.atproto.moderation.createReport.main, {
+        body: input.body as com.atproto.moderation.createReport.$InputBody,
+        headers,
+        validateRequest: ctx.cfg.service.devMode,
+        validateResponse: ctx.cfg.service.devMode,
+        strictResponseProcessing: ctx.cfg.service.devMode,
       })
 
       return {
         encoding: 'application/json',
-        body: res.data,
+        body: result.body,
       }
     },
   })

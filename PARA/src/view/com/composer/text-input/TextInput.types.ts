@@ -1,6 +1,9 @@
 import {type TextInput} from 'react-native'
 import {type RichText} from '@atproto/api'
 
+import {type ComposerFlair} from '#/lib/post-flairs'
+import {type PostType} from '#/lib/tags'
+
 export type TextInputRef = {
   focus: () => void
   blur: () => void
@@ -25,7 +28,12 @@ export type TextInputProps = {
   webForceMinHeight: boolean
   hasRightPadding: boolean
   isActive: boolean
+  civicAutocompleteEnabled: boolean
+  selectedFlairs: ComposerFlair[]
+  postType: PostType | null
   setRichText: (v: RichText) => void
+  setSelectedFlairs: (flairs: ComposerFlair[]) => void
+  setPostType: (postType: PostType | null) => void
   onPhotoPasted: (uri: string) => void
   onPressPublish: (richtext: RichText) => void
   onNewLink: (uri: string) => void

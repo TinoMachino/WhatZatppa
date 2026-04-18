@@ -26,6 +26,19 @@ import * as token from './helpers/token'
 
 export { AccountStatus, formatAccountStatus } from './helpers/account'
 
+/**
+ * Thrown by {@link AccountManager.login} when the identifier resolved to a
+ * known account but the supplied credentials did not match.
+ */
+export class InvalidPasswordError extends AuthRequiredError {
+  constructor(
+    public readonly did: string,
+    errorMessage = 'Invalid identifier or password',
+  ) {
+    super(errorMessage)
+  }
+}
+
 export type AccountManagerDbConfig = {
   accountDbLoc: string
   disableWalAutoCheckpoint: boolean
@@ -387,11 +400,11 @@ export class AccountManager {
       if (!validAccountPass) {
         // takendown/suspended accounts cannot login with app password
         if (isSoftDeleted) {
-          throw new AuthRequiredError('Invalid identifier or password')
+          throw new InvalidPasswordError(user.did)
         }
         appPassword = await this.verifyAppPassword(user.did, password)
         if (appPassword === null) {
-          throw new AuthRequiredError('Invalid identifier or password')
+          throw new InvalidPasswordError(user.did)
         }
       }
 

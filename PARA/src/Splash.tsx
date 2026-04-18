@@ -3,12 +3,10 @@ import {
   AccessibilityInfo,
   Image as RNImage,
   StyleSheet,
-  useColorScheme,
   View,
 } from 'react-native'
 import Animated, {
   Easing,
-  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -28,56 +26,51 @@ const darkSplashImageUri = RNImage.resolveAssetSource(
 
 type Props = {
   isReady: boolean
+  theme: 'light' | 'dim' | 'dark'
 }
 
 export function Splash(props: PropsWithChildren<Props>) {
   'use no memo'
-  const outroAppOpacity = useSharedValue(0)
-  const colorScheme = useColorScheme()
+  const overlayOpacity = useSharedValue(1)
   const [isAnimationComplete, setIsAnimationComplete] = useState(false)
-  const [isImageLoaded, setIsImageLoaded] = useState(false)
   const [isLayoutReady, setIsLayoutReady] = useState(false)
-  const [reduceMotion, setReduceMotion] = useState<boolean | undefined>(false)
-  const isReady =
-    props.isReady &&
-    isImageLoaded &&
-    isLayoutReady &&
-    reduceMotion !== undefined
-  const isDarkMode = colorScheme === 'dark'
+  const [reduceMotion, setReduceMotion] = useState(false)
+  const isReady = props.isReady && isLayoutReady
+  const isDarkMode = props.theme !== 'light'
 
-  const appAnimation = useAnimatedStyle(() => {
+  const overlayAnimation = useAnimatedStyle(() => {
     return {
-      opacity: interpolate(
-        outroAppOpacity.get(),
-        [0, 0.1, 0.2, 1],
-        [0, 0, 1, 1],
-        'clamp',
-      ),
+      opacity: overlayOpacity.get(),
     }
   })
 
   const onFinish = useCallback(() => setIsAnimationComplete(true), [])
   const onLayout = useCallback(() => setIsLayoutReady(true), [])
-  const onLoadEnd = useCallback(() => setIsImageLoaded(true), [])
 
   useEffect(() => {
     if (isReady) {
-      SplashScreen.hideAsync()
+      void SplashScreen.hideAsync()
         .then(() => {
-          outroAppOpacity.set(() =>
-            withTiming(1, {
-              duration: 1200,
-              easing: Easing.in(Easing.cubic),
-            }, finished => {
-              if (finished) {
-                runOnJS(onFinish)()
-              }
-            }),
+          overlayOpacity.set(() =>
+            withTiming(
+              0,
+              {
+                duration: reduceMotion ? 0 : 220,
+                easing: Easing.out(Easing.cubic),
+              },
+              finished => {
+                if (finished) {
+                  runOnJS(onFinish)()
+                }
+              },
+            ),
           )
         })
-        .catch(() => {})
+        .catch(() => {
+          setIsAnimationComplete(true)
+        })
     }
-  }, [onFinish, outroAppOpacity, isReady])
+  }, [isReady, onFinish, overlayOpacity, reduceMotion])
 
   useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled()
@@ -86,24 +79,24 @@ export function Splash(props: PropsWithChildren<Props>) {
   }, [])
 
   return (
-    <View style={{flex: 1}} onLayout={onLayout}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: isDarkMode ? '#10141F' : '#F7FAFC',
+      }}
+      onLayout={onLayout}>
+      {isReady && <View style={{flex: 1}}>{props.children}</View>}
+
       {!isAnimationComplete && (
-        <View style={StyleSheet.absoluteFillObject}>
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFillObject, overlayAnimation]}>
           <Image
             accessibilityIgnoresInvertColors
-            onLoadEnd={onLoadEnd}
             source={{uri: isDarkMode ? darkSplashImageUri : splashImageUri}}
             style={StyleSheet.absoluteFillObject}
           />
-        </View>
-      )}
-
-      {isReady && (
-        <>
-          <Animated.View style={[{flex: 1}, appAnimation]}>
-            {props.children}
-          </Animated.View>
-        </>
+        </Animated.View>
       )}
     </View>
   )

@@ -10,6 +10,7 @@ import express, {
   Router,
 } from 'express'
 import { LexValue } from '@atproto/lex-data'
+import { lexStringify } from '@atproto/lex-json'
 import { l } from '@atproto/lex-schema'
 import {
   LexXrpcProcedure,
@@ -17,7 +18,6 @@ import {
   LexXrpcSubscription,
   LexiconDoc,
   Lexicons,
-  lexToJson,
 } from '@atproto/lexicon'
 import {
   InternalServerError,
@@ -278,6 +278,11 @@ export class Server {
   ) {
     const config =
       typeof configOrFn === 'function' ? { handler: configOrFn } : configOrFn
+    if (config.opts && 'paramsParseLoose' in config.opts) {
+      throw new Error(
+        `paramsParseLoose is not supported with method(), use add() instead`,
+      )
+    }
     const def = this.lex.getDef(nsid)
     if (def?.type === 'query' || def?.type === 'procedure') {
       this.addRoute(nsid, def, config)
@@ -478,8 +483,7 @@ export class Server {
             // a stream, which would be a bug.
             await pipeline(output.body, res)
           } else if (encoding === 'application/json') {
-            const json = lexToJson(output.body)
-            res.json(json)
+            res.send(lexStringify(output.body as LexValue))
           } else {
             res.send(
               Buffer.isBuffer(output.body)
