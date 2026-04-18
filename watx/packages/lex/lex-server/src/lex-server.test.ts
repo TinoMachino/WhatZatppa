@@ -495,7 +495,7 @@ describe('Error Handling', () => {
       expect(data.message).toBe('It was that one!')
     })
 
-    it('handles falsy values thrown as InternalError', async () => {
+    it('handles falsy values thrown as InternalServerError', async () => {
       const handler: LexRouterMethodHandler<
         typeof io.example.throwFalsyValue
       > = async () => {
@@ -511,7 +511,7 @@ describe('Error Handling', () => {
 
       expect(response.status).toBe(500)
       const data = await response.json()
-      expect(data.error).toBe('InternalError')
+      expect(data.error).toBe('InternalServerError')
     })
   })
 

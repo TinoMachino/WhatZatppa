@@ -52,15 +52,38 @@ export class LexServerError<
     }
 
     // Convert @atproto/lex-schema validation errors to 400 Bad Request
-    if (cause instanceof LexValidationError) {
-      return new LexServerError(400, cause.toJSON(), undefined, {
-        cause,
-      })
+    if (
+      cause instanceof LexValidationError ||
+      (typeof cause === 'object' &&
+        cause !== null &&
+        'name' in cause &&
+        cause.name === 'LexValidationError')
+    ) {
+      const issues = (cause as any).toJSON?.().issues ?? []
+      return new LexServerError(
+        400,
+        {
+          error: 'InvalidRequest',
+          message: (cause as any).message,
+          issues,
+        },
+        undefined,
+        {
+          cause,
+        },
+      )
     }
 
-    // Any other error is treated as a generic 500 Internal Server Error
-    if (cause instanceof LexError) {
-      return new LexServerError(500, cause.toJSON(), undefined, {
+    // Convert @atproto/lex-data errors to 400 Bad Request (by default)
+    // unless it is already a LexServerError with a specific status.
+    if (
+      cause instanceof LexError ||
+      (typeof cause === 'object' &&
+        cause !== null &&
+        'name' in cause &&
+        cause.name === 'LexError')
+    ) {
+      return new LexServerError(400, (cause as any).toJSON(), undefined, {
         cause,
       })
     }
