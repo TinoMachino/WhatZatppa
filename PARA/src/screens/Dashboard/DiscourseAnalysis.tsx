@@ -12,17 +12,16 @@ import {useNavigation} from '@react-navigation/native'
 import {useQuery} from '@tanstack/react-query'
 
 import {DiscourseAPI} from '#/lib/api/discourse'
-import {SentimentDistribution} from '#/lib/api/para-lexicons'
+import {type SentimentDistribution} from '#/lib/api/para-lexicons'
 import {getCabildeoUri} from '#/lib/cabildeo-client'
 import {
-  DISCOURSE_COMMUNITIES,
   DISCOURSE_FLUX_TAGS,
   DISCOURSE_INDICATORS,
   MOCK_CABILDEOS,
 } from '#/lib/constants/mockData'
 import {type NavigationProp} from '#/lib/routes/types'
-import {useBaseFilter} from '#/state/shell/base-filter'
 import {useAgent} from '#/state/session'
+import {useBaseFilter} from '#/state/shell/base-filter'
 import {Text} from '#/view/com/util/text/Text'
 import {useTheme} from '#/alf'
 import {ActiveFiltersStackButton} from '#/components/BaseFilterControls'

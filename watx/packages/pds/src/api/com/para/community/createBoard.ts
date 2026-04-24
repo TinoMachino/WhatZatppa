@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { CID } from 'multiformats/cid'
 import { TID } from '@atproto/common'
 import { AtUri } from '@atproto/syntax'

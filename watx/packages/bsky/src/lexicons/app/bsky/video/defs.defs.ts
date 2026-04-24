@@ -39,7 +39,7 @@ const jobStatus = l.typedObject<JobStatus>(
       knownValues: ['JOB_STATE_COMPLETED', 'JOB_STATE_FAILED']
     }>(),
     progress: l.optional(l.integer({ minimum: 0, maximum: 100 })),
-    blob: l.optional(l.blob({ allowLegacy: false })),
+    blob: l.optional(l.blob()),
     error: l.optional(l.string()),
     message: l.optional(l.string()),
   }),

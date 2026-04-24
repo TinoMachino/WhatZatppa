@@ -126,12 +126,16 @@ export default async (
     replies.carol[0],
   )
   await sc.network.processAll()
-  await sc.reply(
+  const alicesReplyToBob = await sc.reply(
     alice,
     sc.posts[alice][1].ref,
     sc.replies[bob][0].ref,
     replies.alice[0],
   )
+  await sc.repost(carol, sc.posts[dan][1].ref)
+  await sc.repost(dan, sc.posts[alice][1].ref)
+  await sc.repost(dan, alicesReplyToBob.ref)
+
   if (sc.network instanceof TestNetwork) {
     const bsky = sc.network.bsky
     await createLabel(bsky, {

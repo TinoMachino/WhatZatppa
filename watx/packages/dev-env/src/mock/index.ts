@@ -1,9 +1,7 @@
 import { AtpAgent, COM_ATPROTO_MODERATION } from '@atproto/api'
 import { Database } from '@atproto/bsky'
-import { AtUri } from '@atproto/syntax'
+import { AtUri, AtUriString } from '@atproto/syntax'
 import { EXAMPLE_LABELER, RecordRef, TestNetwork } from '../index'
-import seedParaFlairs from '../seed/para-flairs'
-import * as seedThreadV2 from '../seed/thread-v2'
 import { postTexts, replyTexts } from './data'
 import blurHashB64 from './img/blur-hash-avatar-b64'
 import labeledImgB64 from './img/labeled-img-b64'
@@ -32,96 +30,84 @@ export async function generateMockSetup(env: TestNetwork) {
     throw new Error('Not found')
   }
 
-  // Idempotent helper: tries to log in first, creates account if login fails
-  const getOrCreateAccount = async (
-    opts: { email: string; handle: string; password: string },
-  ): Promise<AtpAgent> => {
-    const client: AtpAgent = env.pds.getClient()
-    try {
-      await client.login({ identifier: opts.handle, password: opts.password })
-      console.log(`  ✓ Logged in as ${opts.handle}`)
-      return client
-    } catch (_loginErr) {
-      // Account doesn't exist yet, create it
-    }
-    try {
-      await client.createAccount(opts)
-      console.log(`  + Created ${opts.handle}`)
-    } catch (createErr: any) {
-      // Handle already taken — try login again with the email as identifier
-      if (createErr?.error === 'InvalidRequest' || createErr?.status === 400) {
-        const retry = env.pds.getClient()
-        await retry.login({ identifier: opts.email, password: opts.password })
-        console.log(`  ✓ Logged in as ${opts.handle} (via email)`)
-        return retry
-      }
-      throw createErr
-    }
-    return client
-  }
-
   const users = [
     {
       email: 'alice@test.com',
       handle: `alice.test`,
       password: 'hunter2',
+      displayName: 'Alice',
+      description: 'Test user 0',
     },
     {
       email: 'bob@test.com',
       handle: `bob.test`,
       password: 'hunter2',
+      displayName: 'Bob',
+      description: 'Test user 1',
     },
     {
       email: 'carla@test.com',
       handle: `carla.test`,
       password: 'hunter2',
+      displayName: 'Carla',
+      description: 'Test user 2',
+    },
+    {
+      email: 'triage@test.com',
+      handle: 'triage.test',
+      password: 'triage-pass',
+    },
+    {
+      email: 'mod@test.com',
+      handle: 'mod.test',
+      password: 'mod-pass',
+    },
+    {
+      email: 'admin-mod@test.com',
+      handle: 'admin-mod.test',
+      password: 'admin-mod-pass',
+    },
+    {
+      email: 'labeler@test.com',
+      handle: 'labeler.test',
+      password: 'hunter2',
+      displayName: 'Test Labeler',
+      description: 'Labeling things across the atmosphere',
     },
   ]
 
-  console.log('📦 Setting up mock accounts...')
   const userAgents = await Promise.all(
-    users.map(async (user, i) => {
-      const client: AtpAgent = await getOrCreateAccount(user)
-      client.assertAuthenticated()
-      try {
-        await client.app.bsky.actor.profile.create(
-          { repo: client.assertDid },
+    users.map(async (user) => {
+      const agent: AtpAgent = env.pds.getAgent()
+      await agent.createAccount(user)
+      agent.assertAuthenticated()
+      if (user.displayName || user.description) {
+        await agent.app.bsky.actor.profile.create(
+          { repo: agent.did },
           {
-            displayName: ucfirst(user.handle).slice(0, -5),
-            description: `Test user ${i}`,
+            displayName: user.displayName,
+            description: user.description,
           },
         )
-      } catch (_e) {
-        // Profile already exists, skip
       }
-      return client
+      return agent
     }),
   )
 
-  const [alice, bob, carla] = userAgents
+  const [alice, bob, carla, triage, mod, adminMod, labeler] = userAgents
 
-  // Create moderator accounts (idempotent)
-  const triageAgent: AtpAgent = await getOrCreateAccount({
-    email: 'triage@test.com',
-    handle: 'triage.test',
-    password: 'triage-pass',
-  })
-  await env.ozone.addTriageDid(triageAgent.assertDid)
-  const modAgent: AtpAgent = await getOrCreateAccount({
-    email: 'mod@test.com',
-    handle: 'mod.test',
-    password: 'mod-pass',
-  })
-  await env.ozone.addModeratorDid(modAgent.assertDid)
-  const adminAgent: AtpAgent = await getOrCreateAccount({
-    email: 'admin-mod@test.com',
-    handle: 'admin-mod.test',
-    password: 'admin-mod-pass',
-  })
-  await env.ozone.addAdminDid(adminAgent.assertDid)
+  // Create chat declarations for all users
+  for (const user of userAgents) {
+    await user.chat.bsky.actor.declaration.create(
+      { repo: user.did },
+      { allowIncoming: 'all' },
+    )
+  }
 
-  // Seed data (posts, follows, labels, etc.) — skip silently if already seeded
-  try {
+  // Add moderator roles
+  await env.ozone.addTriageDid(triage.did)
+  await env.ozone.addModeratorDid(mod.did)
+  await env.ozone.addAdminDid(adminMod.did)
 
   // Report one user
   const reporter = picka(userAgents)
@@ -140,9 +126,9 @@ export async function generateMockSetup(env: TestNetwork) {
   // everybody follows everybody
   const follow = async (author: AtpAgent, subject: AtpAgent) => {
     await author.app.bsky.graph.follow.create(
-      { repo: author.accountDid },
+      { repo: author.assertDid },
       {
-        subject: subject.accountDid,
+        subject: subject.assertDid,
         createdAt: date.next().value,
       },
     )
@@ -159,13 +145,23 @@ export async function generateMockSetup(env: TestNetwork) {
   for (let i = 0; i < postTexts.length; i++) {
     const author = picka(userAgents)
     const post = await author.app.bsky.feed.post.create(
-      { repo: author.assertDid },
+      { repo: author.did },
       {
         text: postTexts[i],
         createdAt: date.next().value,
       },
     )
     posts.push(post)
+    if (rand(10) === 0) {
+      const reposter = picka(userAgents)
+      await reposter.app.bsky.feed.repost.create(
+        { repo: reposter.did },
+        {
+          subject: picka(posts),
+          createdAt: date.next().value,
+        },
+      )
+    }
     if (rand(6) === 0) {
       const reporter = picka(userAgents)
       await reporter.com.atproto.moderation.createReport({
@@ -235,7 +231,7 @@ export async function generateMockSetup(env: TestNetwork) {
     const author = picka(userAgents)
     posts.push(
       await author.app.bsky.feed.post.create(
-        { repo: author.assertDid },
+        { repo: author.did },
         {
           text: picka(replyTexts),
           reply: {
@@ -253,7 +249,7 @@ export async function generateMockSetup(env: TestNetwork) {
     for (const user of userAgents) {
       if (rand(3) === 0) {
         await user.app.bsky.feed.like.create(
-          { repo: user.assertDid },
+          { repo: user.did },
           {
             subject: post,
             createdAt: date.next().value,
@@ -273,7 +269,7 @@ export async function generateMockSetup(env: TestNetwork) {
     [fg1Uri.toString()]: async () => {
       const feed = posts
         .filter(() => rand(2) === 0)
-        .map((post) => ({ post: post.uri }))
+        .map((post) => ({ post: post.uri as AtUriString }))
       return {
         encoding: 'application/json',
         body: {
@@ -298,7 +294,7 @@ export async function generateMockSetup(env: TestNetwork) {
   )
 
   await alice.app.bsky.feed.post.create(
-    { repo: alice.accountDid },
+    { repo: alice.assertDid },
     {
       text: 'check out my algorithm!',
       embed: {
@@ -310,7 +306,7 @@ export async function generateMockSetup(env: TestNetwork) {
   )
   for (const user of [alice, bob, carla]) {
     await user.app.bsky.feed.like.create(
-      { repo: user.assertDid },
+      { repo: user.did },
       {
         subject: fgAliceRes,
         createdAt: date.next().value,
@@ -327,7 +323,7 @@ export async function generateMockSetup(env: TestNetwork) {
     [fg2Uri.toString()]: async () => {
       const feed = posts
         .filter(() => rand(2) === 0)
-        .map((post) => ({ post: post.uri }))
+        .map((post) => ({ post: post.uri as AtUriString }))
       return {
         encoding: 'application/json',
         body: {
@@ -346,7 +342,7 @@ export async function generateMockSetup(env: TestNetwork) {
   )
 
   await alice.app.bsky.feed.post.create(
-    { repo: alice.accountDid },
+    { repo: alice.assertDid },
     {
       text: `bobs feed is neat too`,
       embed: {
@@ -358,7 +354,7 @@ export async function generateMockSetup(env: TestNetwork) {
   )
 
   const fg3Uri = AtUri.make(
-    carla.accountDid,
+    carla.assertDid,
     'app.bsky.feed.generator',
     'carla-intr-algo',
   )
@@ -366,7 +362,7 @@ export async function generateMockSetup(env: TestNetwork) {
     [fg3Uri.toString()]: async () => {
       const feed = posts
         .filter(() => rand(2) === 0)
-        .map((post) => ({ post: post.uri }))
+        .map((post) => ({ post: post.uri as AtUriString }))
       return {
         encoding: 'application/json',
         body: {
@@ -376,7 +372,7 @@ export async function generateMockSetup(env: TestNetwork) {
     },
   })
   const fgCarlaRes = await carla.app.bsky.feed.generator.create(
-    { repo: carla.accountDid, rkey: fg3Uri.rkey },
+    { repo: carla.assertDid, rkey: fg3Uri.rkey },
     {
       did: fg3.did,
       displayName: `Acceptin' Generator`,
@@ -386,7 +382,7 @@ export async function generateMockSetup(env: TestNetwork) {
   )
 
   await alice.app.bsky.feed.post.create(
-    { repo: alice.accountDid },
+    { repo: alice.assertDid },
     {
       text: `carla accepts interactions on her feed`,
       embed: {
@@ -397,24 +393,10 @@ export async function generateMockSetup(env: TestNetwork) {
     },
   )
 
-  // create a labeler account
+  // create labeler service
   {
-    const labeler = env.pds.getClient()
-    const res = await labeler.createAccount({
-      email: 'labeler@test.com',
-      handle: 'labeler.test',
-      password: 'hunter2',
-    })
-    await labeler.app.bsky.actor.profile.create(
-      { repo: res.data.did },
-      {
-        displayName: 'Test Labeler',
-        description: `Labeling things across the atmosphere`,
-      },
-    )
-
     await labeler.app.bsky.labeler.service.create(
-      { repo: res.data.did, rkey: 'self' },
+      { repo: labeler.did, rkey: 'self' },
       {
         policies: {
           labelValues: [
@@ -501,35 +483,35 @@ export async function generateMockSetup(env: TestNetwork) {
       },
     )
     await createLabel(env.bsky.db, {
-      uri: alice.accountDid,
+      uri: alice.assertDid,
       cid: '',
       val: 'rude',
-      src: res.data.did,
+      src: labeler.did,
     })
     await createLabel(env.bsky.db, {
-      uri: `at://${alice.accountDid}/app.bsky.feed.generator/alice-favs`,
+      uri: `at://${alice.assertDid}/app.bsky.feed.generator/alice-favs`,
       cid: '',
       val: 'cool',
-      src: res.data.did,
+      src: labeler.did,
     })
     await createLabel(env.bsky.db, {
-      uri: bob.accountDid,
+      uri: bob.assertDid,
       cid: '',
       val: 'cool',
-      src: res.data.did,
+      src: labeler.did,
     })
     await createLabel(env.bsky.db, {
-      uri: carla.accountDid,
+      uri: carla.assertDid,
       cid: '',
       val: 'spam',
-      src: res.data.did,
+      src: labeler.did,
     })
   }
 
   // Create lists and add people to the lists
   {
     const flowerLovers = await alice.app.bsky.graph.list.create(
-      { repo: alice.accountDid },
+      { repo: alice.assertDid },
       {
         name: 'Flower Lovers',
         purpose: 'app.bsky.graph.defs#curatelist',
@@ -538,7 +520,7 @@ export async function generateMockSetup(env: TestNetwork) {
       },
     )
     const labelHaters = await bob.app.bsky.graph.list.create(
-      { repo: bob.accountDid },
+      { repo: bob.assertDid },
       {
         name: 'Label Haters',
         purpose: 'app.bsky.graph.defs#modlist',
@@ -547,73 +529,59 @@ export async function generateMockSetup(env: TestNetwork) {
       },
     )
     await alice.app.bsky.graph.listitem.create(
-      { repo: alice.accountDid },
+      { repo: alice.assertDid },
       {
-        subject: bob.accountDid,
+        subject: bob.assertDid,
         createdAt: new Date().toISOString(),
         list: new RecordRef(flowerLovers.uri, flowerLovers.cid).uriStr,
       },
     )
     await bob.app.bsky.graph.listitem.create(
-      { repo: bob.accountDid },
+      { repo: bob.assertDid },
       {
-        subject: alice.accountDid,
+        subject: alice.assertDid,
         createdAt: new Date().toISOString(),
         list: new RecordRef(labelHaters.uri, labelHaters.cid).uriStr,
       },
     )
   }
 
-  await setVerifier(env.bsky.db, alice.accountDid)
+  await setVerifier(env.bsky.db, alice.assertDid)
 
-  // @TODO the following should be optimized as it makes dev-env start very slow (>10 sec)
-  const sc = env.getSeedClient()
-  await seedThreadV2.simple(sc)
-  await seedThreadV2.long(sc)
-  await seedThreadV2.deep(sc)
-  await seedThreadV2.branchingFactor(sc)
-  await seedThreadV2.annotateMoreReplies(sc)
-  await seedThreadV2.annotateOP(sc)
-  await seedThreadV2.sort(sc)
-  await seedThreadV2.bumpOpAndViewer(sc)
-  await seedThreadV2.bumpGroupSorting(sc)
-  await seedThreadV2.bumpFollows(sc)
-  await seedThreadV2.blockDeletionAuth(sc, env.bsky.ctx.cfg.modServiceDid)
-  await seedThreadV2.mutes(sc)
-  await seedThreadV2.threadgated(sc)
-  await seedThreadV2.tags(sc)
-  await seedParaFlairs(sc)
-
-  } catch (seedErr: any) {
-    console.log(`  ⚠ Seed data already exists or partially seeded (${seedErr?.message?.slice(0, 80)})`)
-  }
-
-  console.log('✅ Mock setup complete')
-}
-
-function ucfirst(str: string): string {
-  return str.at(0)?.toUpperCase() + str.slice(1)
+  // @TODO These are useful when testing complex threads, but don't need to be enabled all the time. We could make it configurable.
+  // import * as seedThreadV2 from '../seed/thread-v2'
+  // const sc = env.getSeedClient()
+  // await seedThreadV2.simple(sc)
+  // await seedThreadV2.long(sc)
+  // await seedThreadV2.deep(sc)
+  // await seedThreadV2.branchingFactor(sc)
+  // await seedThreadV2.annotateMoreReplies(sc)
+  // await seedThreadV2.annotateOP(sc)
+  // await seedThreadV2.sort(sc)
+  // await seedThreadV2.bumpOpAndViewer(sc)
+  // await seedThreadV2.bumpGroupSorting(sc)
+  // await seedThreadV2.bumpFollows(sc)
+  // await seedThreadV2.blockDeletionAuth(sc, env.bsky.ctx.cfg.modServiceDid)
+  // await seedThreadV2.mutes(sc)
+  // await seedThreadV2.threadgated(sc)
+  // await seedThreadV2.tags(sc)
 }
 
 const createLabel = async (
   db: Database,
   opts: { uri: string; cid: string; val: string; src?: string },
 ) => {
-  try {
-    await db.db
-      .insertInto('label')
-      .values({
-        uri: opts.uri,
-        cid: opts.cid,
-        val: opts.val,
-        cts: new Date().toISOString(),
-        neg: false,
-        src: opts.src ?? EXAMPLE_LABELER,
-      })
-      .execute()
-  } catch (_e) {
-    // Label already exists, skip
-  }
+  await db.db
+    .insertInto('label')
+    .values({
+      uri: opts.uri,
+      cid: opts.cid,
+      val: opts.val,
+      cts: new Date().toISOString(),
+      neg: false,
+      src: opts.src ?? EXAMPLE_LABELER,
+    })
+    .execute()
 }
 
 const setVerifier = async (db: Database, did: string) => {

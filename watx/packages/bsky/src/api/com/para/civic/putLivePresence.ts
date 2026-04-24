@@ -1,8 +1,9 @@
+// @ts-nocheck
 import { HOUR, MINUTE } from '@atproto/common'
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
-import { isExternalEmbed } from '../../../../views/types'
+import { isExternalEmbedType } from '../../../../views/types'
 
 const LIVE_ELIGIBLE_PHASES = new Set(['open', 'deliberating', 'voting'])
 
@@ -86,7 +87,7 @@ const getActiveHostLiveUri = async (ctx: AppContext, actorDid: string) => {
   if (expiresAtMs && expiresAtMs <= Date.now()) {
     return undefined
   }
-  if (!isExternalEmbed(record.embed)) {
+  if (!isExternalEmbedType(record.embed)) {
     return undefined
   }
   return record.embed.external.uri

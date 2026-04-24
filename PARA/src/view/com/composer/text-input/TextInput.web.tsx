@@ -32,19 +32,11 @@ import {
 import {textInputWebEmitter} from '#/view/com/composer/text-input/textInputWebEmitter'
 import {atoms as a, useAlf} from '#/alf'
 import {normalizeTextStyles} from '#/alf/typography'
+import {type Emoji} from '#/components/EmojiPicker'
 import {Portal} from '#/components/Portal'
 import {Text} from '#/components/Typography'
-import {
-  applyCivicAutocompleteItem,
-  type CivicAutocompleteItem,
-  type ComposerAutocompleteContext,
-  getCivicAutocompleteItems,
-  getComposerAutocompleteContext,
-} from './civic-autocomplete'
 import {type TextInputProps} from './TextInput.types'
 import {type AutocompleteRef, createSuggestion} from './web/Autocomplete'
-import {CivicAutocomplete} from './web/CivicAutocomplete'
-import {type Emoji} from './web/EmojiPicker'
 import {LinkDecorator} from './web/LinkDecorator'
 import {TagDecorator} from './web/TagDecorator'
 
@@ -55,12 +47,7 @@ export function TextInput({
   webForceMinHeight,
   hasRightPadding,
   isActive,
-  civicAutocompleteEnabled,
-  selectedFlairs,
-  postType,
   setRichText,
-  setSelectedFlairs,
-  setPostType,
   onPhotoPasted,
   onPressPublish,
   onNewLink,
@@ -73,26 +60,6 @@ export function TextInput({
 
   const [isDropping, setIsDropping] = useState(false)
   const autocompleteRef = useRef<AutocompleteRef>(null)
-  const [civicAutocompleteState, setCivicAutocompleteState] = useState<{
-    context: Extract<
-      ComposerAutocompleteContext,
-      {type: 'hashtag' | 'command'}
-    >
-    items: CivicAutocompleteItem[]
-    position: {left: number; top: number}
-  } | null>(null)
-  const [selectedCivicIndex, setSelectedCivicIndex] = useState(0)
-  const civicAutocompleteStateRef = useRef(civicAutocompleteState)
-  const selectedCivicIndexRef = useRef(0)
-  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
-
-  useEffect(() => {
-    civicAutocompleteStateRef.current = civicAutocompleteState
-  }, [civicAutocompleteState])
-
-  useEffect(() => {
-    selectedCivicIndexRef.current = selectedCivicIndex
-  }, [selectedCivicIndex])
 
   const extensions = useMemo(
     () => [
@@ -182,91 +149,6 @@ export function TextInput({
 
   const pastSuggestedUris = useRef(new Set<string>())
   const prevDetectedUris = useRef(new Map<string, LinkFacetMatch>())
-  const handleSelectCivicItem = useCallback(
-    (item: CivicAutocompleteItem) => {
-      const editor = editorRef.current
-      if (!editor) return
-
-      const active = civicAutocompleteStateRef.current
-      if (!active) return
-
-      const from = editor.state.selection.from - active.context.raw.length
-      const to = editor.state.selection.from
-      const replacement =
-        item.type === 'composerCommand' ? item.postType.tag ?? '' : ''
-
-      const {nextSelectedFlairs, nextPostType} = applyCivicAutocompleteItem({
-        item,
-        text: richtext.text,
-        context: active.context,
-        selectedFlairs,
-        postType,
-      })
-
-      setSelectedFlairs(nextSelectedFlairs)
-      setPostType(nextPostType)
-
-      if (replacement) {
-        editor.chain().focus().insertContentAt({from, to}, replacement).run()
-      } else {
-        editor.commands.deleteRange({from, to})
-      }
-
-      setSelectedCivicIndex(0)
-      setCivicAutocompleteState(null)
-    },
-    [postType, richtext.text, selectedFlairs, setPostType, setSelectedFlairs],
-  )
-  const handleSelectCivicItemRef = useRef(handleSelectCivicItem)
-
-  useEffect(() => {
-    handleSelectCivicItemRef.current = handleSelectCivicItem
-  }, [handleSelectCivicItem])
-
-  const syncCivicAutocomplete = useCallback(() => {
-    const editor = editorRef.current
-    if (!editor || !civicAutocompleteEnabled) {
-      setCivicAutocompleteState(null)
-      return
-    }
-
-    const selectionPos = editor.state.selection.$anchor.pos
-    const textBefore = editor.state.doc.textBetween(0, selectionPos, '\n', '\n')
-    const fullText = editor.state.doc.textBetween(
-      0,
-      editor.state.doc.content.size,
-      '\n',
-      '\n',
-    )
-    const context = getComposerAutocompleteContext(fullText, textBefore.length)
-
-    if (
-      !context ||
-      context.type === 'mention' ||
-      (context.type === 'hashtag' && !context.query)
-    ) {
-      setCivicAutocompleteState(null)
-      return
-    }
-
-    const items = getCivicAutocompleteItems(context, 8)
-    if (!items.length) {
-      setCivicAutocompleteState(null)
-      return
-    }
-
-    const coords = editor.view.coordsAtPos(selectionPos)
-    setCivicAutocompleteState({
-      context,
-      items,
-      position: {
-        left: coords.left,
-        top: coords.bottom + 4,
-      },
-    })
-    setSelectedCivicIndex(0)
-  }, [civicAutocompleteEnabled])
-
   const editor = useEditor(
     {
       extensions,
@@ -318,34 +200,6 @@ export function TextInput({
           }
         },
         handleKeyDown: (view, event) => {
-          const civic = civicAutocompleteStateRef.current
-          if (civic && !(event.metaKey || event.ctrlKey)) {
-            if (event.key === 'ArrowUp') {
-              const nextIndex =
-                (selectedCivicIndexRef.current + civic.items.length - 1) %
-                civic.items.length
-              setSelectedCivicIndex(nextIndex)
-              return true
-            }
-            if (event.key === 'ArrowDown') {
-              const nextIndex =
-                (selectedCivicIndexRef.current + 1) % civic.items.length
-              setSelectedCivicIndex(nextIndex)
-              return true
-            }
-            if (event.key === 'Enter' || event.key === 'Tab') {
-              const item = civic.items[selectedCivicIndexRef.current]
-              if (item) {
-                handleSelectCivicItemRef.current(item)
-                return true
-              }
-            }
-            if (event.key === 'Escape') {
-              setCivicAutocompleteState(null)
-              return true
-            }
-          }
-
           if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
             textInputWebEmitter.emit('publish')
             return true
@@ -430,33 +284,6 @@ export function TextInput({
     [modeClass],
   )
 
-  useEffect(() => {
-    editorRef.current = editor
-  }, [editor])
-
-  useEffect(() => {
-    if (!editor) return
-
-    syncCivicAutocomplete()
-
-    const handleUpdate = () => {
-      syncCivicAutocomplete()
-    }
-    const handleBlur = () => {
-      setCivicAutocompleteState(null)
-    }
-
-    editor.on('update', handleUpdate)
-    editor.on('selectionUpdate', handleUpdate)
-    editor.on('blur', handleBlur)
-
-    return () => {
-      editor.off('update', handleUpdate)
-      editor.off('selectionUpdate', handleUpdate)
-      editor.off('blur', handleBlur)
-    }
-  }, [editor, syncCivicAutocomplete])
-
   const onEmojiInserted = useCallback(
     (emoji: Emoji) => {
       editor?.chain().focus().insertContent(emoji.native).run()
@@ -484,16 +311,7 @@ export function TextInput({
       const pos = editor?.state.selection.$anchor.pos
       return pos ? editor?.view.coordsAtPos(pos) : undefined
     },
-    maybeClosePopup: () => {
-      if (autocompleteRef.current?.maybeClose()) {
-        return true
-      }
-      if (civicAutocompleteStateRef.current) {
-        setCivicAutocompleteState(null)
-        return true
-      }
-      return false
-    },
+    maybeClosePopup: () => autocompleteRef.current?.maybeClose() ?? false,
   }))
 
   const inputStyle = useMemo(() => {
@@ -550,20 +368,6 @@ export function TextInput({
             </View>
           </Animated.View>
         </Portal>
-      )}
-
-      {civicAutocompleteState && (
-        <CivicAutocomplete
-          items={civicAutocompleteState.items}
-          selectedIndex={selectedCivicIndex}
-          position={civicAutocompleteState.position}
-          onSelect={item => {
-            handleSelectCivicItem(item)
-          }}
-          onHover={index => {
-            setSelectedCivicIndex(index)
-          }}
-        />
       )}
     </>
   )

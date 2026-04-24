@@ -256,9 +256,9 @@ export function GestureActionView({
     outputRange: ColorValue[]
   }>(() => {
     if (!actions.leftFirst) {
-      return rightSideInterpolation!
+      return rightSideInterpolation
     } else if (!actions.rightFirst) {
-      return leftSideInterpolation!
+      return leftSideInterpolation
     } else {
       return {
         inputRange: [

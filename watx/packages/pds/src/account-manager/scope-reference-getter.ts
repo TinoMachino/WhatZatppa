@@ -58,7 +58,7 @@ export class ScopeReferenceGetter extends CachedGetter<
 
     try {
       const { scope } = await this.entryway.call(
-        com.atproto.temp.dereferenceScope.main,
+        com.atproto.temp.dereferenceScope,
         { scope: ref },
         {
           signal: opts?.signal,

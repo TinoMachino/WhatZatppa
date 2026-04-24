@@ -26,15 +26,18 @@ export const communityGovernanceQueryKey = (
 export function useCommunityGovernanceQuery({
   communityName,
   communityId,
+  enabled = true,
 }: {
   communityName: string
   communityId?: string
+  enabled?: boolean
 }) {
   const agent = useAgent()
 
   return useQuery<CommunityGovernanceView | null>({
     staleTime: STALE.SECONDS.THIRTY,
     queryKey: communityGovernanceQueryKey(communityName, communityId),
+    enabled: enabled && Boolean(communityName.trim()),
     queryFn: async () =>
       fetchGovernanceFromXrpc({
         agent,
@@ -93,7 +96,7 @@ export function useCommunityGovernanceMutation({
         repo: currentAccount.did,
         collection: PARA_COMMUNITY_GOVERNANCE_COLLECTION,
         rkey: communityGovernanceRkey(communityName),
-        record: createCommunityGovernanceRecord(next),
+        record: createCommunityGovernanceRecord(next) as any,
       })
 
       return {

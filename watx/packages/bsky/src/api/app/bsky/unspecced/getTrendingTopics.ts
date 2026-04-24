@@ -1,17 +1,14 @@
 import { noUndefinedVals } from '@atproto/common'
 import { Client } from '@atproto/lex'
-import { InternalServerError } from '@atproto/xrpc-server'
+import { MethodNotImplementedError, Server } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { HydrateCtx, Hydrator } from '../../../../hydration/hydrator'
-import { Server } from '../../../../lexicon'
-import { TrendingTopic } from '../../../../lexicon/types/app/bsky/unspecced/defs'
-import { QueryParams } from '../../../../lexicon/types/app/bsky/unspecced/getTrendingTopics'
 import { app } from '../../../../lexicons/index.js'
 import {
-  HydrationFnInput,
-  PresentationFnInput,
-  RulesFnInput,
-  SkeletonFnInput,
+  HydrationFn,
+  PresentationFn,
+  RulesFn,
+  SkeletonFn,
   createPipeline,
 } from '../../../../pipeline'
 import { Views } from '../../../../views'
@@ -23,7 +20,7 @@ export default function (server: Server, ctx: AppContext) {
     noBlocksOrMutes,
     presentation,
   )
-  server.app.bsky.unspecced.getTrendingTopics({
+  server.add(app.bsky.unspecced.getTrendingTopics, {
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
       const viewer = auth.credentials.iss
@@ -48,42 +45,41 @@ export default function (server: Server, ctx: AppContext) {
   })
 }
 
-const skeleton = async (input: SkeletonFnInput<Context, Params>) => {
+const skeleton: SkeletonFn<Context, Params, SkeletonState> = async (input) => {
   const { params, ctx } = input
-  if (ctx.topicsClient) {
-    return ctx.topicsClient.call(
-      app.bsky.unspecced.getTrendingTopics,
-      {
-        limit: params.limit,
-        viewer: params.hydrateCtx.viewer ?? undefined,
-      } as app.bsky.unspecced.getTrendingTopics.$Params,
-      {
-        headers: params.headers,
-      },
-    )
-  } else {
-    throw new InternalServerError('Topics agent not available')
+
+  if (!ctx.topicsClient) {
+    // Use 501 instead of 500 as these are not considered retry-able by clients
+    throw new MethodNotImplementedError('Topics agent not available')
   }
+
+  return ctx.topicsClient.call(
+    app.bsky.unspecced.getTrendingTopics,
+    {
+      limit: params.limit,
+      viewer: params.hydrateCtx.viewer ?? undefined,
+    },
+    {
+      headers: params.headers,
+    },
+  )
 }
 
-const hydration = async (
-  _: HydrationFnInput<Context, Params, SkeletonState>,
-) => {
+const hydration: HydrationFn<Context, Params, SkeletonState> = async () => {
   return {}
 }
 
-const noBlocksOrMutes = (
-  input: RulesFnInput<Context, Params, SkeletonState>,
-) => {
-  const { skeleton } = input
-  return skeleton
+const noBlocksOrMutes: RulesFn<Context, Params, SkeletonState> = (input) => {
+  return input.skeleton
 }
 
-const presentation = (
-  input: PresentationFnInput<Context, Params, SkeletonState>,
-) => {
-  const { skeleton } = input
-  return skeleton
+const presentation: PresentationFn<
+  Context,
+  Params,
+  SkeletonState,
+  SkeletonState
+> = (input) => {
+  return input.skeleton
 }
 
 type Context = {
@@ -92,12 +88,9 @@ type Context = {
   topicsClient: Client | undefined
 }
 
-type Params = Omit<QueryParams, 'viewer'> & {
+type Params = Omit<app.bsky.unspecced.getTrendingTopics.$Params, 'viewer'> & {
   hydrateCtx: HydrateCtx
   headers: Record<string, string>
 }
 
-type SkeletonState = {
-  topics: TrendingTopic[]
-  suggested: TrendingTopic[]
-}
+type SkeletonState = app.bsky.unspecced.getTrendingTopics.$OutputBody

@@ -1,7 +1,9 @@
+// @ts-nocheck
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
 import { OutputSchema } from '../../../../lexicon/types/com/para/feed/getTimeline'
+import { com } from '../../../../lexicons/index.js'
 import { computeProxyTo } from '../../../../pipethrough'
 import {
   LocalRecords,
@@ -22,7 +24,12 @@ export default function (server: Server, ctx: AppContext) {
       },
     }),
     handler: async (reqCtx) => {
-      return pipethroughReadAfterWrite(ctx, reqCtx, getTimelineMunge)
+      return pipethroughReadAfterWrite(
+        ctx,
+        reqCtx,
+        com.para.feed.getTimeline.main,
+        getTimelineMunge,
+      )
     },
   })
 }

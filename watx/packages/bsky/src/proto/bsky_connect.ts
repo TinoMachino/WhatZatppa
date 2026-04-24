@@ -665,6 +665,35 @@ export const Service = {
       kind: MethodKind.Unary,
     },
     /**
+     * @generated from rpc bsky.Service.GetTimeline
+     */
+    getTimeline: {
+      name: "GetTimeline",
+      I: GetTimelineRequest,
+      O: GetTimelineResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc bsky.Service.GetListFeed
+     */
+    getListFeed: {
+      name: "GetListFeed",
+      I: GetListFeedRequest,
+      O: GetListFeedResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Threads
+     *
+     * @generated from rpc bsky.Service.GetThread
+     */
+    getThread: {
+      name: "GetThread",
+      I: GetThreadRequest,
+      O: GetThreadResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * @generated from rpc bsky.Service.GetParaAuthorFeed
      */
     getParaAuthorFeed: {
@@ -800,24 +829,6 @@ export const Service = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc bsky.Service.GetTimeline
-     */
-    getTimeline: {
-      name: "GetTimeline",
-      I: GetTimelineRequest,
-      O: GetTimelineResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc bsky.Service.GetListFeed
-     */
-    getListFeed: {
-      name: "GetListFeed",
-      I: GetListFeedRequest,
-      O: GetListFeedResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
      * @generated from rpc bsky.Service.GetParaDiscourseSnapshot
      */
     getParaDiscourseSnapshot: {
@@ -842,17 +853,6 @@ export const Service = {
       name: "GetParaDiscourseSentiment",
       I: GetParaDiscourseSentimentRequest,
       O: GetParaDiscourseSentimentResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * Threads
-     *
-     * @generated from rpc bsky.Service.GetThread
-     */
-    getThread: {
-      name: "GetThread",
-      I: GetThreadRequest,
-      O: GetThreadResponse,
       kind: MethodKind.Unary,
     },
     /**

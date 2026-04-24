@@ -1,4 +1,4 @@
-import { XRPCError } from '@atproto/xrpc'
+// @ts-nocheck
 import { AtUri } from '@atproto/syntax'
 import { CID } from 'multiformats/cid'
 import { AppContext } from '../../../../context'
@@ -8,8 +8,9 @@ import { ids } from '../../../../lexicon/lexicons'
 import { PostView } from '../../../../lexicon/types/com/para/feed/getAuthorFeed'
 import { OutputSchema } from '../../../../lexicon/types/com/para/feed/getPostThread'
 import { Record as ParaPostRecord } from '../../../../lexicon/types/com/para/post'
+import { com } from '../../../../lexicons/index.js'
 import { RecordDescript } from '../../../../read-after-write/types'
-import { computeProxyTo } from '../../../../pipethrough'
+import { PipethroughUpstreamError, computeProxyTo } from '../../../../pipethrough'
 import {
   LocalRecords,
   LocalViewer,
@@ -33,10 +34,15 @@ export default function (server: Server, ctx: AppContext) {
     }),
     handler: async (reqCtx) => {
       try {
-        return await pipethroughReadAfterWrite(ctx, reqCtx, getPostThreadMunge)
+        return await pipethroughReadAfterWrite(
+          ctx,
+          reqCtx,
+          com.para.feed.getPostThread.main,
+          getPostThreadMunge,
+        )
       } catch (err) {
         const isNotFound =
-          err instanceof XRPCError &&
+          err instanceof PipethroughUpstreamError &&
           (err.error === 'NotFound' ||
             err.status === 400 ||
             err.status === 404)

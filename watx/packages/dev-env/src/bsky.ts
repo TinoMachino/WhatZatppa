@@ -1,13 +1,10 @@
-import {
-  Client as PlcClient,
-  atprotoOp,
-  didForCreateOp,
-} from '@did-plc/lib'
+import { Client as PlcClient } from '@did-plc/lib'
 import getPort from 'get-port'
 import * as ui8 from 'uint8arrays'
 import { AtpAgent } from '@atproto/api'
 import * as bsky from '@atproto/bsky'
 import { Secp256k1Keypair } from '@atproto/crypto'
+import { Client } from '@atproto/lex'
 import { ADMIN_PASSWORD, EXAMPLE_LABELER } from './const'
 import { BskyConfig } from './types'
 export * from '@atproto/bsky'
@@ -31,47 +28,34 @@ export class TestBsky {
     const plcClient = new PlcClient(cfg.plcUrl)
 
     const port = cfg.port || (await getPort())
-    // The appview may publish a public URL, but local bootstrap and tests
-    // should still talk to the local server directly.
     const url = `http://localhost:${port}`
-
-    const op = await atprotoOp({
+    const serverDid = await plcClient.createDid({
       signingKey: serviceKeypair.did(),
       rotationKeys: [serviceKeypair.did()],
       handle: 'bsky.test',
       pds: `http://localhost:${port}`,
-      prev: null,
       signer: serviceKeypair,
     })
-    const serverDid = await didForCreateOp(op)
 
-    try {
-      await plcClient.getDocument(serverDid)
-    } catch (err) {
-      await plcClient.sendOperation(serverDid, op)
+    const endpoint = `http://localhost:${port}`
 
-      const endpoint = `http://localhost:${port}`
-
-      await plcClient.updateData(serverDid, serviceKeypair, (x) => {
-        x.services['bsky_notif'] = {
-          type: 'BskyNotificationService',
-          endpoint,
-        }
-        x.services['bsky_appview'] = {
-          type: 'BskyAppView',
-          endpoint,
-        }
-        return x
-      })
-    }
+    await plcClient.updateData(serverDid, serviceKeypair, (x) => {
+      x.services['bsky_notif'] = {
+        type: 'BskyNotificationService',
+        endpoint,
+      }
+      x.services['bsky_appview'] = {
+        type: 'BskyAppView',
+        endpoint,
+      }
+      return x
+    })
 
     // shared across server, ingester, and indexer in order to share pool, avoid too many pg connections.
     const db = new bsky.Database({
       url: cfg.dbPostgresUrl,
       schema: cfg.dbPostgresSchema,
-      // Keep test concurrency from exhausting Postgres max_connections when many
-      // TestNetwork instances are created across parallel Jest workers.
-      poolSize: 4,
+      poolSize: 10,
     })
 
     const dataplanePort = await getPort()
@@ -147,10 +131,16 @@ export class TestBsky {
     return this.server.ctx
   }
 
-  getClient(): AtpAgent {
+  getAgent(): AtpAgent {
     const agent = new AtpAgent({ service: this.url })
     agent.configureLabelers([EXAMPLE_LABELER])
     return agent
+  }
+
+  getClient(): Client {
+    const client = new Client({ service: this.url })
+    client.setLabelers([EXAMPLE_LABELER])
+    return client
   }
 
   adminAuth(): string {

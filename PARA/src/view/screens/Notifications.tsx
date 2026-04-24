@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {View} from 'react-native'
-import {useDerivedValue} from 'react-native-reanimated'
+import {useDerivedValue, withSpring} from 'react-native-reanimated'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -24,7 +24,7 @@ import {
   useUnreadNotificationsApi,
 } from '#/state/queries/notifications/unread'
 import {truncateAndInvalidate} from '#/state/queries/util'
-import {useSetMinimalShellMode} from '#/state/shell'
+import {useMinimalShellMode} from '#/state/shell'
 import {NotificationFeed} from '#/view/com/notifications/NotificationFeed'
 import {Pager} from '#/view/com/pager/Pager'
 import {TabBar as NativeTabBar} from '#/view/com/pager/TabBar'
@@ -337,9 +337,13 @@ function NotificationsTab({
   setIsLoadingLatest: (v: boolean) => void
 }) {
   const {_} = useLingui()
-  const setMinimalShellMode = useSetMinimalShellMode()
-  const [isScrolledDown, setIsScrolledDown] = useState(false)
   const scrollElRef = useRef<ListMethods>(null)
+  const [isScrolledDown, setIsScrolledDown] = useState(false)
+  const {headerMode} = useMinimalShellMode()
+  const showHeader = useCallback(() => {
+    'worklet'
+    headerMode.set(() => withSpring(0, {overshootClamping: true}))
+  }, [headerMode])
   const queryClient = useQueryClient()
   const isScreenFocused = useIsFocused()
   const isFocusedAndActive = isScreenFocused && isActive
@@ -348,8 +352,8 @@ function NotificationsTab({
   // =
   const scrollToTop = useCallback(() => {
     scrollElRef.current?.scrollToOffset({animated: IS_NATIVE, offset: 0})
-    setMinimalShellMode(false)
-  }, [scrollElRef, setMinimalShellMode])
+    showHeader()
+  }, [scrollElRef, showHeader])
 
   const onPressLoadLatest = useCallback(() => {
     scrollToTop()
@@ -392,11 +396,11 @@ function NotificationsTab({
   useFocusEffect(
     useCallback(() => {
       if (isFocusedAndActive) {
-        setMinimalShellMode(false)
+        showHeader()
         logger.debug('NotificationsScreen: Focus')
         onFocusCheckLatest()
       }
-    }, [setMinimalShellMode, onFocusCheckLatest, isFocusedAndActive]),
+    }, [showHeader, onFocusCheckLatest, isFocusedAndActive]),
   )
 
   useEffect(() => {

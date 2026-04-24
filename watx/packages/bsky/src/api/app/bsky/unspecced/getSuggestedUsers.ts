@@ -1,15 +1,12 @@
 import { dedupeStrs, mapDefined, noUndefinedVals } from '@atproto/common'
-import { Client } from '@atproto/lex'
-import { InternalServerError } from '@atproto/xrpc-server'
+import { Client, DidString } from '@atproto/lex'
+import { MethodNotImplementedError, Server } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
-import { Gate } from '../../../../feature-gates/gates'
 import {
   HydrateCtx,
   Hydrator,
   mergeManyStates,
 } from '../../../../hydration/hydrator'
-import { Server } from '../../../../lexicon'
-import { QueryParams } from '../../../../lexicon/types/app/bsky/unspecced/getSuggestedUsers'
 import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
@@ -27,7 +24,7 @@ export default function (server: Server, ctx: AppContext) {
     noBlocksOrFollows,
     presentation,
   )
-  server.app.bsky.unspecced.getSuggestedUsers({
+  server.add(app.bsky.unspecced.getSuggestedUsers, {
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
       const viewer = auth.credentials.iss
@@ -67,36 +64,42 @@ export default function (server: Server, ctx: AppContext) {
 // TODO: rename to `skeleton` once we can fully migrate to Discover
 const skeletonFromDiscover = async (
   input: SkeletonFnInput<Context, Params>,
-) => {
+): Promise<SkeletonState> => {
   const { params, ctx } = input
-  if (!ctx.suggestionsClient)
-    throw new InternalServerError('Suggestions agent not available')
+  if (!ctx.suggestionsClient) {
+    throw new MethodNotImplementedError('Suggestions agent not available')
+  }
 
   return ctx.suggestionsClient.call(
     app.bsky.unspecced.getSuggestedUsersSkeleton,
     {
       limit: params.limit,
-      viewer: params.hydrateCtx.viewer ?? undefined,
       category: params.category,
-    } as app.bsky.unspecced.getSuggestedUsersSkeleton.$Params,
+      viewer: params.hydrateCtx.viewer ?? undefined,
+    },
     {
       headers: params.headers,
     },
   )
 }
 
-const skeletonFromTopics = async (input: SkeletonFnInput<Context, Params>) => {
+const skeletonFromTopics = async (
+  input: SkeletonFnInput<Context, Params>,
+): Promise<SkeletonState> => {
   const { params, ctx } = input
-  if (!ctx.topicsClient)
-    throw new InternalServerError('Topics agent not available')
+
+  if (!ctx.topicsClient) {
+    // Use 501 instead of 500 as these are not considered retry-able by clients
+    throw new MethodNotImplementedError('Topics agent not available')
+  }
 
   return ctx.topicsClient.call(
     app.bsky.unspecced.getSuggestedUsersSkeleton,
     {
       limit: params.limit,
-      viewer: params.hydrateCtx.viewer ?? undefined,
       category: params.category,
-    } as app.bsky.unspecced.getSuggestedUsersSkeleton.$Params,
+      viewer: params.hydrateCtx.viewer ?? undefined,
+    },
     {
       headers: params.headers,
     },
@@ -105,7 +108,7 @@ const skeletonFromTopics = async (input: SkeletonFnInput<Context, Params>) => {
 
 const skeleton = async (input: SkeletonFnInput<Context, Params>) => {
   const useDiscover = input.params.hydrateCtx.features.checkGate(
-    Gate.SuggestedUsersDiscoverEnable,
+    input.params.hydrateCtx.features.Gate.SuggestedUsersDiscoverEnable,
   )
   const skeletonFn = useDiscover ? skeletonFromDiscover : skeletonFromTopics
   return skeletonFn(input)
@@ -116,7 +119,7 @@ const hydration = async (
 ) => {
   const { ctx, params, skeleton } = input
   const dids = dedupeStrs(skeleton.dids)
-  const pairs: Map<string, string[]> = new Map()
+  const pairs: Map<DidString, DidString[]> = new Map()
   const viewer = params.hydrateCtx.viewer
   if (viewer) {
     pairs.set(viewer, dids)
@@ -167,14 +170,14 @@ type Context = {
   suggestionsClient: Client | undefined
 }
 
-type Params = QueryParams & {
+type Params = app.bsky.unspecced.getSuggestedUsers.$Params & {
   hydrateCtx: HydrateCtx & { viewer: string | null }
   headers: Record<string, string>
   category?: string
 }
 
 type SkeletonState = {
-  dids: string[]
+  dids: DidString[]
   recId?: string
   recIdStr?: string
 }

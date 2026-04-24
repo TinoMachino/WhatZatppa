@@ -176,8 +176,8 @@ export function isSharedRateLimitOpts<
 export type RouteOptions = {
   blobLimit?: number
   jsonLimit?: number
-  paramsParseLoose?: boolean
   textLimit?: number
+  paramsParseLoose?: boolean
 }
 
 export type MethodAuth<

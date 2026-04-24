@@ -275,7 +275,7 @@ export async function compressImage(
 async function moveIfNecessary(from: string) {
   const cacheDir = IS_NATIVE && getImageCacheDirectory()
 
-  if (cacheDir && from.startsWith(cacheDir)) {
+  if (cacheDir && !from.startsWith(cacheDir)) {
     const to = joinPath(cacheDir, nanoid(36))
 
     await makeDirectoryAsync(cacheDir, {intermediates: true})
@@ -347,7 +347,8 @@ function blobToDataUri(blob: Blob): Promise<string> {
         reject(new Error('Failed to convert blob to data URI'))
       }
     }
-    reader.onerror = () => reject(reader.error)
+    reader.onerror = () =>
+      reject(reader.error ?? new Error('Failed to read blob as data URI'))
     reader.readAsDataURL(blob)
   })
 }

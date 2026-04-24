@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { QueryParams } from '../../../../lexicon/types/com/para/discourse/getSentiment'

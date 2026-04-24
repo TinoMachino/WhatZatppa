@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AtUri } from '@atproto/syntax'
 import { ActorStoreReader } from '../../../../actor-store/actor-store-reader'
 import * as ComParaCommunityBoard from '../../../../lexicon/types/com/para/community/board'

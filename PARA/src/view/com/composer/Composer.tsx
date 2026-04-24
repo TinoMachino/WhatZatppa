@@ -138,7 +138,7 @@ import {VideoPreview} from '#/view/com/composer/videos/VideoPreview'
 import {VideoTranscodeProgress} from '#/view/com/composer/videos/VideoTranscodeProgress'
 import {Text} from '#/view/com/util/text/Text'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
-import {atoms as a, native, useTheme, web} from '#/alf'
+import {atoms as a, native, useTheme, web, useBreakpoints} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {
   ChevronLeft_Stroke2_Corner0_Rounded as ChevronLeftIcon,
@@ -146,6 +146,7 @@ import {
 } from '#/components/icons/Chevron'
 import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfoIcon} from '#/components/icons/CircleInfo'
 import {EmojiArc_Stroke2_Corner0_Rounded as EmojiSmileIcon} from '#/components/icons/Emoji'
+import * as EmojiPicker from '#/components/EmojiPicker'
 import {Globe_Stroke2_Corner0_Rounded as GlobeIcon} from '#/components/icons/Globe'
 import {Lock_Stroke2_Corner0_Rounded as LockIcon} from '#/components/icons/Lock'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
@@ -213,7 +214,6 @@ export const ComposePost = ({
   onPostSuccess,
   quote: initQuote,
   mention: initMention,
-  openEmojiPicker,
   text: initText,
   imageUris: initImageUris,
   videoUri: initVideoUri,
@@ -233,7 +233,7 @@ export const ComposePost = ({
   const requireAltTextEnabled = useRequireAltTextEnabled()
   const langPrefs = useLanguagePrefs()
   const setLangPrefs = useLanguagePrefsApi()
-  const textInput = useRef<TextInputRef>(null)
+  const textInputRef = useRef<TextInputRef>(null)
   const discardPromptControl = Prompt.usePromptControl()
   // const loadDraftMedia = useLoadDraft() // Removed
   const {mutateAsync: saveDraft, isPending: _isSavingDraft} =
@@ -269,6 +269,7 @@ export const ComposePost = ({
   const [acceptedLanguageSuggestion, setAcceptedLanguageSuggestion] = useState<
     string | null
   >(null)
+  const [langDetectionNudgeAt, setLangDetectionNudgeAt] = useState(0)
 
   /**
    * The language(s) of the post being replied to.
@@ -716,7 +717,7 @@ export const ComposePost = ({
   )
 
   const onPressCancel = useCallback(() => {
-    if (textInput.current?.maybeClosePopup()) {
+    if (textInputRef.current?.maybeClosePopup()) {
       return
     } else if (
       thread.posts.some(
@@ -1151,16 +1152,6 @@ export const ComposePost = ({
     }
   }
 
-  const onEmojiButtonPress = useCallback(() => {
-    const rect = textInput.current?.getCursorPosition()
-    if (rect) {
-      openEmojiPicker?.({
-        ...rect,
-        nextFocusRef: textInput as unknown as MutableRefObject<HTMLElement>,
-      })
-    }
-  }, [openEmojiPicker])
-
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>()
   useEffect(() => {
     if (composerState.mutableNeedsFocusActive) {
@@ -1168,7 +1159,7 @@ export const ComposePost = ({
       // On Android, this risks getting the cursor stuck behind the keyboard.
       // Not worth it.
       if (!IS_ANDROID) {
-        textInput.current?.focus()
+        textInputRef.current?.focus()
       }
     }
   }, [composerState])
@@ -1194,6 +1185,7 @@ export const ComposePost = ({
         replyToLanguages={replyToLanguages}
         currentLanguages={currentLanguages}
         onAcceptSuggestedLanguage={setAcceptedLanguageSuggestion}
+        onNudge={() => setLangDetectionNudgeAt(Date.now())}
       />
       <ComposerPills
         isReply={!!replyTo}
@@ -1217,7 +1209,6 @@ export const ComposePost = ({
           !isEmptyPost(activePost) && (!nextPost || !isEmptyPost(nextPost))
         }
         onError={setError}
-        onEmojiButtonPress={onEmojiButtonPress}
         onSelectVideo={selectVideo}
         onAddPost={() => {
           composerDispatch({
@@ -1227,6 +1218,8 @@ export const ComposePost = ({
         currentLanguages={currentLanguages}
         onSelectLanguage={onSelectLanguage}
         openGallery={openGallery}
+        textInputRef={textInputRef}
+        nudgeAt={langDetectionNudgeAt}
       />
     </>
   )
@@ -1292,7 +1285,7 @@ export const ComposePost = ({
                 <ComposerPost
                   post={post}
                   dispatch={composerDispatch}
-                  textInput={post.id === activePost.id ? textInput : null}
+                  textInputRef={post.id === activePost.id ? textInputRef : null}
                   classificationPostId={classificationPost.id}
                   selectedFlairs={selectedFlairs}
                   postType={postType}
@@ -1378,7 +1371,7 @@ export const ComposePost = ({
 let ComposerPost = memo(function ComposerPost({
   post,
   dispatch,
-  textInput,
+  textInputRef,
   classificationPostId,
   selectedFlairs,
   postType,
@@ -1398,7 +1391,7 @@ let ComposerPost = memo(function ComposerPost({
 }: {
   post: PostDraft
   dispatch: (action: ComposerAction) => void
-  textInput: Ref<TextInputRef>
+  textInputRef: React.RefObject<TextInputRef | null> | null
   classificationPostId: string
   selectedFlairs: ComposerFlair[]
   postType: PostType | null
@@ -1504,7 +1497,7 @@ let ComposerPost = memo(function ComposerPost({
           style={[a.mt_xs]}
         />
         <ComposerTextInput
-          ref={textInput}
+          ref={textInputRef}
           style={[a.pt_xs]}
           richtext={richtext}
           placeholder={selectTextInputPlaceholder}
@@ -2144,29 +2137,30 @@ function ComposerFooter({
   post,
   dispatch,
   showAddButton,
-  onEmojiButtonPress,
   onSelectVideo,
   onAddPost,
   currentLanguages,
   onSelectLanguage,
   openGallery,
+  textInputRef,
+  nudgeAt,
 }: {
   post: PostDraft
   dispatch: (action: PostAction) => void
   showAddButton: boolean
-  onEmojiButtonPress: () => void
   onError: (error: string) => void
   onSelectVideo: (postId: string, asset: ImagePickerAsset) => void
   onAddPost: () => void
   currentLanguages: string[]
   onSelectLanguage?: (language: string) => void
-  openGallery?: () => void
+  openGallery?: boolean
+  textInputRef: React.RefObject<TextInputRef | null>
+  nudgeAt: number
 }) {
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false)
 
   useEffect(() => {
     if (openGallery) {
-      openGallery()
       setShouldOpenGallery(true)
       const timer = setTimeout(() => setShouldOpenGallery(false), 100)
       return () => clearTimeout(timer)
@@ -2176,6 +2170,7 @@ function ComposerFooter({
   const t = useTheme()
   const {_} = useLingui()
   const {isMobile} = useWebMediaQueries()
+  const {gtPhone} = useBreakpoints()
   /*
    * Once we've allowed a certain type of asset to be selected, we don't allow
    * other types of media to be selected.
@@ -2298,17 +2293,23 @@ function ComposerFooter({
                 onAdd={onImageAdd}
               />
               <SelectGifBtn onSelectGif={onSelectGif} disabled={!!media} />
-              {!isMobile ? (
-                <Button
-                  onPress={onEmojiButtonPress}
-                  style={a.p_sm}
-                  label={_(msg`Open emoji picker`)}
-                  accessibilityHint={_(msg`Opens emoji picker`)}
-                  variant="ghost"
-                  shape="round"
-                  color="primary">
-                  <EmojiSmileIcon size="lg" />
-                </Button>
+              {IS_WEB && gtPhone ? (
+                <EmojiPicker.Root nextFocusRef={textInputRef}>
+                  <EmojiPicker.Trigger label={_(msg`Open emoji picker`)}>
+                    {({props}) => (
+                      <Button
+                        style={a.p_sm}
+                        label={props.accessibilityLabel}
+                        variant="ghost"
+                        shape="round"
+                        color="primary"
+                        {...props}>
+                        <EmojiSmileIcon size="lg" />
+                      </Button>
+                    )}
+                  </EmojiPicker.Trigger>
+                  <EmojiPicker.Picker />
+                </EmojiPicker.Root>
               ) : null}
             </ToolbarWrapper>
           )}
@@ -2329,6 +2330,7 @@ function ComposerFooter({
         <PostLanguageSelect
           currentLanguages={currentLanguages}
           onSelectLanguage={onSelectLanguage}
+          nudgeAt={nudgeAt}
         />
         <CharProgress
           count={post.shortenedGraphemeLength}

@@ -31,7 +31,7 @@ export function NewskieDialog({
   const {_} = useLingui()
   const control = useDialogControl()
 
-  const createdAt = profile.createdAt as string | undefined
+  const createdAt = profile.createdAt
 
   const [now] = useState(() => Date.now())
   const daysOld = useMemo(() => {

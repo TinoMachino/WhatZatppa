@@ -17,4 +17,3 @@ test.sqlite
 *.swp
 .claude/
 coverage
-.env.production

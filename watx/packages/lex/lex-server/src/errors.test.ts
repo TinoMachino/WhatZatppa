@@ -30,7 +30,7 @@ describe(LexServerError, () => {
   })
 
   it('has undefined headers when none provided', () => {
-    const error = new LexServerError(500, { error: 'InternalServerError' })
+    const error = new LexServerError(500, { error: 'InternalError' })
     expect(error.headers).toBeUndefined()
   })
 
@@ -124,11 +124,11 @@ describe(LexServerError, () => {
       expect(serverError.cause).toBe(validationError)
     })
 
-    it('converts plain LexError to 400', () => {
+    it('converts plain LexError to 500', () => {
       const lexError = new LexError('CustomError', 'Something happened')
       const serverError = LexServerError.from(lexError)
 
-      expect(serverError.status).toBe(400)
+      expect(serverError.status).toBe(500)
       expect(serverError.body.error).toBe('CustomError')
       expect(serverError.cause).toBe(lexError)
     })

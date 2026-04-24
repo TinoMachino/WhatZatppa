@@ -1,17 +1,13 @@
 import { Insertable, Selectable } from 'kysely'
-import { CID } from 'multiformats/cid'
+import { Cid } from '@atproto/lex'
 import { AtUri, normalizeDatetimeAlways } from '@atproto/syntax'
-import * as lex from '../../../../lexicon/lexicons'
-import * as Like from '../../../../lexicon/types/app/bsky/feed/like'
+import { app } from '../../../../lexicons'
 import { BackgroundQueue } from '../../background'
 import { Database } from '../../db'
 import { DatabaseSchema, DatabaseSchemaType } from '../../db/database-schema'
 import { Notification } from '../../db/tables/notification'
 import { countAll, excluded } from '../../db/util'
 import { RecordProcessor } from '../processor'
-import { recomputeParaProfileStats } from './para-profile-stats'
-
-const lexId = lex.ids.AppBskyFeedLike
 
 type Notif = Insertable<Notification>
 type IndexedLike = Selectable<DatabaseSchemaType['like']>
@@ -19,8 +15,8 @@ type IndexedLike = Selectable<DatabaseSchemaType['like']>
 const insertFn = async (
   db: DatabaseSchema,
   uri: AtUri,
-  cid: CID,
-  obj: Like.Record,
+  cid: Cid,
+  obj: app.bsky.feed.like.Main,
   timestamp: string,
 ): Promise<IndexedLike | null> => {
   const inserted = await db
@@ -45,7 +41,7 @@ const insertFn = async (
 const findDuplicate = async (
   db: DatabaseSchema,
   uri: AtUri,
-  obj: Like.Record,
+  obj: app.bsky.feed.like.Main,
 ): Promise<AtUri | null> => {
   const found = await db
     .selectFrom('like')
@@ -134,29 +130,12 @@ const updateAggregates = async (db: DatabaseSchema, like: IndexedLike) => {
       oc.column('uri').doUpdateSet({ likeCount: excluded(db, 'likeCount') }),
     )
   await likeCountQb.execute()
-
-  const paraSubject = await db
-    .selectFrom('para_post')
-    .where('uri', '=', like.subject)
-    .select('creator')
-    .executeTakeFirst()
-
-  if (paraSubject) {
-    await Promise.all([
-      recomputeParaProfileStats(db, paraSubject.creator),
-      recomputeParaProfileStats(db, like.creator),
-    ])
-  }
 }
 
-export type PluginType = RecordProcessor<Like.Record, IndexedLike>
-
-export const makePlugin = (
-  db: Database,
-  background: BackgroundQueue,
-): PluginType => {
+export type PluginType = ReturnType<typeof makePlugin>
+export const makePlugin = (db: Database, background: BackgroundQueue) => {
   return new RecordProcessor(db, background, {
-    lexId,
+    schema: app.bsky.feed.like.main,
     insertFn,
     findDuplicate,
     deleteFn,

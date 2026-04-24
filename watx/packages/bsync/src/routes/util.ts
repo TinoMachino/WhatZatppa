@@ -59,8 +59,8 @@ export const validateNamespace = (namespace: string): void => {
   }
 
   const [nsid, fragment] = parts
-  ensureValidNsid(nsid)
 
+  ensureValidNsid(nsid)
   if (fragment && !/^[a-zA-Z][a-zA-Z0-9]*$/.test(fragment)) {
     throw new Error('namespace fragment must be a valid identifier')
   }

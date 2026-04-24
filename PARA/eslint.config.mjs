@@ -204,6 +204,16 @@ export default defineConfig(
         ],
       }],
       'import-x/no-nodejs-modules': 'error',
+      'no-restricted-imports': ['error', {
+        paths: [
+          {
+            name: 'react',
+            importNames: ['React', 'default'],
+            message:
+              'React is already in the global type namespace. Use named imports for runtime modules.',
+          },
+        ],
+      }],
 
       /**
        * TypeScript-specific rules

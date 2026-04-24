@@ -1,5 +1,10 @@
+import { Server } from '@atproto/xrpc-server'
 import { AppContext } from '../context'
-import { Server } from '../lexicon'
+import {
+  ComParaNS,
+  Server as ParaLexiconServer,
+} from '../lexicon'
+import { schemas as paraSchemas } from '../lexicon/lexicons'
 import getProfile from './app/bsky/actor/getProfile'
 import getProfiles from './app/bsky/actor/getProfiles'
 import getSuggestions from './app/bsky/actor/getSuggestions'
@@ -104,6 +109,9 @@ import putParaLivePresence from './com/para/civic/putLivePresence'
 import getParaCommunityBoard from './com/para/community/getBoard'
 import getParaCommunityGovernance from './com/para/community/getGovernance'
 import listParaCommunityBoards from './com/para/community/listBoards'
+import getParaDiscourseSentiment from './com/para/discourse/getSentiment'
+import getParaDiscourseSnapshot from './com/para/discourse/getSnapshot'
+import getParaDiscourseTopics from './com/para/discourse/getTopics'
 import getParaAuthorFeed from './com/para/feed/getAuthorFeed'
 import getParaPostThread from './com/para/feed/getPostThread'
 import getParaPosts from './com/para/feed/getPosts'
@@ -111,9 +119,6 @@ import getParaTimeline from './com/para/feed/getTimeline'
 import getParaHighlight from './com/para/highlight/getHighlight'
 import listParaHighlights from './com/para/highlight/listHighlights'
 import getParaPostMeta from './com/para/social/getPostMeta'
-import getParaDiscourseSnapshot from './com/para/discourse/getSnapshot'
-import getParaDiscourseTopics from './com/para/discourse/getTopics'
-import getParaDiscourseSentiment from './com/para/discourse/getSentiment'
 
 export * as health from './health'
 
@@ -126,6 +131,10 @@ export * as external from './external'
 export * as sitemap from './sitemap'
 
 export default function (server: Server, ctx: AppContext) {
+  server.addLexicons(paraSchemas)
+  const paraServer = { xrpc: server } as ParaLexiconServer
+  ;(paraServer as any).com = { para: new ComParaNS(paraServer) }
+
   // app.bsky
   getTimeline(server, ctx)
   createBookmark(server, ctx)
@@ -225,23 +234,22 @@ export default function (server: Server, ctx: AppContext) {
   fetchLabels(server, ctx)
   queryLabels(server, ctx)
   // com.para
-  getParaProfileStats(server, ctx)
-  listParaCabildeos(server, ctx)
-  getParaCabildeo(server, ctx)
-  listParaCabildeoPositions(server, ctx)
-  putParaLivePresence(server, ctx)
-  getParaCommunityBoard(server, ctx)
-  getParaCommunityGovernance(server, ctx)
-  listParaCommunityBoards(server, ctx)
-  listParaHighlights(server, ctx)
-  getParaHighlight(server, ctx)
-  getParaAuthorFeed(server, ctx)
-  getParaPostThread(server, ctx)
-  getParaPosts(server, ctx)
-  getParaTimeline(server, ctx)
-  getParaPostMeta(server, ctx)
-  getParaDiscourseSnapshot(server, ctx)
-  getParaDiscourseTopics(server, ctx)
-  getParaDiscourseSentiment(server, ctx)
-  return server
+  getParaProfileStats(paraServer, ctx)
+  listParaCabildeos(paraServer, ctx)
+  getParaCabildeo(paraServer, ctx)
+  listParaCabildeoPositions(paraServer, ctx)
+  putParaLivePresence(paraServer, ctx)
+  getParaCommunityBoard(paraServer, ctx)
+  getParaCommunityGovernance(paraServer, ctx)
+  listParaCommunityBoards(paraServer, ctx)
+  listParaHighlights(paraServer, ctx)
+  getParaHighlight(paraServer, ctx)
+  getParaAuthorFeed(paraServer, ctx)
+  getParaPostThread(paraServer, ctx)
+  getParaPosts(paraServer, ctx)
+  getParaTimeline(paraServer, ctx)
+  getParaPostMeta(paraServer, ctx)
+  getParaDiscourseSnapshot(paraServer, ctx)
+  getParaDiscourseTopics(paraServer, ctx)
+  getParaDiscourseSentiment(paraServer, ctx)
 }

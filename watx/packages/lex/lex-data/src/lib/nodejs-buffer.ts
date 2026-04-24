@@ -13,10 +13,10 @@ interface NodeJSBufferConstructor {
   ): NodeJSBuffer<ArrayBuffer>
   from(input: string, encoding?: Encoding): NodeJSBuffer<ArrayBuffer>
   from<TArrayBuffer extends ArrayBufferLike>(
-    arrayBuffer: TArrayBuffer,
+    arrayBuffer: WithImplicitCoercion<TArrayBuffer>,
     byteOffset?: number,
     length?: number,
-  ): NodeJSBuffer<TArrayBuffer>
+  ): Buffer<TArrayBuffer>
   concat(list: readonly Uint8Array[], totalLength?: number): NodeJSBuffer
   byteLength(input: string, encoding?: Encoding): number
   prototype: NodeJSBuffer

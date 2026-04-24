@@ -100,6 +100,7 @@ module.exports = function (_config) {
           NSLocationWhenInUseUsageDescription:
             'Used to show your location on the map and find local communities.',
           CFBundleSpokenName: 'PARA',
+          NSUserActivityTypes: ['INSendMessageIntent'],
           CFBundleLocalizations: [
             'en',
             'an',
@@ -148,6 +149,7 @@ module.exports = function (_config) {
           'com.apple.developer.kernel.increased-memory-limit': true,
           'com.apple.developer.kernel.extended-virtual-addressing': true,
           'com.apple.security.application-groups': 'group.com.parasocial.app',
+          'com.apple.developer.usernotifications.communication': true,
           //          'com.apple.developer.device-information.user-assigned-device-name': true,
         },
         privacyManifests: {

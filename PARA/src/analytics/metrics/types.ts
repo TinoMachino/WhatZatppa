@@ -17,6 +17,14 @@ export type Events = {
     experimentId: string
     variationId: string
   }
+  'feature:viewed': {
+    featureId: string
+    featureResultValue: unknown
+    /** Only available if feature has experiment rules applied */
+    experimentId?: string
+    /** Only available if feature has experiment rules applied */
+    variationId?: string
+  }
 
   'account:loggedIn': {
     logContext:
@@ -66,13 +74,6 @@ export type Events = {
   'welcomeModal:signinClicked': {}
   'welcomeModal:dismissed': {}
   'welcomeModal:presented': {}
-  'community:create:ctaShown': {}
-  'community:create:ctaClicked': {}
-  'community:create:eligibilityDenied': {}
-  'community:create:submitStarted': {}
-  'community:create:submitSucceeded': {}
-  'community:create:submitFailed': {}
-  'community:create:wizardCompleted': {}
   'signup:nextPressed': {
     activeStep: number
     phoneVerificationRequired?: boolean
@@ -157,6 +158,7 @@ export type Events = {
     feedUrl: string
     feedType: string
     index: number
+    reason?: string
   }
   'feed:endReached': {
     feedUrl: string
@@ -244,7 +246,6 @@ export type Events = {
     persist: boolean
     hasChanged: boolean
   }
-
   'composer:open': {
     logContext:
       | 'Fab'
@@ -252,9 +253,9 @@ export type Events = {
       | 'QuotePost'
       | 'ProfileFeed'
       | 'Deeplink'
-      | 'Other'
       | 'ComposerPrompt'
       | 'Navigation'
+      | 'Other'
     isReply: boolean
     hasQuote: boolean
     hasDraft: boolean
@@ -325,7 +326,7 @@ export type Events = {
     logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
     feedDescriptor?: string
   }
-  'post:quote': {
+  'post:repost': {
     uri: string
     authorDid: string
     logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
@@ -337,7 +338,7 @@ export type Events = {
     logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
     feedDescriptor?: string
   }
-  'post:unquote': {
+  'post:unrepost': {
     uri: string
     authorDid: string
     logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
@@ -481,12 +482,14 @@ export type Events = {
   'suggestedUser:follow': {
     logContext:
       | 'Explore'
-      | 'InterstitialDiscover'
-      | 'InterstitialProfile'
-      | 'Profile'
+      | 'DiscoverInterstitial'
+      | 'ProfileInterstitial'
+      | 'ProfileHeader'
       | 'Onboarding'
       | 'SeeMoreSuggestedUsers'
+      | 'ProgressGuide'
     location: 'Card' | 'Profile' | 'FollowAll'
+    recSource?: 'Search'
     recId?: number | string
     position: number
     suggestedDid: string
@@ -495,8 +498,9 @@ export type Events = {
   'suggestedUser:press': {
     logContext:
       | 'Explore'
-      | 'InterstitialDiscover'
-      | 'InterstitialProfile'
+      | 'DiscoverInterstitial'
+      | 'ProfileInterstitial'
+      | 'ProfileHeader'
       | 'Onboarding'
       | 'SeeMoreSuggestedUsers'
     recId?: number | string
@@ -507,12 +511,13 @@ export type Events = {
   'suggestedUser:seen': {
     logContext:
       | 'Explore'
-      | 'InterstitialDiscover'
-      | 'InterstitialProfile'
-      | 'Profile'
+      | 'DiscoverInterstitial'
+      | 'ProfileInterstitial'
+      | 'ProfileHeader'
       | 'Onboarding'
-      | 'ProgressGuide'
       | 'SeeMoreSuggestedUsers'
+      | 'ProgressGuide'
+    recSource?: 'Search'
     recId?: number | string
     position: number
     suggestedDid: string
@@ -521,13 +526,14 @@ export type Events = {
   'suggestedUser:seeMore': {
     logContext:
       | 'Explore'
-      | 'InterstitialDiscover'
-      | 'InterstitialProfile'
-      | 'Profile'
+      | 'DiscoverInterstitial'
+      | 'ProfileInterstitial'
+      | 'ProfileHeader'
       | 'Onboarding'
+    recId?: number | string
   }
   'suggestedUser:dismiss': {
-    logContext: 'InterstitialDiscover' | 'InterstitialProfile'
+    logContext: 'DiscoverInterstitial' | 'ProfileInterstitial' | 'ProfileHeader'
     recId?: number | string
     position: number
     suggestedDid: string
@@ -561,6 +567,9 @@ export type Events = {
       | 'ChatsList'
       | 'SendViaChatDialog'
   }
+  'groupchat:create': {
+    logContext: 'NewChatDialog'
+  }
   'starterPack:addUser': {
     starterPack?: string
   }
@@ -583,6 +592,10 @@ export type Events = {
     setDescription: boolean
     profilesCount: number
     feedsCount: number
+  }
+  'starterPack:convertToList': {
+    starterPack: string
+    memberCount: number
   }
   'starterPack:ctaPress': {
     starterPack: string
@@ -789,6 +802,100 @@ export type Events = {
      */
     resultSourceLanguage: string
   }
+  'composer:language:suggestLanguage': {
+    os: Platform['OS']
+    /**
+     * The language we detected and suggested to the user as an override for the
+     * expected target language.
+     */
+    suggestedLanguage: string | undefined
+    /**
+     * This is the user's current composer languages, which are always defined.
+     */
+    currentTargetLanguages: string[]
+    /**
+     * The length of the text being translated. We assume shorter texts are
+     * more likely to have inaccurate translations.
+     */
+    textLength: number
+  }
+  'composer:language:acceptSuggestion': {
+    os: Platform['OS']
+    /**
+     * The language we detected and suggested to the user as an override for the
+     * expected target language.
+     */
+    suggestedLanguage: string | undefined
+    /**
+     * This is the user's current composer languages, which are always defined.
+     */
+    currentTargetLanguages: string[]
+    /**
+     * The length of the text being translated. We assume shorter texts are
+     * more likely to have inaccurate translations.
+     */
+    textLength: number
+  }
+  'composer:language:declineSuggestion': {
+    os: Platform['OS']
+    /**
+     * The language we detected and suggested to the user as an override for the
+     * expected target language.
+     */
+    suggestedLanguage: string | undefined
+    /**
+     * This is the user's current composer languages, which are always defined.
+     */
+    currentTargetLanguages: string[]
+    /**
+     * The length of the text being translated. We assume shorter texts are
+     * more likely to have inaccurate translations.
+     */
+    textLength: number
+  }
+  'composer:language:replyNudgeAccept': {
+    /**
+     * The language of the post the user is replying to.
+     */
+    replyToLanguage: string
+    /**
+     * This is the user's current composer languages, which are always defined.
+     */
+    currentTargetLanguages: string[]
+  }
+  'composer:language:replyNudgeDecline': {
+    /**
+     * The language of the post the user is replying to.
+     */
+    replyToLanguage: string
+    /**
+     * This is the user's current composer languages, which are always defined.
+     */
+    currentTargetLanguages: string[]
+  }
+  'composer:language:nudgeUser': {
+    os: Platform['OS']
+    /**
+     * The language we detected and suggested to the user as an override for the
+     * expected target language.
+     */
+    suggestedLanguage: string | undefined
+    /**
+     * This is the user's current composer languages, which are always defined.
+     */
+    currentTargetLanguages: string[]
+    /**
+     * The length of the text being translated. We assume shorter texts are
+     * more likely to have inaccurate translations.
+     */
+    textLength: number
+  }
+  'composer:language:langSelectorPressed': {
+    /**
+     * If the user was nudged by our language detection to update their language
+     */
+    wasNudged: boolean
+  }
 
   'postMenu:openMuteWordsDialog': {
     uri: string
@@ -833,6 +940,9 @@ export type Events = {
   }
   'verification:settings:hideBadges': {}
   'verification:settings:unHideBadges': {}
+
+  'bot:label:toggle': {state: 'add' | 'remove'}
+  'bot:badge:click': {}
 
   'live:create': {duration: number}
   'live:edit': {}
@@ -1028,5 +1138,25 @@ export type Events = {
   }
   'liveEvents:unhideAllFeedBanners': {
     context: LiveEventFeedMetricContext
+  }
+
+  'profile:associated:germ:click-to-chat': {}
+  'profile:associated:germ:click-self-info': {}
+  'profile:associated:germ:self-disconnect': {}
+  'profile:associated:germ:self-reconnect': {}
+
+  // Gallery carousel events
+  'post:gallery:swipe': {
+    fromImage: number
+    toImage: number
+    totalImages: number
+  }
+  'post:gallery:openLightbox': {
+    fromImage: number
+    totalImages: number
+  }
+  'post:gallery:impression': {
+    totalImages: number
+    postUri: string
   }
 }

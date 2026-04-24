@@ -1,6 +1,6 @@
 {
   "name": "@atproto/dev-env",
-  "version": "0.3.210",
+  "version": "0.4.5",
   "license": "MIT",
   "description": "Local development environment helper for atproto development",
   "keywords": [
@@ -14,13 +14,11 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": "dist/bin.js",
+  "bin": "bin.js",
   "scripts": {
-    "ensure:native": "node ../../scripts/ensure-pds-native-addon.js",
     "build": "tsc --build tsconfig.build.json",
-    "start": "pnpm run ensure:native && ../dev-infra/with-test-redis-and-db.sh node --enable-source-maps dist/bin.js",
-    "start:persistent": "pnpm run ensure:native && ../dev-infra/with-redis-and-db.sh node --enable-source-maps dist/bin.js",
-    "dev": "pnpm run ensure:native && ../dev-infra/with-test-redis-and-db.sh node --enable-source-maps --watch dist/bin.js"
+    "start": "../dev-infra/with-test-redis-and-db.sh node --enable-source-maps dist/bin.js",
+    "dev": "../dev-infra/with-test-redis-and-db.sh node --enable-source-maps --watch dist/bin.js"
   },
   "engines": {
     "node": ">=18.7.0"
@@ -32,6 +30,7 @@
     "@atproto/common-web": "workspace:^",
     "@atproto/crypto": "workspace:^",
     "@atproto/identity": "workspace:^",
+    "@atproto/lex": "workspace:^",
     "@atproto/lexicon": "workspace:^",
     "@atproto/ozone": "workspace:^",
     "@atproto/pds": "workspace:^",

@@ -1,20 +1,19 @@
-const {withProjectBuildGradle} = require('@expo/config-plugins')
+const {withProjectBuildGradle} = require('expo/config-plugins')
 
-const jitpackRepository = "maven { url 'https://www.jitpack.io' }"
+const jitpackRepositoryPatterns = [
+  /[ \t]*maven\s*\{\s*url\s+['"]https:\/\/www\.jitpack\.io['"]\s*\}[ \t]*\n?/g,
+  /[ \t]*maven\s*\(\s*['"]https:\/\/www\.jitpack\.io['"]\s*\)[ \t]*\n?/g,
+]
 
 module.exports = function withAndroidNoJitpackPlugin(config) {
   return withProjectBuildGradle(config, config => {
-    if (!config.modResults.contents.includes(jitpackRepository)) {
-      throw Error(
-        'Expected to find the jitpack string in the config. ' +
-          'You MUST verify whether it was actually removed upstream, ' +
-          'or if the format has changed and this plugin no longer recognizes it.',
+    for (const pattern of jitpackRepositoryPatterns) {
+      config.modResults.contents = config.modResults.contents.replace(
+        pattern,
+        '',
       )
     }
-    config.modResults.contents = config.modResults.contents.replaceAll(
-      jitpackRepository,
-      '',
-    )
+
     return config
   })
 }

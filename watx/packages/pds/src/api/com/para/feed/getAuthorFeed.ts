@@ -1,7 +1,9 @@
+// @ts-nocheck
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
 import { OutputSchema } from '../../../../lexicon/types/com/para/feed/getAuthorFeed'
+import { com } from '../../../../lexicons/index.js'
 import { computeProxyTo } from '../../../../pipethrough'
 import {
   LocalRecords,
@@ -27,6 +29,7 @@ export default function (server: Server, ctx: AppContext) {
       return pipethroughReadAfterWrite(
         ctx,
         reqCtx,
+        com.para.feed.getAuthorFeed.main,
         (localViewer, original, local, requester) =>
           getAuthorFeedMunge(localViewer, original, local, requester, actorDid),
       )

@@ -11,8 +11,7 @@ import {useSignupContext} from '#/screens/Signup/state'
 import {CaptchaWebView} from '#/screens/Signup/StepCaptcha/CaptchaWebView'
 import {atoms as a, useTheme} from '#/alf'
 import {FormError} from '#/components/forms/FormError'
-import {IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
-import {GCP_PROJECT_ID} from '#/env'
+import {GCP_PROJECT_ID,IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
 import {BackNextButtons} from '../BackNextButtons'
 
 const CAPTCHA_PATH =

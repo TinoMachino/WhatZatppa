@@ -1,10 +1,12 @@
 import {useEffect, useState} from 'react'
 
 import {useSession} from '#/state/session'
+import {useLoggedOutView} from '#/state/shell/logged-out'
 import {IS_WEB} from '#/env'
 
 export function useWelcomeModal() {
   const {hasSession} = useSession()
+  const {showLoggedOut} = useLoggedOutView()
   const [isOpen, setIsOpen] = useState(false)
 
   const open = () => setIsOpen(true)
@@ -37,7 +39,7 @@ export function useWelcomeModal() {
         return () => clearTimeout(timer)
       }
     }
-  }, [hasSession])
+  }, [hasSession, showLoggedOut])
 
-  return {isOpen, open, close}
+  return {isOpen: isOpen && !showLoggedOut, open, close}
 }

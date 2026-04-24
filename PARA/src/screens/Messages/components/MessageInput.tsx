@@ -23,7 +23,6 @@ import {
   useMessageDraft,
   useSaveMessageDraft,
 } from '#/state/messages/message-drafts'
-import {type EmojiPickerPosition} from '#/view/com/composer/text-input/web/EmojiPicker'
 import {android, atoms as a, useTheme} from '#/alf'
 import {useSharedInputStyles} from '#/components/forms/TextField'
 import {PaperPlane_Stroke2_Corner0_Rounded as PaperPlane} from '#/components/icons/PaperPlane'
@@ -43,7 +42,6 @@ export function MessageInput({
   hasEmbed: boolean
   setEmbed: (embedUrl: string | undefined) => void
   children?: React.ReactNode
-  openEmojiPicker?: (pos: EmojiPickerPosition) => void
 }) {
   const {_} = useLingui()
   const t = useTheme()

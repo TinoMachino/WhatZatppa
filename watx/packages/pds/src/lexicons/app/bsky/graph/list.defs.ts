@@ -45,11 +45,7 @@ const main = l.record<'tid', Main>(
       l.array(l.ref<RichtextFacet.Main>((() => RichtextFacet.main) as any)),
     ),
     avatar: l.optional(
-      l.blob({
-        accept: ['image/png', 'image/jpeg'],
-        maxSize: 1000000,
-        allowLegacy: false,
-      }),
+      l.blob({ accept: ['image/png', 'image/jpeg'], maxSize: 1000000 }),
     ),
     labels: l.optional(
       l.typedUnion(

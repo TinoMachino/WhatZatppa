@@ -1,11 +1,10 @@
 import { mapDefined } from '@atproto/common'
-import { Client } from '@atproto/lex'
+import { AtUriString, Client } from '@atproto/lex'
+import { Server } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { DataPlaneClient } from '../../../../data-plane'
 import { HydrateCtx, Hydrator } from '../../../../hydration/hydrator'
 import { parseString } from '../../../../hydration/util'
-import { Server } from '../../../../lexicon'
-import { QueryParams } from '../../../../lexicon/types/app/bsky/graph/searchStarterPacks'
 import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
@@ -25,7 +24,7 @@ export default function (server: Server, ctx: AppContext) {
     noBlocks,
     presentation,
   )
-  server.app.bsky.graph.searchStarterPacks({
+  server.add(app.bsky.graph.searchStarterPacks, {
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
       const { viewer, includeTakedowns, skipViewerBlocks } =
@@ -47,11 +46,14 @@ export default function (server: Server, ctx: AppContext) {
   })
 }
 
-const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
+const skeleton = async (
+  inputs: SkeletonFnInput<Context, Params>,
+): Promise<Skeleton> => {
   const { ctx, params } = inputs
   const { q } = params
 
   if (ctx.searchClient) {
+    // @NOTE cursors won't change on appview swap
     const res = await ctx.searchClient.call(
       app.bsky.unspecced.searchStarterPacksSkeleton,
       {
@@ -59,7 +61,7 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
         cursor: params.cursor,
         limit: params.limit,
         viewer: params.hydrateCtx.viewer ?? undefined,
-      } as app.bsky.unspecced.searchStarterPacksSkeleton.$Params,
+      },
     )
     return {
       uris: res.starterPacks.map(({ uri }) => uri),
@@ -73,7 +75,7 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
     cursor: params.cursor,
   })
   return {
-    uris: res.uris,
+    uris: res.uris as AtUriString[],
     cursor: parseString(res.cursor),
   }
 }
@@ -114,9 +116,11 @@ type Context = {
   searchClient?: Client
 }
 
-type Params = QueryParams & { hydrateCtx: HydrateCtx }
+type Params = app.bsky.graph.searchStarterPacks.$Params & {
+  hydrateCtx: HydrateCtx
+}
 
 type Skeleton = {
-  uris: string[]
+  uris: AtUriString[]
   cursor?: string
 }

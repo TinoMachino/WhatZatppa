@@ -113,11 +113,7 @@ export function decodeQueryParam(
   }
 }
 
-export function getSearchParams(url?: string): URLSearchParams | undefined {
-  return getSearchParamsWithOptions(url)
-}
-
-export function getSearchParamsWithOptions(
+function getSearchParams(
   url?: string,
   opts?: { parseLoose?: boolean },
 ): URLSearchParams | undefined {
@@ -132,8 +128,11 @@ export function getSearchParamsWithOptions(
   const urlSearchParams = new URLSearchParams(queryString)
 
   if (opts?.parseLoose) {
-    // Backwards-compat: normalize "foo[]" and "foo[0]" into repeated "foo"
-    // parameters so older clients keep working after stricter parsing.
+    // @NOTE this is non-standard and should only be used for limited backwards-compatibility purposes.
+    // Converts "foo[]=bar&foo[0]=baz" syntax into "foo=bar&foo=baz"
+
+    // We cannot "delete()" while iterating. SO we'll first collect all keys
+    // that need to be changed, then apply the changes after
     const toAppend = new URLSearchParams()
     const toDelete = new Set<string>()
 
@@ -165,7 +164,7 @@ export function getQueryParams(
 
   const result: UndecodedParams = Object.create(null)
 
-  const searchParams = getSearchParamsWithOptions(req.url, opts)
+  const searchParams = getSearchParams(req.url, opts)
   if (!searchParams) return result
 
   if (searchParams.has('__proto__')) {
@@ -188,16 +187,15 @@ export function createLexiconParamsVerifier<P extends Params = Params>(
   nsid: string,
   def: LexXrpcQuery | LexXrpcProcedure | LexXrpcSubscription,
   lexicons: Lexicons,
-  opts?: { parseLoose?: boolean },
 ): ParamsVerifierInternal<P> {
   return (req) => {
-    const queryParams = getQueryParams(req, opts)
+    const queryParams = getQueryParams(req)
     const params = decodeQueryParams(def, queryParams)
     try {
       return lexicons.assertValidXrpcParams(nsid, params) as P
-    } catch (e) {
+    } catch (cause) {
       // @NOTE WE historically did not check for specific error types here,
-      throw new InvalidRequestError(String(e))
+      throw new InvalidRequestError(String(cause), undefined, { cause })
     }
   }
 }
@@ -206,23 +204,24 @@ export function createSchemaParamsVerifier<
   M extends l.Procedure | l.Query | l.Subscription,
 >(
   ns: l.Main<M>,
-  opts?: { parseLoose?: boolean },
+  options?: RouteOptions,
 ): ParamsVerifierInternal<LexMethodParams<M>> {
   const schema = l.getMain(ns)
+  const queryOpts = { parseLoose: options?.paramsParseLoose }
   return (req) => {
     const urlSearchParams =
-      getSearchParamsWithOptions(req.url, opts) ?? new URLSearchParams()
+      getSearchParams(req.url, queryOpts) ?? new URLSearchParams()
     try {
       const params = schema.parameters.fromURLSearchParams(urlSearchParams)
       return params as LexMethodParams<M>
-    } catch (err) {
-      if (err instanceof l.LexValidationError) {
-        const message = `Invalid ${schema.nsid} params: ${err.issues
+    } catch (cause) {
+      if (cause instanceof l.LexValidationError) {
+        const message = `Invalid ${schema.nsid} params: ${cause.issues
           .map((issue) => issue.message)
           .join(', ')}`
-        throw new InvalidRequestError(message)
+        throw new InvalidRequestError(message, undefined, { cause })
       }
-      throw err
+      throw cause
     }
   }
 }
@@ -311,6 +310,7 @@ export function createSchemaInputVerifier<M extends l.Procedure | l.Query>(
     //
     return async (req) => {
       if (getBodyPresence(req) === 'present') {
+        // @NOTE we *could* also discard the body here instead of throwing an error
         throw new InvalidRequestError(
           `A request body was provided when none was expected`,
         )

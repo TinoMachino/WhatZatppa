@@ -441,11 +441,12 @@ let DrawerFooter = ({
 }
 DrawerFooter = memo(DrawerFooter)
 
-interface MenuItemProps extends ComponentProps<typeof PressableScale> {
+interface MenuItemProps {
   icon: JSX.Element
   label: string
   count?: string
   bold?: boolean
+  onPress: () => void
 }
 
 let SearchMenuItem = ({

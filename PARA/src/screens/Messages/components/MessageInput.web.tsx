@@ -22,12 +22,9 @@ import {
   useSaveMessageDraft,
 } from '#/state/messages/message-drafts'
 import {textInputWebEmitter} from '#/view/com/composer/text-input/textInputWebEmitter'
-import {
-  type Emoji,
-  type EmojiPickerPosition,
-} from '#/view/com/composer/text-input/web/EmojiPicker'
 import {atoms as a, flatten, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
+import * as EmojiPicker from '#/components/EmojiPicker'
 import {useSharedInputStyles} from '#/components/forms/TextField'
 import {EmojiArc_Stroke2_Corner0_Rounded as EmojiSmile} from '#/components/icons/Emoji'
 import {PaperPlane_Stroke2_Corner0_Rounded as PaperPlane} from '#/components/icons/PaperPlane'
@@ -40,13 +37,11 @@ export function MessageInput({
   hasEmbed,
   setEmbed,
   children,
-  openEmojiPicker,
 }: {
   onSendMessage: (message: string) => void
   hasEmbed: boolean
   setEmbed: (embedUrl: string | undefined) => void
   children?: ReactNode
-  openEmojiPicker?: (pos: EmojiPickerPosition) => void
 }) {
   const {isMobile} = useWebMediaQueries()
   const {_} = useLingui()
@@ -114,7 +109,7 @@ export function MessageInput({
   }, [])
 
   const onEmojiInserted = useCallback(
-    (emoji: Emoji) => {
+    (emoji: any) => {
       if (!textAreaRef.current) {
         return
       }
@@ -162,49 +157,43 @@ export function MessageInput({
         // @ts-expect-error web only
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}>
-        <Button
-          onPress={e => {
-            e.currentTarget.measure((_fx, _fy, _width, _height, px, py) => {
-              openEmojiPicker?.({
-                top: py,
-                left: px,
-                right: px,
-                bottom: py,
-                nextFocusRef:
-                  textAreaRef as unknown as MutableRefObject<HTMLElement>,
-              })
-            })
-          }}
-          style={[
-            a.rounded_full,
-            a.overflow_hidden,
-            a.align_center,
-            a.justify_center,
-            {
-              marginTop: 5,
-              height: 30,
-              width: 30,
-            },
-          ]}
-          label={_(msg`Open emoji picker`)}>
-          {state => (
-            <View
-              style={[
-                a.absolute,
-                a.inset_0,
-                a.align_center,
-                a.justify_center,
-                {
-                  backgroundColor:
-                    state.hovered || state.focused || state.pressed
-                      ? t.atoms.bg.backgroundColor
-                      : undefined,
-                },
-              ]}>
-              <EmojiSmile size="lg" />
-            </View>
-          )}
-        </Button>
+        <EmojiPicker.Root onEmojiSelect={onEmojiInserted} nextFocusRef={textAreaRef}>
+          <EmojiPicker.Trigger label={_(msg`Open emoji picker`)}>
+            {({props, state}: {props: any, state: any}) => (
+              <Button
+                style={[
+                  a.rounded_full,
+                  a.overflow_hidden,
+                  a.align_center,
+                  a.justify_center,
+                  {
+                    marginTop: 5,
+                    height: 30,
+                    width: 30,
+                  },
+                ]}
+                label={props.accessibilityLabel}
+                {...props}>
+                <View
+                  style={[
+                    a.absolute,
+                    a.inset_0,
+                    a.align_center,
+                    a.justify_center,
+                    {
+                      backgroundColor:
+                        state.hovered || state.focused || state.pressed
+                          ? t.atoms.bg.backgroundColor
+                          : undefined,
+                    },
+                  ]}>
+                  <EmojiSmile size="lg" />
+                </View>
+              </Button>
+            )}
+          </EmojiPicker.Trigger>
+          <EmojiPicker.Picker />
+        </EmojiPicker.Root>
         <TextareaAutosize
           ref={textAreaRef}
           style={flatten([

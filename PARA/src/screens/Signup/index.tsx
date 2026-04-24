@@ -30,8 +30,7 @@ import {LinearGradientBackground} from '#/components/LinearGradientBackground'
 import {InlineLinkText} from '#/components/Link'
 import {ScreenTransition} from '#/components/ScreenTransition'
 import {Text} from '#/components/Typography'
-import {IS_ANDROID} from '#/env'
-import {GCP_PROJECT_ID} from '#/env'
+import {GCP_PROJECT_ID,IS_ANDROID} from '#/env'
 import * as bsky from '#/types/bsky'
 
 export function Signup({onPressBack}: {onPressBack: () => void}) {

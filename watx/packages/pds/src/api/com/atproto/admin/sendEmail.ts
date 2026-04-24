@@ -1,18 +1,12 @@
-import { InvalidRequestError } from '@atproto/xrpc-server'
+import { InvalidRequestError, Server } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
-import { Server } from '../../../../lexicon'
-import { ids } from '../../../../lexicon/lexicons'
 import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
-  server.com.atproto.admin.sendEmail({
+  server.add(com.atproto.admin.sendEmail, {
     auth: ctx.authVerifier.moderator,
-    handler: async ({ input, req }) => {
-      const {
-        content,
-        recipientDid,
-        subject = 'Message via your PDS',
-      } = input.body
+    handler: async ({ input: { body }, req }) => {
+      const { content, recipientDid, subject = 'Message via your PDS' } = body
 
       const account = await ctx.accountManager.getAccount(recipientDid, {
         includeDeactivated: true,
@@ -23,19 +17,16 @@ export default function (server: Server, ctx: AppContext) {
       }
 
       if (ctx.entrywayClient) {
-        const body = await ctx.entrywayClient.call(
-          com.atproto.admin.sendEmail.main,
-          input.body as com.atproto.admin.sendEmail.$InputBody,
-          await ctx.entrywayAuthHeaders(
-            req,
-            recipientDid,
-            ids.ComAtprotoAdminSendEmail,
-          ),
+        const { headers } = await ctx.entrywayAuthHeaders(
+          req,
+          recipientDid,
+          com.atproto.admin.sendEmail.$lxm,
         )
-        return {
-          encoding: 'application/json',
+
+        return ctx.entrywayClient.xrpc(com.atproto.admin.sendEmail, {
+          headers,
           body,
-        }
+        })
       }
 
       if (!account.email) {
@@ -48,7 +39,7 @@ export default function (server: Server, ctx: AppContext) {
       )
 
       return {
-        encoding: 'application/json',
+        encoding: 'application/json' as const,
         body: { sent: true },
       }
     },

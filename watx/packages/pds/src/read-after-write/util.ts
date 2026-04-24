@@ -1,14 +1,11 @@
 import express from 'express'
-import { ValidationError } from '@atproto/lexicon'
-import { jsonToLex } from '@atproto/lexicon'
 import { HeadersMap } from '@atproto/xrpc'
+import { LexValue, l, lexParse } from '@atproto/lex'
 import {
   HandlerPipeThrough,
   HandlerPipeThroughBuffer,
-  parseReqNsid,
 } from '@atproto/xrpc-server'
 import { AppContext } from '../context'
-import { lexicons } from '../lexicons.js'
 import { readStickyLogger as log } from '../logger'
 import {
   asPipeThroughBuffer,
@@ -39,13 +36,21 @@ export const getLocalLag = (local: LocalRecords): number | undefined => {
   return Date.now() - new Date(oldest).getTime()
 }
 
-export const pipethroughReadAfterWrite = async <T>(
+export const pipethroughReadAfterWrite = async <
+  M extends (l.Query | l.Procedure) & {
+    output: l.Payload<`application/json`, l.Schema<LexValue>>
+  },
+>(
   ctx: AppContext,
   reqCtx: { req: express.Request; auth: { credentials: { did: string } } },
-  munge: MungeFn<T>,
-): Promise<HandlerResponse<T> | HandlerPipeThrough> => {
+  ns: l.Main<M>,
+  munge: MungeFn<l.InferMethodOutputBody<M>>,
+): Promise<
+  HandlerResponse<l.InferMethodOutputBody<M>> | HandlerPipeThrough
+> => {
   const { req, auth } = reqCtx
   const requester = auth.credentials.did
+  const method = l.getMain(ns)
 
   const streamRes = await pipethrough(ctx, req, { iss: requester })
 
@@ -63,24 +68,20 @@ export const pipethroughReadAfterWrite = async <T>(
   let bufferRes: HandlerPipeThroughBuffer | undefined
 
   try {
-    const lxm = parseReqNsid(req)
-
     return await ctx.actorStore.read(requester, async (store) => {
       const local = await store.record.getRecordsSinceRev(rev)
       if (local.count === 0) return streamRes
 
       const { buffer } = (bufferRes = await asPipeThroughBuffer(streamRes))
 
-      const lex = jsonToLex(JSON.parse(buffer.toString('utf8')))
+      const lex = lexParse(buffer.toString('utf8'), { strict: false })
 
-      let parsedRes: T
-      try {
-        parsedRes = lexicons.assertValidXrpcOutput(lxm, lex) as T
-      } catch (err) {
-        // Invalid upstream payloads should skip read-after-write munging.
-        if (err instanceof ValidationError) return bufferRes
-        throw err
-      }
+      const result = method.output.schema.safeValidate(lex, { strict: false })
+
+      // We won't perform munging with invalid upstream data
+      if (!result.success) return bufferRes
+
+      const parsedRes = result.value as l.InferMethodOutputBody<M, never>
 
       const localViewer = ctx.localViewer(store)
 

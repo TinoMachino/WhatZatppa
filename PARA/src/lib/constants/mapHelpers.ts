@@ -1,5 +1,5 @@
 import {ELECTORAL_DISTRICTS} from '#/lib/constants/electoralDistrictsData'
-import {type CityData, MEXICO_CITY_DATA} from '#/lib/constants/mexicoCityData'
+import {MEXICO_CITY_DATA} from '#/lib/constants/mexicoCityData'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,7 +77,7 @@ export function buildSearchIndex(
 
   // 3. Cities from MEXICO_CITY_DATA
   for (const [stateName, cities] of Object.entries(MEXICO_CITY_DATA)) {
-    for (const city of cities as CityData[]) {
+    for (const city of cities) {
       results.push({
         name: city.name,
         type: 'city',

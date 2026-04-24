@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import {getDmServiceHeadersForServiceUrl} from '#/lib/constants'
+import {DM_SERVICE_HEADERS} from '#/lib/constants'
 import {STALE} from '#/state/queries'
 import {useOnMarkAsRead} from '#/state/queries/messages/list-conversations'
 import {useAgent} from '#/state/session'
@@ -19,22 +19,18 @@ import {
 const RQKEY_ROOT = 'convo'
 export const RQKEY = (convoId: string) => [RQKEY_ROOT, convoId]
 
-export function useConvoQuery(convo: ChatBskyConvoDefs.ConvoView) {
+export function useConvoQuery({convoId}: {convoId: string}) {
   const agent = useAgent()
-  const dmServiceHeaders = getDmServiceHeadersForServiceUrl(
-    agent.serviceUrl.toString(),
-  )
 
   return useQuery({
-    queryKey: RQKEY(convo.id),
+    queryKey: RQKEY(convoId),
     queryFn: async () => {
       const {data} = await agent.chat.bsky.convo.getConvo(
-        {convoId: convo.id},
-        {headers: dmServiceHeaders},
+        {convoId},
+        {headers: DM_SERVICE_HEADERS},
       )
       return data.convo
     },
-    initialData: convo,
     staleTime: STALE.INFINITY,
   })
 }
@@ -50,9 +46,6 @@ export function useMarkAsReadMutation() {
   const optimisticUpdate = useOnMarkAsRead()
   const queryClient = useQueryClient()
   const agent = useAgent()
-  const dmServiceHeaders = getDmServiceHeadersForServiceUrl(
-    agent.serviceUrl.toString(),
-  )
 
   return useMutation({
     mutationFn: async ({
@@ -64,14 +57,14 @@ export function useMarkAsReadMutation() {
     }) => {
       if (!convoId) throw new Error('No convoId provided')
 
-      await agent.api.chat.bsky.convo.updateRead(
+      await agent.chat.bsky.convo.updateRead(
         {
           convoId,
           messageId,
         },
         {
           encoding: 'application/json',
-          headers: dmServiceHeaders,
+          headers: DM_SERVICE_HEADERS,
         },
       )
     },

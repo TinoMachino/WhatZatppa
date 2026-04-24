@@ -1,4 +1,4 @@
-import * as React from 'react'
+import {useEffect} from 'react'
 import {View} from 'react-native'
 // Based on @react-navigation/native-stack/src/navigators/createNativeStackNavigator.ts
 // MIT License
@@ -78,7 +78,7 @@ function NativeStackNavigator({
       UNSTABLE_router,
     })
 
-  React.useEffect(
+  useEffect(
     () =>
       // @ts-expect-error: there may not be a tab navigator in parent
       navigation?.addListener?.('tabPress', (e: any) => {
@@ -114,6 +114,10 @@ function NativeStackNavigator({
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {isMobile} = useWebMediaQueries()
   const {leftNavMinimal} = useLayoutBreakpoints()
+  const isLoggedOutHome =
+    IS_WEB &&
+    !hasSession &&
+    (activeRoute.name === 'Home' || activeRoute.name === 'Start')
   if (!hasSession && (activeRouteRequiresAuth || IS_NATIVE)) {
     return <LoggedOut />
   }
@@ -144,7 +148,7 @@ function NativeStackNavigator({
 
   // Show the bottom bar if we have a session only on mobile web. If we don't have a session, we want to show it
   // on both tablet and mobile web so that we see the create account CTA.
-  const showBottomBar = hasSession ? isMobile : leftNavMinimal
+  const showBottomBar = hasSession ? isMobile : leftNavMinimal && !isLoggedOutHome
 
   return (
     <NavigationContent>
@@ -157,7 +161,7 @@ function NativeStackNavigator({
           describe={describe}
         />
       </View>
-      {IS_WEB && (
+      {IS_WEB && !isLoggedOutHome && (
         <>
           {showBottomBar ? <BottomBarWeb /> : <DesktopLeftNav />}
           {!isMobile && <DesktopRightNav routeName={activeRoute.name} />}

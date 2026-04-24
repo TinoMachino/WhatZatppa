@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-query'
 import throttle from 'lodash.throttle'
 
-import {getDmServiceHeadersForServiceUrl} from '#/lib/constants'
+import {DM_SERVICE_HEADERS} from '#/lib/constants'
 import {useCurrentConvoId} from '#/state/messages/current-convo-id'
 import {useMessagesEventBus} from '#/state/messages/events'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -24,25 +24,25 @@ export const RQKEY_ROOT = 'convo-list'
 export const RQKEY = (
   status: 'accepted' | 'request' | 'all',
   readState: 'all' | 'unread' = 'all',
-) => [RQKEY_ROOT, status, readState]
+  kind: 'all' | 'group' | 'direct' = 'all',
+) => [RQKEY_ROOT, status, readState, kind]
 type RQPageParam = string | undefined
 
 export function useListConvosQuery({
   enabled,
   status,
   readState = 'all',
+  kind = 'all',
 }: {
   enabled?: boolean
   status?: 'request' | 'accepted'
   readState?: 'all' | 'unread'
+  kind?: 'all' | 'group' | 'direct'
 } = {}) {
   const agent = useAgent()
-  const dmServiceHeaders = getDmServiceHeadersForServiceUrl(
-    agent.serviceUrl.toString(),
-  )
 
   return useInfiniteQuery({
-    enabled: enabled ?? true,
+    enabled,
     queryKey: RQKEY(status ?? 'all', readState),
     queryFn: async ({pageParam}) => {
       const {data} = await agent.chat.bsky.convo.listConvos(
@@ -50,9 +50,10 @@ export function useListConvosQuery({
           limit: 20,
           cursor: pageParam,
           readState: readState === 'unread' ? 'unread' : undefined,
+          kind: kind === 'all' ? undefined : kind,
           status,
         },
-        {headers: dmServiceHeaders},
+        {headers: DM_SERVICE_HEADERS},
       )
       return data
     },

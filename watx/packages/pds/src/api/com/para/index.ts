@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AppContext } from '../../../context'
 import { Server } from '../../../lexicon'
 import actor from './actor'

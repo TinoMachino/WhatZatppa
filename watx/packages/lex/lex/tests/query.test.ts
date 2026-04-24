@@ -141,7 +141,9 @@ describe('com.example.query', () => {
           integer: 123,
           string: 'string',
         })
-      }).toThrow('Expected boolean value type (got "string") at $.object.boolean')
+      }).toThrow(
+        'Expected boolean value type (got "string") at $.object.boolean',
+      )
     })
   })
 })

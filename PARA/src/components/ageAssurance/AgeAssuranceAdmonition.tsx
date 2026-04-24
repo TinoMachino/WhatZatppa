@@ -10,8 +10,7 @@ import type * as Dialog from '#/components/Dialog'
 import {ShieldCheck_Stroke2_Corner0_Rounded as Shield} from '#/components/icons/Shield'
 import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {useAgeAssurance} from '#/ageAssurance'
-import {logger} from '#/ageAssurance'
+import {logger,useAgeAssurance} from '#/ageAssurance'
 
 export function AgeAssuranceAdmonition({
   children,

@@ -5,5 +5,8 @@
 
 'use strict'
 
-// Exists so pnpm can link the package bin before the package has been built.
+// @NOTE This file exists so that pnpm can properly link the "bin" scripts when
+// the monorepo is being setup (during initial "pnpm install"), but was never
+// built.
+
 require('./dist/index.js')

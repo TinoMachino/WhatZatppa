@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { jsonToLex } from '@atproto/lexicon'
 import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'

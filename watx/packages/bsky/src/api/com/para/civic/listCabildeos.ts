@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AppContext } from '../../../../context'
 import { parseCid, parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'

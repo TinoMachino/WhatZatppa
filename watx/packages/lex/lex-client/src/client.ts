@@ -20,10 +20,24 @@ import {
 import { Agent, AgentOptions, buildAgent } from './agent.js'
 import { XrpcFailure } from './errors.js'
 import { com } from './lexicons/index.js'
-import { XrpcResponse, XrpcResponseBody } from './response.js'
-import { BinaryBodyInit, CallOptions, Service } from './types.js'
-import { buildAtprotoHeaders } from './util.js'
-import { XrpcOptions, XrpcRequestParams, xrpc, xrpcSafe } from './xrpc.js'
+import {
+  XrpcResponse,
+  XrpcResponseBody,
+  XrpcResponseOptions,
+} from './response.js'
+import { BinaryBodyInit, Service } from './types.js'
+import {
+  XrpcRequestHeadersOptions,
+  applyDefaults,
+  buildXrpcRequestHeaders,
+} from './util.js'
+import {
+  XrpcOptions,
+  XrpcRequestParams,
+  XrpcRequestProcessingOptions,
+  xrpc,
+  xrpcSafe,
+} from './xrpc.js'
 
 export type {
   AtIdentifierString,
@@ -58,19 +72,13 @@ export type {
  * }
  * ```
  */
-export type ClientOptions = {
-  /** Labeler DIDs to include in requests for content moderation. */
-  labelers?: Iterable<DidString>
-  /** Custom headers to include in all requests made by this client. */
-  headers?: HeadersInit
-  /** Service proxy identifier for routing requests through a specific service. */
-  service?: Service
-  /** Enables request validation by default for all XRPC calls made by this client. */
-  validateRequest?: boolean
-  /** Enables response validation by default for all XRPC calls made by this client. */
-  validateResponse?: boolean
-  /** Enables strict Lex JSON parsing by default for all XRPC calls made by this client. */
-  strictResponseProcessing?: boolean
+export type ClientOptions = XrpcRequestHeadersOptions &
+  Pick<XrpcRequestProcessingOptions, 'validateRequest'> &
+  XrpcResponseOptions
+
+export type ActionOptions = {
+  /** AbortSignal to cancel the request. */
+  signal?: AbortSignal
 }
 
 /**
@@ -93,7 +101,7 @@ export type ClientOptions = {
 export type Action<I = any, O = any> = (
   client: Client,
   input: I,
-  options: CallOptions,
+  options: ActionOptions,
 ) => O | Promise<O>
 
 /**
@@ -115,7 +123,10 @@ export type InferActionOutput<A extends Action> =
  *
  * @see {@link Client.createRecord}
  */
-export type CreateRecordOptions = CallOptions & {
+export type CreateRecordOptions = Omit<
+  XrpcOptions<typeof com.atproto.repo.createRecord.main>,
+  'body'
+> & {
   /** Repository identifier (DID or handle). Defaults to authenticated user's DID. */
   repo?: AtIdentifierString
   /** Compare-and-swap on the repo commit. If specified, must match current commit. */
@@ -129,7 +140,10 @@ export type CreateRecordOptions = CallOptions & {
  *
  * @see {@link Client.deleteRecord}
  */
-export type DeleteRecordOptions = CallOptions & {
+export type DeleteRecordOptions = Omit<
+  XrpcOptions<typeof com.atproto.repo.deleteRecord.main>,
+  'body'
+> & {
   /** Repository identifier (DID or handle). Defaults to authenticated user's DID. */
   repo?: AtIdentifierString
   /** Compare-and-swap on the repo commit. If specified, must match current commit. */
@@ -143,7 +157,10 @@ export type DeleteRecordOptions = CallOptions & {
  *
  * @see {@link Client.getRecord}
  */
-export type GetRecordOptions = CallOptions & {
+export type GetRecordOptions = Omit<
+  XrpcOptions<typeof com.atproto.repo.getRecord.main>,
+  'params'
+> & {
   /** Repository identifier (DID or handle). Defaults to authenticated user's DID. */
   repo?: AtIdentifierString
 }
@@ -153,7 +170,10 @@ export type GetRecordOptions = CallOptions & {
  *
  * @see {@link Client.putRecord}
  */
-export type PutRecordOptions = CallOptions & {
+export type PutRecordOptions = Omit<
+  XrpcOptions<typeof com.atproto.repo.putRecord.main>,
+  'body'
+> & {
   /** Repository identifier (DID or handle). Defaults to authenticated user's DID. */
   repo?: AtIdentifierString
   /** Compare-and-swap on the repo commit. If specified, must match current commit. */
@@ -169,7 +189,10 @@ export type PutRecordOptions = CallOptions & {
  *
  * @see {@link Client.listRecords}
  */
-export type ListRecordsOptions = CallOptions & {
+export type ListRecordsOptions = Omit<
+  XrpcOptions<typeof com.atproto.repo.listRecords.main>,
+  'params'
+> & {
   /** Repository identifier (DID or handle). Defaults to authenticated user's DID. */
   repo?: AtIdentifierString
   /** Maximum number of records to return. */
@@ -179,6 +202,16 @@ export type ListRecordsOptions = CallOptions & {
   /** If true, returns records in reverse chronological order. */
   reverse?: boolean
 }
+
+export type UploadBlobOptions = Omit<
+  XrpcOptions<typeof com.atproto.repo.uploadBlob.main>,
+  'body'
+>
+
+export type GetBlobOptions = Omit<
+  XrpcOptions<typeof com.atproto.sync.getBlob.main>,
+  'params'
+>
 
 export type RecordKeyOptions<
   T extends RecordSchema,
@@ -288,11 +321,12 @@ export type ListRecord<Value extends LexMap> =
  * services. It provides type-safe methods for XRPC calls, record operations,
  * and blob handling.
  *
- * @example Basic usage
+ * @example // Basic usage
  * ```typescript
  * import { Client } from '@atproto/lex'
  *
- * const client = new Client(agent)
+ * const client = new Client(oauthSession)
+ *
  * const response = await client.xrpc(app.bsky.feed.getTimeline.main, {
  *   params: { limit: 50 }
  * })
@@ -396,12 +430,19 @@ export class Client implements Agent {
   }
 
   /**
-   * Low-level fetch handler for making requests.
+   * {@link Agent}'s {@link Agent.fetchHandler} implementation, which adds
+   * labelers and service proxying headers. This method allow a {@link Client}
+   * instance to be used directly as an {@link Agent} for another
+   * {@link Client}, enabling composition of headers (labelers, proxying, etc.).
+   *
    * @param path - The request path
    * @param init - Request initialization options
    */
-  public fetchHandler(path: `/${string}`, init: RequestInit): Promise<Response> {
-    const headers = buildAtprotoHeaders({
+  public fetchHandler(
+    path: `/${string}`,
+    init: RequestInit,
+  ): Promise<Response> {
+    const headers = buildXrpcRequestHeaders({
       headers: init.headers,
       service: this.service,
       labelers: [
@@ -463,10 +504,7 @@ export class Client implements Agent {
     ns: Main<M>,
     options: XrpcOptions<M> = {} as XrpcOptions<M>,
   ): Promise<XrpcResponse<M>> {
-    return xrpc(this, ns, {
-      ...this.xrpcDefaults,
-      ...options,
-    })
+    return xrpc(this, ns, applyDefaults(options, this.xrpcDefaults))
   }
 
   /**
@@ -505,10 +543,7 @@ export class Client implements Agent {
     ns: Main<M>,
     options: XrpcOptions<M> = {} as XrpcOptions<M>,
   ): Promise<XrpcResponse<M> | XrpcFailure<M>> {
-    return xrpcSafe(this, ns, {
-      ...this.xrpcDefaults,
-      ...options,
-    })
+    return xrpcSafe(this, ns, applyDefaults(options, this.xrpcDefaults))
   }
 
   /**
@@ -664,14 +699,8 @@ export class Client implements Agent {
    * console.log(response.body.blob) // Use this ref in records
    * ```
    */
-  async uploadBlob(
-    body: BinaryBodyInit,
-    options?: CallOptions & { encoding?: `${string}/${string}` },
-  ) {
-    return this.xrpc(com.atproto.repo.uploadBlob.main, {
-      ...options,
-      body,
-    })
+  async uploadBlob(body: BinaryBodyInit, options?: UploadBlobOptions) {
+    return this.xrpc(com.atproto.repo.uploadBlob.main, { ...options, body })
   }
 
   /**
@@ -681,7 +710,7 @@ export class Client implements Agent {
    * @param cid - The CID of the blob
    * @param options - Call options
    */
-  async getBlob(did: DidString, cid: CidString, options?: CallOptions) {
+  async getBlob(did: DidString, cid: CidString, options?: GetBlobOptions) {
     return this.xrpc(com.atproto.sync.getBlob.main, {
       ...options,
       params: { did, cid },
@@ -738,7 +767,13 @@ export class Client implements Agent {
         : T extends Query
           ? XrpcRequestParams<T>
           : never,
-    options?: CallOptions,
+    options?: T extends Action
+      ? ActionOptions
+      : T extends Procedure
+        ? Omit<XrpcOptions<T>, 'body'>
+        : T extends Query
+          ? Omit<XrpcOptions<T>, 'params'>
+          : never,
   ): Promise<
     T extends Action
       ? InferActionOutput<T>
@@ -751,7 +786,7 @@ export class Client implements Agent {
   public async call(
     ns: Main<Action> | Main<Procedure> | Main<Query>,
     arg?: LexValue | Params,
-    options: CallOptions = {},
+    options: ActionOptions = {},
   ): Promise<unknown> {
     const method = getMain(ns)
 

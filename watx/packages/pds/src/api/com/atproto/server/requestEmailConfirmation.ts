@@ -1,12 +1,10 @@
 import { DAY, HOUR } from '@atproto/common'
-import { InvalidRequestError } from '@atproto/xrpc-server'
+import { InvalidRequestError, Server } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
-import { Server } from '../../../../lexicon'
-import { ids } from '../../../../lexicon/lexicons'
 import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
-  server.com.atproto.server.requestEmailConfirmation({
+  server.add(com.atproto.server.requestEmailConfirmation, {
     rateLimit: [
       {
         durationMs: DAY,
@@ -36,15 +34,17 @@ export default function (server: Server, ctx: AppContext) {
       }
 
       if (ctx.entrywayClient) {
-        await ctx.entrywayClient.call(
-          com.atproto.server.requestEmailConfirmation.main,
-          undefined,
-          await ctx.entrywayAuthHeaders(
-            req,
-            auth.credentials.did,
-            ids.ComAtprotoServerRequestEmailConfirmation,
-          ),
+        const { headers } = await ctx.entrywayAuthHeaders(
+          req,
+          auth.credentials.did,
+          com.atproto.server.requestEmailConfirmation.$lxm,
         )
+
+        await ctx.entrywayClient.xrpc(
+          com.atproto.server.requestEmailConfirmation,
+          { headers },
+        )
+
         return
       }
 

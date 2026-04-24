@@ -1,19 +1,24 @@
 import { MINUTE } from '@atproto/common'
-import { AuthRequiredError, InvalidRequestError } from '@atproto/xrpc-server'
+import {
+  AuthRequiredError,
+  InvalidRequestError,
+  Server,
+} from '@atproto/xrpc-server'
 import { AccountStatus } from '../../../../account-manager/account-manager'
 import { OLD_PASSWORD_MAX_LENGTH } from '../../../../account-manager/helpers/scrypt'
 import { AppContext } from '../../../../context'
-import { Server } from '../../../../lexicon'
 import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
-  server.com.atproto.server.deleteAccount({
+  const { entrywayClient } = ctx
+
+  server.add(com.atproto.server.deleteAccount, {
     rateLimit: {
       durationMs: 5 * MINUTE,
       points: 50,
     },
-    handler: async ({ input, req }) => {
-      const { did, password, token } = input.body
+    handler: async ({ input: { body }, req }) => {
+      const { did, password, token } = body
 
       const account = await ctx.accountManager.getAccount(did, {
         includeDeactivated: true,
@@ -23,12 +28,12 @@ export default function (server: Server, ctx: AppContext) {
         throw new InvalidRequestError('account not found')
       }
 
-      if (ctx.entrywayClient) {
-        await ctx.entrywayClient.call(
-          com.atproto.server.deleteAccount.main,
-          input.body as com.atproto.server.deleteAccount.$InputBody,
-          ctx.entrywayPassthruHeaders(req),
-        )
+      if (entrywayClient) {
+        const { headers } = ctx.entrywayPassthruHeaders(req)
+        await entrywayClient.xrpc(com.atproto.server.deleteAccount, {
+          body,
+          headers,
+        })
         return
       }
 

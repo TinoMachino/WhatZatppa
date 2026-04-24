@@ -249,6 +249,10 @@ export const GIF_SEARCH = (params: string) =>
   `${GIF_SERVICE}/tenor/v2/search?${params}`
 export const GIF_FEATURED = (params: string) =>
   `${GIF_SERVICE}/tenor/v2/featured?${params}`
+export const GIF_KLIPY_SEARCH = (params: string) =>
+  `${GIF_SERVICE}/klipy/v2/search?${params}`
+export const GIF_KLIPY_FEATURED = (params: string) =>
+  `${GIF_SERVICE}/klipy/v2/featured?${params}`
 
 export const MAX_LABELERS = 20
 

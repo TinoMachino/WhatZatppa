@@ -1,4 +1,4 @@
-import type {ReactNode} from 'react'
+import  {type ReactNode} from 'react'
 
 import {CurrentConvoIdProvider} from '#/state/messages/current-convo-id'
 import {MessagesEventBusProvider} from '#/state/messages/events'

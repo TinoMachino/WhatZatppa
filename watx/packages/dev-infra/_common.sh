@@ -17,37 +17,6 @@ get_container_id() {
     | jq -r '.[]? | select(.Service == "'${service}'") | .ID'
 }
 
-get_container_health() {
-  local container_id=$1
-  if [ -z "${container_id}" ]; then
-    echo "missing"
-    return
-  fi
-
-  local health_status
-  health_status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${container_id}" 2>/dev/null || echo "missing")
-  echo "${health_status}"
-}
-
-docker_is_usable() {
-  docker ps >/dev/null 2>&1 &
-  local pid=$!
-  local waited=0
-
-  while [ ${waited} -lt 8 ]; do
-    if ! kill -0 ${pid} >/dev/null 2>&1; then
-      wait ${pid}
-      return $?
-    fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-
-  kill -9 ${pid} >/dev/null 2>&1 || true
-  wait ${pid} >/dev/null 2>&1 || true
-  return 1
-}
-
 # Exports all environment variables
 export_env() {
   export_pg_env
@@ -57,38 +26,17 @@ export_env() {
 # Exports postgres environment variables
 export_pg_env() {
   # Based on creds in compose.yaml
+  export PGPORT=5433
   export PGHOST=localhost
   export PGUSER=pg
   export PGPASSWORD=password
   export PGDATABASE=postgres
-  export DB_POSTGRES_URL="postgresql://pg:password@127.0.0.1:5432/postgres"
-  export DB_TEST_POSTGRES_URL="postgresql://pg:password@127.0.0.1:5433/postgres"
+  export DB_POSTGRES_URL="postgresql://pg:password@127.0.0.1:5433/postgres"
 }
 
 # Exports redis environment variables
 export_redis_env() {
-  export REDIS_HOST="127.0.0.1:6379"
-  export REDIS_TEST_HOST="127.0.0.1:6380"
-}
-
-select_runtime_pg_env() {
-  local services=$1
-  if [[ $services == *"db_test"* ]]; then
-    export PGPORT=5433
-  else
-    export PGPORT=5432
-  fi
-}
-
-select_runtime_urls() {
-  local services=$1
-  local postgres_url_env_var=`[[ $services == *"db_test"* ]] && echo "DB_TEST_POSTGRES_URL" || echo "DB_POSTGRES_URL"`
-  local redis_host_env_var=`[[ $services == *"redis_test"* ]] && echo "REDIS_TEST_HOST" || echo "REDIS_HOST"`
-
-  select_runtime_pg_env "${services}"
-
-  postgres_url="${!postgres_url_env_var}"
-  redis_host="${!redis_host_env_var}"
+  export REDIS_HOST="127.0.0.1:6380"
 }
 
 pg_clear() {
@@ -111,12 +59,12 @@ redis_clear() {
 }
 
 main_native() {
-  export_env
-
   local services=${SERVICES}
-  select_runtime_urls "${services}"
   local postgres_url_env_var=`[[ $services == *"db_test"* ]] && echo "DB_TEST_POSTGRES_URL" || echo "DB_POSTGRES_URL"`
   local redis_host_env_var=`[[ $services == *"redis_test"* ]] && echo "REDIS_TEST_HOST" || echo "REDIS_HOST"`
+
+  postgres_url="${!postgres_url_env_var}"
+  redis_host="${!redis_host_env_var}"
 
   if [ -n "${postgres_url}" ]; then
     echo "Using ${postgres_url_env_var} (${postgres_url}) to connect to postgres."
@@ -179,9 +127,7 @@ main_docker() {
     local services=$@
     echo # newline
     if $started_container; then
-      if [[ $services == *"db_test"* ]] || [[ $services == *"redis_test"* ]]; then
-        docker compose --file $compose_file rm --force --stop --volumes ${services}
-      fi
+      docker compose --file $compose_file rm --force --stop --volumes ${services}
     fi
   }
 
@@ -192,30 +138,19 @@ main_docker() {
     exit $?
   }
 
-  # check if all services are running and healthy already
-  needs_recreate=false
+  # check if all services are running already
+  not_running=false
   for service in $services; do
     container_id=$(get_container_id $compose_file $service)
     if [ -z $container_id ]; then
-      needs_recreate=true
-      break
-    fi
-
-    health=$(get_container_health $container_id)
-    if [ "${health}" != "none" ] && [ "${health}" != "healthy" ]; then
-      needs_recreate=true
+      not_running=true
       break
     fi
   done
 
-  # if any are missing/unhealthy, recreate all services
-  if $needs_recreate; then
+  # if any are missing, recreate all services
+  if $not_running; then
     started_container=true
-    if [[ $services == *"db_test"* ]] || [[ $services == *"redis_test"* ]]; then
-      docker compose --file $compose_file rm --force --stop --volumes ${services} >/dev/null 2>&1 || true
-    else
-      docker compose --file $compose_file rm --force --stop ${services} >/dev/null 2>&1 || true
-    fi
     docker compose --file $compose_file up --wait --force-recreate ${services}
   else
     echo "all services ${services} are already running"
@@ -226,9 +161,6 @@ main_docker() {
 
   # setup environment variables and run args
   export_env
-  select_runtime_urls "${services}"
-  DB_POSTGRES_URL="${postgres_url}" \
-  REDIS_HOST="${redis_host}" \
   "$@"
   # save return code for later
   code=$?
@@ -240,27 +172,8 @@ main_docker() {
 
 # Main entry point
 main() {
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker CLI unavailable. Running on host."
-    if ! command -v psql >/dev/null 2>&1; then
-      echo "Host fallback unavailable: psql is required but not installed."
-      exit 1
-    fi
-    main_native $@
-  elif ! docker_is_usable; then
-    echo "Docker is unavailable or unresponsive. Running on host."
-    echo "If you expected Docker mode, restart Docker Desktop and retry."
-    if ! command -v psql >/dev/null 2>&1; then
-      echo "Host fallback unavailable: psql is required but not installed."
-      exit 1
-    fi
-    main_native $@
-  elif ! docker ps >/dev/null 2>&1; then
+  if ! docker ps >/dev/null 2>&1; then
     echo "Docker unavailable. Running on host."
-    if ! command -v psql >/dev/null 2>&1; then
-      echo "Host fallback unavailable: psql is required but not installed."
-      exit 1
-    fi
     main_native $@
   else
     main_docker $@

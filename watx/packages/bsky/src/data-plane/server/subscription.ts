@@ -1,5 +1,6 @@
 import { IdResolver } from '@atproto/identity'
 import { WriteOpAction } from '@atproto/repo'
+import { DidString } from '@atproto/syntax'
 import { Event as FirehoseEvent, Firehose, MemoryRunner } from '@atproto/sync'
 import { subLogger as log } from '../../logger'
 import { BackgroundQueue } from './background'
@@ -71,18 +72,19 @@ const createFirehose = (opts: {
     unauthenticatedCommits: true, // @TODO there seems to be a very rare issue where the authenticator thinks a block is missing in deletion ops
     onError: (err) => log.error({ err }, 'error in subscription'),
     handleEvent: async (evt: FirehoseEvent) => {
+      const did = evt.did as DidString
       if (evt.event === 'identity') {
-        await indexingSvc.indexHandle(evt.did, evt.time, true)
+        await indexingSvc.indexHandle(did, evt.time, true)
       } else if (evt.event === 'account') {
         if (evt.active === false && evt.status === 'deleted') {
-          await indexingSvc.deleteActor(evt.did)
+          await indexingSvc.deleteActor(did)
         } else {
-          await indexingSvc.updateActorStatus(evt.did, evt.active, evt.status)
+          await indexingSvc.updateActorStatus(did, evt.active, evt.status)
         }
       } else if (evt.event === 'sync') {
         await Promise.all([
-          indexingSvc.setCommitLastSeen(evt.did, evt.cid, evt.rev),
-          indexingSvc.indexHandle(evt.did, evt.time),
+          indexingSvc.setCommitLastSeen(did, evt.cid, evt.rev),
+          indexingSvc.indexHandle(did, evt.time),
         ])
       } else {
         const indexFn =
@@ -99,8 +101,8 @@ const createFirehose = (opts: {
               )
         await Promise.all([
           indexFn,
-          indexingSvc.setCommitLastSeen(evt.did, evt.commit, evt.rev),
-          indexingSvc.indexHandle(evt.did, evt.time),
+          indexingSvc.setCommitLastSeen(did, evt.commit, evt.rev),
+          indexingSvc.indexHandle(did, evt.time),
         ])
       }
     },

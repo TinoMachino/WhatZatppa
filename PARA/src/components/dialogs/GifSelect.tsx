@@ -15,11 +15,10 @@ import {Trans} from '@lingui/react/macro'
 import {logEvent} from '#/lib/statsig/statsig'
 import {cleanError} from '#/lib/strings/errors'
 import {
-  type Gif,
-  tenorUrlToBskyGifUrl,
-  useFeaturedGifsQuery,
-  useGifSearchQuery,
-} from '#/state/queries/tenor'
+  useFeaturedGifsQuery as useKlipyFeaturedGifsQuery,
+  useGifSearchQuery as useKlipyGifSearchQuery,
+} from '#/state/queries/klipy'
+import {type Gif, gifPreviewUrl} from '#/state/queries/tenor'
 import {ErrorScreen} from '#/view/com/util/error/ErrorScreen'
 import {ErrorBoundary} from '#/view/com/util/ErrorBoundary'
 import {type ListMethods} from '#/view/com/util/List'
@@ -96,8 +95,8 @@ function GifList({
 
   const isSearching = search.length > 0
 
-  const trendingQuery = useFeaturedGifsQuery()
-  const searchQuery = useGifSearchQuery(search)
+  const trendingQuery = useKlipyFeaturedGifsQuery()
+  const searchQuery = useKlipyGifSearchQuery(search)
 
   const {
     data,
@@ -167,7 +166,7 @@ function GifList({
           <TextField.Icon icon={Search} />
           <TextField.Input
             label={_(msg`Search GIFs`)}
-            placeholder={_(msg`Search Tenor`)}
+            placeholder={_(msg`Search KLIPY`)}
             onChangeText={text => {
               setSearch(text)
               listRef.current?.scrollToOffset({offset: 0, animated: false})
@@ -213,12 +212,12 @@ function GifList({
                 sideBorders={false}
                 topBorder={false}
                 errorTitle={_(msg`Failed to load GIFs`)}
-                errorMessage={_(msg`There was an issue connecting to Tenor.`)}
+                errorMessage={_(msg`There was an issue connecting to KLIPY.`)}
                 emptyMessage={
                   isSearching
                     ? _(msg`No search results found for "${search}".`)
                     : _(
-                        msg`No featured GIFs found. There may be an issue with Tenor.`,
+                        msg`No featured GIFs found. There may be an issue with KLIPY.`,
                       )
                 }
               />
@@ -307,7 +306,7 @@ export function GifPreview({
             t.atoms.bg_contrast_25,
           ]}
           source={{
-            uri: tenorUrlToBskyGifUrl(gif.media_formats.tinygif.url),
+            uri: gifPreviewUrl(gif.media_formats.tinygif.url),
           }}
           contentFit="cover"
           accessibilityLabel={gif.title}

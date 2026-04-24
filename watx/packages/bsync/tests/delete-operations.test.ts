@@ -96,7 +96,11 @@ describe('operations', () => {
 })
 
 const dumpOps = async (db: Database) => {
-  return db.db.selectFrom('operation').selectAll().orderBy('id', 'asc').execute()
+  return db.db
+    .selectFrom('operation')
+    .selectAll()
+    .orderBy('id', 'asc')
+    .execute()
 }
 
 const clearOps = async (db: Database) => {

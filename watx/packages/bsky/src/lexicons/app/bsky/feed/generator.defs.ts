@@ -49,11 +49,7 @@ const main = l.record<'any', Main>(
       l.array(l.ref<RichtextFacet.Main>((() => RichtextFacet.main) as any)),
     ),
     avatar: l.optional(
-      l.blob({
-        accept: ['image/png', 'image/jpeg'],
-        maxSize: 1000000,
-        allowLegacy: false,
-      }),
+      l.blob({ accept: ['image/png', 'image/jpeg'], maxSize: 1000000 }),
     ),
     acceptsInteractions: l.optional(l.boolean()),
     labels: l.optional(

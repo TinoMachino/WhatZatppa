@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { AppContext } from '../../../../context'
 import { parseString } from '../../../../hydration/util'

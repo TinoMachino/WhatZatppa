@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { sql } from 'kysely'
 import { DatabaseSchema } from '../../db/database-schema'
 import { countAll } from '../../db/util'

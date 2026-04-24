@@ -4,6 +4,7 @@
 
 import { l } from '@atproto/lex'
 import * as ConvoDefs from './defs.defs.js'
+import * as ActorDefs from '../actor/defs.defs.js'
 
 const $nsid = 'chat.bsky.convo.getMessages'
 
@@ -35,6 +36,13 @@ const main = l.query(
           ),
         ],
         false,
+      ),
+    ),
+    relatedProfiles: l.optional(
+      l.array(
+        l.ref<ActorDefs.ProfileViewBasic>(
+          (() => ActorDefs.profileViewBasic) as any,
+        ),
       ),
     ),
   }),

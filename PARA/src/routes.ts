@@ -86,6 +86,7 @@ export const router = new Router<AllNavigatableRoutes>({
   Representatives: '/representatives',
   MessagesInbox: '/messages/inbox',
   MessagesConversation: '/messages/:conversation',
+  MessagesConversationSettings: '/messages/:conversation/settings',
   // Base
   Base: '/base',
   MyBase: '/my-base',

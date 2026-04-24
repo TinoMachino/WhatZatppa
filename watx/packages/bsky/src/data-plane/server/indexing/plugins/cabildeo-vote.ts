@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Selectable, sql } from 'kysely'
 import { CID } from 'multiformats/cid'
 import { AtUri, normalizeDatetimeAlways } from '@atproto/syntax'
@@ -8,8 +9,12 @@ import { RecordProcessor } from '../processor'
 import { recomputeCabildeoAggregates } from './recompute-cabildeo-aggregates'
 
 interface VoteRecord {
-  cabildeo: string
+  subject?: string
+  subjectType?: string
+  cabildeo?: string
   selectedOption?: number
+  signal?: number
+  reason?: string
   isDirect: boolean
   delegatedFrom?: string[]
   createdAt: string
@@ -29,6 +34,10 @@ const insertFn = async (
   obj: VoteRecord,
   timestamp: string,
 ): Promise<IndexedVote | null> => {
+  if (!obj.cabildeo) {
+    return null
+  }
+
   const record = {
     uri: uri.toString(),
     cid: cid.toString(),

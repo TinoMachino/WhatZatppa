@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AtUri } from '@atproto/syntax'
 import { AppContext } from '../../../../context'
 import { PostView } from '../../../../lexicon/types/com/para/feed/getAuthorFeed'

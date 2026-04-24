@@ -5,6 +5,7 @@ import { Keypair, Secp256k1Keypair } from '@atproto/crypto'
 import {
   HandleString,
   asAtIdentifierString,
+  getBlobCidString,
   isDidString,
   isHandleString,
 } from '@atproto/lex'
@@ -236,6 +237,10 @@ export class OAuthStore
 
       return this.buildAccount(user)
     } catch (err) {
+      // `InvalidPasswordError` is a subclass of `XrpcAuthRequiredError`,
+      // so it must be checked first. Surfacing the matched `did` as the
+      // `sub` lets the oauth-provider's `onSignInFailed` hook distinguish
+      // "identifier known, credentials wrong" from "identifier unknown".
       if (err instanceof InvalidPasswordError) {
         throw new InvalidCredentialsError(err.message, err.did, err)
       }
@@ -262,9 +267,7 @@ export class OAuthStore
       this.db,
       // @TODO @atproto/oauth-provider should strongly type `Sub` as `DidString`
       asAtIdentifierString(sub),
-      {
-        includeDeactivated: true,
-      },
+      { includeDeactivated: true },
     )
 
     assert(accountRow, 'Account not found')
@@ -639,21 +642,11 @@ export class OAuthStore
 
         account.name ||= displayName
         account.picture ||= avatar
-          ? this.imageUrlBuilder.build('avatar', did, blobCidString(avatar))
+          ? this.imageUrlBuilder.build('avatar', did, getBlobCidString(avatar))
           : undefined
       }
     }
 
     return account
   }
-}
-
-const blobCidString = (blob: {
-  ref?: { toString(): string }
-  cid?: string
-}): string => {
-  const ref = blob.ref?.toString()
-  if (ref) return ref
-  if (typeof blob.cid === 'string') return blob.cid
-  throw new TypeError('Invalid blob ref')
 }

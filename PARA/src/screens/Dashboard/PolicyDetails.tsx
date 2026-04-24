@@ -13,11 +13,14 @@ import {
   getCabildeoTotalParticipants,
   getViewerParticipation,
 } from '#/lib/cabildeo-display'
+import {getCommunityConsensusPermissions} from '#/lib/policy-consensus'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {
   useCabildeoPositionsQuery,
   useCabildeoQuery,
 } from '#/state/queries/cabildeo'
+import {useCommunityGovernanceQuery} from '#/state/queries/community-governance'
+import {useSession} from '#/state/session'
 import {Text} from '#/view/com/util/text/Text'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -74,6 +77,7 @@ type DetailModel = {
   options: DetailOptionRow[]
   positions: DetailPositionRow[]
   cabildeoUri?: string
+  governanceCommunity?: string
 }
 
 const STANCE_META: Record<
@@ -90,6 +94,7 @@ export function PolicyDetailsScreen({route, navigation}: Props) {
   const insets = useSafeAreaInsets()
   const cabildeoUri = route.params?.cabildeoUri
   const legacyItem = route.params?.item as PolicyItem | undefined
+  const {currentAccount} = useSession()
 
   const {
     data: cabildeo = null,
@@ -107,6 +112,17 @@ export function PolicyDetailsScreen({route, navigation}: Props) {
 
   const formatCount = (value: number) =>
     new Intl.NumberFormat().format(Math.round(value))
+
+  const governanceCommunityName =
+    cabildeo?.community || legacyItem?.community || ''
+  const {data: governance} = useCommunityGovernanceQuery({
+    communityName: governanceCommunityName,
+    enabled: Boolean(governanceCommunityName),
+  })
+  const permissions = getCommunityConsensusPermissions(
+    governance,
+    currentAccount?.did,
+  )
 
   const model = useMemo(() => {
     if (cabildeo) {
@@ -470,6 +486,67 @@ export function PolicyDetailsScreen({route, navigation}: Props) {
             )}
           </View>
 
+          {model.governanceCommunity ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, t.atoms.text]}>
+                <Trans>Governance permissions</Trans>
+              </Text>
+              <View
+                style={[
+                  styles.governanceCard,
+                  t.atoms.bg_contrast_25,
+                  t.atoms.border_contrast_low,
+                ]}>
+                <Text style={[styles.governanceLead, t.atoms.text]}>
+                  {governance
+                    ? `Published governance is active for ${model.governanceCommunity}.`
+                    : `No published governance record was found yet for ${model.governanceCommunity}.`}
+                </Text>
+
+                <View style={styles.permissionChipRow}>
+                  {(permissions.roles.length > 0
+                    ? permissions.roles
+                    : ['member']
+                  ).map(role => (
+                    <View
+                      key={role}
+                      style={[
+                        styles.permissionChip,
+                        {backgroundColor: t.palette.contrast_100},
+                      ]}>
+                      <Text style={[styles.permissionChipText, t.atoms.text]}>
+                        {role}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.permissionList}>
+                  <Text style={[styles.permissionText, t.atoms.text]}>
+                    {permissions.canPropose
+                      ? 'Can propose policy drafts'
+                      : 'Cannot propose official policy drafts yet'}
+                  </Text>
+                  <Text style={[styles.permissionText, t.atoms.text]}>
+                    {permissions.canVote
+                      ? 'Can vote in weighted policy consensus'
+                      : 'Cannot cast official weighted votes yet'}
+                  </Text>
+                  <Text style={[styles.permissionText, t.atoms.text]}>
+                    {permissions.canCertify
+                      ? 'Can certify outcomes'
+                      : 'Cannot certify outcomes'}
+                  </Text>
+                  <Text style={[styles.permissionText, t.atoms.text]}>
+                    {permissions.canMarkOfficial
+                      ? 'Can mark a passed policy as official'
+                      : 'Cannot mark policy as official'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
           {model.cabildeoUri ? (
             <View style={styles.section}>
               <Button
@@ -601,6 +678,7 @@ function buildLiveDetailModel({
       }
     }),
     cabildeoUri: cabildeo.uri,
+    governanceCommunity: cabildeo.community,
   }
 }
 
@@ -651,6 +729,7 @@ function buildFallbackDetailModel({
     ],
     options: [],
     positions: [],
+    governanceCommunity: item.community,
   }
 }
 
@@ -858,6 +937,38 @@ const styles = StyleSheet.create({
   positionText: {
     fontSize: 14,
     lineHeight: 21,
+  },
+  governanceCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
+  governanceLead: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  permissionChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  permissionChip: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  permissionChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  permissionList: {
+    gap: 8,
+  },
+  permissionText: {
+    fontSize: 13,
+    lineHeight: 19,
   },
   emptyStateCard: {
     borderRadius: 18,

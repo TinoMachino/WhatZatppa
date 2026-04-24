@@ -1,4 +1,4 @@
-import {type ReactNode} from 'react'
+import {type ReactElement, type ReactNode} from 'react'
 import {View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
@@ -18,7 +18,7 @@ import {Link} from '#/components/Link'
 
 export function HomeHeaderLayout(props: {
   children: ReactNode
-  tabBarAnchor: ReactNode
+  tabBarAnchor: ReactElement | null | undefined
 }) {
   const {gtMobile} = useBreakpoints()
   if (!gtMobile) {
@@ -33,7 +33,7 @@ function HomeHeaderLayoutDesktopAndTablet({
   tabBarAnchor,
 }: {
   children: ReactNode
-  tabBarAnchor: ReactNode
+  tabBarAnchor: ReactElement | null | undefined
 }) {
   useCinzelFont()
   const t = useTheme()

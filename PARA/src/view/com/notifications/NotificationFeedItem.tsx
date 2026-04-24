@@ -895,7 +895,7 @@ function SayHelloBtn({profile}: {profile: AppBskyActorDefs.ProfileView}) {
           setIsLoading(true)
           const res = await agent.api.chat.bsky.convo.getConvoForMembers(
             {
-              members: [profile.did, agent.session!.did!],
+              members: [profile.did, agent.session!.did],
             },
             {headers: dmServiceHeaders},
           )

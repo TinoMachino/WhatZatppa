@@ -7,7 +7,7 @@ import {
   officialParties,
 } from '#/lib/constants/communities'
 import {MEXICAN_STATES} from '#/lib/constants/mexico'
-import {NavigationProp} from '#/lib/routes/types'
+import {type NavigationProp} from '#/lib/routes/types'
 import {useGlobalFilter} from '#/state/shell/global-filter'
 import {useTheme} from '#/alf'
 import {CommunityCard} from '#/components/CommunityCard'

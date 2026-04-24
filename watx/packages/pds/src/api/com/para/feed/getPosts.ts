@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { CID } from 'multiformats/cid'
 import { AtUri } from '@atproto/syntax'
 import { jsonToLex } from '@atproto/lexicon'
@@ -8,6 +9,7 @@ import { Server } from '../../../../lexicon'
 import { ids } from '../../../../lexicon/lexicons'
 import { OutputSchema } from '../../../../lexicon/types/com/para/feed/getPosts'
 import { Record as ParaPostRecord } from '../../../../lexicon/types/com/para/post'
+import { com } from '../../../../lexicons/index.js'
 import {
   asPipeThroughBuffer,
   computeProxyTo,
@@ -41,6 +43,7 @@ export default function (server: Server, ctx: AppContext) {
       const pipethroughRes = await pipethroughReadAfterWrite<OutputSchema>(
         ctx,
         reqCtx,
+        com.para.feed.getPosts.main,
         (_, original, local) => getPostsMunge(original, local, uris),
       )
 

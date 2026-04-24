@@ -8,13 +8,13 @@ import {
   verifyDiff,
 } from '@atproto/repo'
 import { AtUri } from '@atproto/syntax'
-import { InvalidRequestError } from '@atproto/xrpc-server'
+import { InvalidRequestError, Server } from '@atproto/xrpc-server'
 import { ACCESS_FULL } from '../../../../auth-scope'
 import { AppContext } from '../../../../context'
-import { Server } from '../../../../lexicon'
+import { com } from '../../../../lexicons/index.js'
 
 export default function (server: Server, ctx: AppContext) {
-  server.com.atproto.repo.importRepo({
+  server.add(com.atproto.repo.importRepo, {
     opts: {
       blobLimit: ctx.cfg.service.maxImportSize,
     },

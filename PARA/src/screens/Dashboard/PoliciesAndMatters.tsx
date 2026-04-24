@@ -44,7 +44,10 @@ export function PoliciesDashboard({route}: {route: any}) {
     | undefined
 
   const onPressItem = (item: PolicyItem) => {
-    navigation.navigate('PolicyDetails', {item})
+    navigation.navigate('PolicyDetails', {
+      item,
+      cabildeoUri: item.cabildeoUri,
+    })
   }
 
   const [activeTab, setActiveTab] = useState<'Matters' | 'Policies'>(
@@ -63,7 +66,8 @@ export function PoliciesDashboard({route}: {route: any}) {
   }, [route.params?.category])
 
   // Common params for all queries
-  const queryType = activeTab === 'Policies' ? 'Policy' : 'Matter'
+  const queryType: 'Policy' | 'Matter' =
+    activeTab === 'Policies' ? 'Policy' : 'Matter'
   const commonParams = {
     category: selectedCategory,
     verified: isVerifiedOnly,

@@ -34,7 +34,6 @@ COPY ./packages/oauth/oauth-client-browser ./packages/oauth/oauth-client-browser
 COPY ./packages/oauth/oauth-client-browser-example ./packages/oauth/oauth-client-browser-example
 COPY ./packages/oauth/oauth-provider ./packages/oauth/oauth-provider
 COPY ./packages/oauth/oauth-provider-api ./packages/oauth/oauth-provider-api
-COPY ./packages/oauth/oauth-provider-frontend ./packages/oauth/oauth-provider-frontend
 COPY ./packages/oauth/oauth-provider-ui ./packages/oauth/oauth-provider-ui
 COPY ./packages/oauth/oauth-scopes ./packages/oauth/oauth-scopes
 COPY ./packages/oauth/oauth-types ./packages/oauth/oauth-types
@@ -46,6 +45,8 @@ COPY ./packages/syntax ./packages/syntax
 COPY ./packages/ws-client ./packages/ws-client
 COPY ./packages/xrpc ./packages/xrpc
 COPY ./packages/xrpc-server ./packages/xrpc-server
+
+COPY ./services/ozone ./services/ozone
 
 # install all deps
 RUN PUPPETEER_SKIP_DOWNLOAD=true pnpm install --frozen-lockfile

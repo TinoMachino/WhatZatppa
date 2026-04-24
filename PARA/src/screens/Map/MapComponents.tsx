@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react'
+import {type ReactNode, useEffect, useRef} from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -196,7 +196,7 @@ function OverlayFrame({
   title: string
   subtitle: string
   onClose: () => void
-  children: React.ReactNode
+  children: ReactNode
 }) {
   const {gtMobile} = useBreakpoints()
   const t = useTheme()

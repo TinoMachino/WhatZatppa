@@ -1401,6 +1401,8 @@ const createCabildeoVoteRecord = async (
       collection: 'com.para.civic.vote',
       record: {
         $type: 'com.para.civic.vote',
+        subject: opts.cabildeo,
+        subjectType: 'cabildeo',
         cabildeo: opts.cabildeo,
         selectedOption: opts.selectedOption,
         isDirect: opts.isDirect,

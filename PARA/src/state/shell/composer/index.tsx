@@ -1,10 +1,4 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useContext,
-  useMemo,
-  useState,
-} from 'react'
+import {createContext, useContext, useMemo, useState} from 'react'
 import {
   type AppBskyActorDefs,
   type AppBskyFeedDefs,
@@ -18,8 +12,11 @@ import {useQueryClient} from '@tanstack/react-query'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {postUriToRelativePath, toBskyAppUrl} from '#/lib/strings/url-helpers'
 import {purgeTemporaryImageFiles} from '#/state/gallery'
-import {precacheResolveLinkQuery} from '#/state/queries/resolve-link'
-import {type EmojiPickerPosition} from '#/view/com/composer/text-input/web/EmojiPicker'
+import {
+  precacheResolveLinkQuery,
+  RQKEY_GIF_ROOT,
+  RQKEY_LINK_ROOT,
+} from '#/state/queries/resolve-link'
 import * as Toast from '#/components/Toast'
 
 export interface ComposerOptsPostRef {
@@ -45,9 +42,9 @@ export type ComposerLogContext =
   | 'QuotePost'
   | 'ProfileFeed'
   | 'Deeplink'
-  | 'Other'
   | 'ComposerPrompt'
   | 'Navigation'
+  | 'Other'
 
 export interface ComposerOpts {
   replyTo?: ComposerOptsPostRef
@@ -55,11 +52,10 @@ export interface ComposerOpts {
   onPostSuccess?: (data: OnPostSuccessData) => void
   quote?: AppBskyFeedDefs.PostView
   mention?: string // handle of user to mention
-  openEmojiPicker?: (pos: EmojiPickerPosition | undefined) => void
   text?: string
   imageUris?: {uri: string; width: number; height: number; altText?: string}[]
   videoUri?: {uri: string; width: number; height: number}
-  openGallery?: () => void
+  openGallery?: boolean
   logContext?: ComposerLogContext
 }
 
@@ -79,7 +75,7 @@ const controlsContext = createContext<ControlsContext>({
 })
 controlsContext.displayName = 'ComposerControlsContext'
 
-export function Provider({children}: PropsWithChildren<{}>) {
+export function Provider({children}: React.PropsWithChildren<{}>) {
   const {_} = useLingui()
   const [state, setState] = useState<StateContext>()
   const queryClient = useQueryClient()
@@ -127,6 +123,12 @@ export function Provider({children}: PropsWithChildren<{}>) {
     if (wasOpen) {
       setState(undefined)
       purgeTemporaryImageFiles()
+      // Purging deletes cached thumbnails on disk, so remove the query
+      // caches that may hold references to those now-deleted file paths.
+      // Without this, restoring a draft would serve stale ResolvedLink
+      // data pointing at missing files, causing "Failed to load blob".
+      queryClient.removeQueries({queryKey: [RQKEY_LINK_ROOT]})
+      queryClient.removeQueries({queryKey: [RQKEY_GIF_ROOT]})
     }
 
     return wasOpen

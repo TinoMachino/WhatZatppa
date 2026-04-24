@@ -1906,7 +1906,7 @@ describe('Subscription', () => {
     // Ensures that "finally" block is indeed called
     await finallyPromise
 
-    expect(messages.slice(0, 3)).toStrictEqual([
+    expect(messages).toStrictEqual([
       [{ op: 1 }, { message: 'ping', count: 1 }],
       [{ op: 1 }, { message: 'ping', count: 2 }],
       [{ op: 1 }, { message: 'ping', count: 3 }],

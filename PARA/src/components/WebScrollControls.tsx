@@ -1,10 +1,7 @@
 import {type ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native'
 
 import {useTheme} from '#/alf'
-import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRight} from '#/components/icons/Chevron'
-import {ChevronLeft_Stroke2_Corner0_Rounded as ChevronLeft} from '#/components/icons/Chevron'
-import {ChevronTop_Stroke2_Corner0_Rounded as ChevronUp} from '#/components/icons/Chevron'
-import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDown} from '#/components/icons/Chevron'
+import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronDown,ChevronLeft_Stroke2_Corner0_Rounded as ChevronLeft,ChevronRight_Stroke2_Corner0_Rounded as ChevronRight,ChevronTop_Stroke2_Corner0_Rounded as ChevronUp} from '#/components/icons/Chevron'
 import {IS_WEB} from '#/env'
 
 interface WebScrollControlsProps {

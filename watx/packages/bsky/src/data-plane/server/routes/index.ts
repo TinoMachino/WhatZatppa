@@ -7,15 +7,15 @@ import blocks from './blocks'
 import bookmarks from './bookmarks'
 import cabildeo from './cabildeo'
 import community from './community'
-import drafts from './drafts'
 import discourse from './discourse'
+import drafts from './drafts'
 import feedGens from './feed-gens'
 import feeds from './feeds'
 import follows from './follows'
-import highlight from './highlight'
 import identity from './identity'
 import interactions from './interactions'
 import labels from './labels'
+import highlight from './highlight'
 import likes from './likes'
 import lists from './lists'
 import moderation from './moderation'
@@ -46,10 +46,10 @@ export default (db: Database, idResolver: IdResolver) =>
       ...feedGens(db),
       ...feeds(db),
       ...follows(db),
-      ...highlight(db),
       ...identity(db, idResolver),
       ...interactions(db),
       ...labels(db),
+      ...highlight(db),
       ...likes(db),
       ...lists(db),
       ...moderation(db),

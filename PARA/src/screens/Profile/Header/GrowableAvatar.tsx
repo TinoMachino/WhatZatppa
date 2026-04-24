@@ -1,3 +1,4 @@
+import  {type ReactNode} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 import Animated, {
   Extrapolation,
@@ -5,7 +6,6 @@ import Animated, {
   type SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated'
-import type {ReactNode} from 'react'
 
 import {usePagerHeaderContext} from '#/view/com/pager/PagerHeaderContext'
 import {IS_IOS} from '#/env'

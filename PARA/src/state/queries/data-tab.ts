@@ -3,6 +3,7 @@ import {useInfiniteQuery} from '@tanstack/react-query'
 import {type RepresentativeItem} from '#/lib/mock-data'
 import {fetchPolicies} from '#/lib/services/policies'
 import {fetchRepresentatives} from '#/lib/services/representatives'
+import {useAgent} from '#/state/session'
 
 export type {RepresentativeItem} // Re-export for compatibility if needed
 
@@ -46,6 +47,7 @@ function applyFilters(data: any[], params: PolicyQueryParams): any[] {
 export function useStatePoliciesQuery(
   params: PolicyQueryParams & {state?: string},
 ) {
+  const agent = useAgent()
   return useInfiniteQuery({
     queryKey: [
       'policies_feed',
@@ -58,7 +60,7 @@ export function useStatePoliciesQuery(
       params.filters,
     ],
     queryFn: async ({pageParam}) => {
-      const response = await fetchPolicies({
+      const response = await fetchPolicies(agent, {
         feed: 'state',
         cursor: pageParam,
         type: params.type,
@@ -79,6 +81,7 @@ export function useStatePoliciesQuery(
 }
 
 export function useFeaturedPoliciesQuery(params: PolicyQueryParams) {
+  const agent = useAgent()
   return useInfiniteQuery({
     queryKey: [
       'policies_feed',
@@ -90,7 +93,7 @@ export function useFeaturedPoliciesQuery(params: PolicyQueryParams) {
       params.filters,
     ],
     queryFn: async ({pageParam}) => {
-      const response = await fetchPolicies({
+      const response = await fetchPolicies(agent, {
         feed: 'featured',
         cursor: pageParam,
         type: params.type,
@@ -106,6 +109,7 @@ export function useFeaturedPoliciesQuery(params: PolicyQueryParams) {
 }
 
 export function useCommunityPoliciesQuery(params: PolicyQueryParams) {
+  const agent = useAgent()
   return useInfiniteQuery({
     queryKey: [
       'policies_feed',
@@ -117,7 +121,7 @@ export function useCommunityPoliciesQuery(params: PolicyQueryParams) {
       params.filters,
     ],
     queryFn: async ({pageParam}) => {
-      const response = await fetchPolicies({
+      const response = await fetchPolicies(agent, {
         feed: 'community',
         cursor: pageParam,
         type: params.type,
@@ -133,6 +137,7 @@ export function useCommunityPoliciesQuery(params: PolicyQueryParams) {
 }
 
 export function usePartyPoliciesQuery(params: PolicyQueryParams) {
+  const agent = useAgent()
   return useInfiniteQuery({
     queryKey: [
       'policies_feed',
@@ -144,7 +149,7 @@ export function usePartyPoliciesQuery(params: PolicyQueryParams) {
       params.filters,
     ],
     queryFn: async ({pageParam}) => {
-      const response = await fetchPolicies({
+      const response = await fetchPolicies(agent, {
         feed: 'party',
         cursor: pageParam,
         type: params.type,
@@ -160,6 +165,7 @@ export function usePartyPoliciesQuery(params: PolicyQueryParams) {
 }
 
 export function useRecommendedPoliciesQuery(params: PolicyQueryParams) {
+  const agent = useAgent()
   return useInfiniteQuery({
     queryKey: [
       'policies_feed',
@@ -170,7 +176,7 @@ export function useRecommendedPoliciesQuery(params: PolicyQueryParams) {
       params.filters,
     ],
     queryFn: async ({pageParam}) => {
-      const response = await fetchPolicies({
+      const response = await fetchPolicies(agent, {
         feed: 'recommended',
         cursor: pageParam,
         type: params.type,

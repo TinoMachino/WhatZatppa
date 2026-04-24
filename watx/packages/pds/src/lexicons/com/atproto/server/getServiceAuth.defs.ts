@@ -8,11 +8,11 @@ const $nsid = 'com.atproto.server.getServiceAuth'
 
 export { $nsid }
 
-/** Get a signed token on behalf of the requesting DID for the requested service, which can be used to make an authenticated XRPC HTTP API request. Implemented by PDS, requires authentication, and constrained by session permissions. */
+/** Get a signed token on behalf of the requesting DID for the requested service. */
 const main = l.query(
   $nsid,
   l.params({
-    aud: l.string(),
+    aud: l.string({ format: 'did' }),
     exp: l.optional(l.integer()),
     lxm: l.optional(l.string({ format: 'nsid' })),
   }),

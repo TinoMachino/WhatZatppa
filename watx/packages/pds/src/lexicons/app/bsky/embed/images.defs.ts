@@ -57,11 +57,7 @@ const image = l.typedObject<Image>(
   $nsid,
   'image',
   l.object({
-    image: l.blob({
-      accept: ['image/*'],
-      maxSize: 2000000,
-      allowLegacy: false,
-    }),
+    image: l.blob({ accept: ['image/*'], maxSize: 2000000 }),
     alt: l.string(),
     aspectRatio: l.optional(
       l.ref<EmbedDefs.AspectRatio>((() => EmbedDefs.aspectRatio) as any),

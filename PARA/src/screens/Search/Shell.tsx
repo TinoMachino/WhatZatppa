@@ -1,12 +1,4 @@
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import {memo, useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react'
 import {
   type StyleProp,
   type TextInput,
@@ -19,7 +11,7 @@ import {Trans} from '@lingui/react/macro'
 import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native'
 import {useQueryClient} from '@tanstack/react-query'
 
-import {HITSLOP_10,HITSLOP_20} from '#/lib/constants'
+import {HITSLOP_10, HITSLOP_20} from '#/lib/constants'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {MagnifyingGlassIcon} from '#/lib/icons'
 import {type NavigationProp} from '#/lib/routes/types'
@@ -79,6 +71,11 @@ export function SearchScreenShell({
 
   // Query terms
   const [searchText, setSearchText] = useState<string>(queryParam)
+  const searchTextRef = useRef(searchText)
+  const setSearchTextWithRef = useCallback((text: string) => {
+    searchTextRef.current = text
+    setSearchText(text)
+  }, [])
   const {data: autocompleteData, isFetching: isAutocompleteFetching} =
     useActorAutocompleteQuery(searchText, true)
 
@@ -99,37 +96,37 @@ export function SearchScreenShell({
   })
 
   const updateSearchHistory = useCallback(
-    async (item: string) => {
+    (item: string) => {
       if (!item) return
       const newSearchHistory = [
         item,
         ...termHistory.filter(search => search !== item),
       ].slice(0, 6)
-      setTermHistory(newSearchHistory)
+      void setTermHistory(newSearchHistory)
     },
     [termHistory, setTermHistory],
   )
 
   const updateProfileHistory = useCallback(
-    async (item: bsky.profile.AnyProfileView) => {
+    (item: bsky.profile.AnyProfileView) => {
       const newAccountHistory = [
         item.did,
         ...accountHistory.filter(p => p !== item.did),
       ].slice(0, 10)
-      setAccountHistory(newAccountHistory)
+      void setAccountHistory(newAccountHistory)
     },
     [accountHistory, setAccountHistory],
   )
 
   const deleteSearchHistoryItem = useCallback(
-    async (item: string) => {
-      setTermHistory(termHistory.filter(search => search !== item))
+    (item: string) => {
+      void setTermHistory(termHistory.filter(search => search !== item))
     },
     [termHistory, setTermHistory],
   )
   const deleteProfileHistoryItem = useCallback(
-    async (item: bsky.profile.AnyProfileView) => {
-      setAccountHistory(accountHistory.filter(p => p !== item.did))
+    (item: bsky.profile.AnyProfileView) => {
+      void setAccountHistory(accountHistory.filter(p => p !== item.did))
     },
     [accountHistory, setAccountHistory],
   )
@@ -151,34 +148,30 @@ export function SearchScreenShell({
     }
   }, [])
 
-  useEffect(() => {
-    setSearchText(queryParam)
-  }, [queryParam])
-
   useFocusEffect(
     useNonReactiveCallback(() => {
       if (IS_WEB) {
-        setSearchText(queryParam)
+        setSearchTextWithRef(queryParam)
       }
     }),
   )
 
   const onPressClearQuery = useCallback(() => {
     scrollToTopWeb()
-    setSearchText('')
+    setSearchTextWithRef('')
     textInput.current?.focus()
-  }, [])
+  }, [setSearchTextWithRef])
 
-  const onChangeText = useCallback(async (text: string) => {
+  const onChangeText = useCallback((text: string) => {
     scrollToTopWeb()
-    setSearchText(text)
-  }, [])
+    setSearchTextWithRef(text)
+  }, [setSearchTextWithRef])
 
   const navigateToItem = useCallback(
     (item: string) => {
       scrollToTopWeb()
       setShowAutocomplete(false)
-      updateSearchHistory(item)
+      void updateSearchHistory(item)
 
       if (IS_WEB) {
         // @ts-expect-error route is not typesafe
@@ -208,19 +201,19 @@ export function SearchScreenShell({
       // @ts-expect-error route is not typesafe
       navigation.replace(route.name, parameters)
     } else {
-      setSearchText('')
+      setSearchTextWithRef('')
       navigation.setParams({q: '', tab: undefined})
     }
-  }, [setShowAutocomplete, setSearchText, navigation, route.params, route.name])
+  }, [setSearchTextWithRef, navigation, route.params, route.name])
 
   const onSubmit = useCallback(
     (source: 'typed' | 'autocomplete') => () => {
       ax.metric('search:query', {
         source,
       })
-      navigateToItem(searchText)
+      navigateToItem(searchTextRef.current)
     },
-    [ax, navigateToItem, searchText],
+    [ax, navigateToItem],
   )
 
   const onAutocompleteResultPress = useCallback(() => {
@@ -233,10 +226,10 @@ export function SearchScreenShell({
 
   const handleHistoryItemClick = useCallback(
     (item: string) => {
-      setSearchText(item)
+      setSearchTextWithRef(item)
       navigateToItem(item)
     },
-    [navigateToItem],
+    [navigateToItem, setSearchTextWithRef],
   )
 
   const handleProfileClick = useCallback(
@@ -244,7 +237,7 @@ export function SearchScreenShell({
       unstableCacheProfileView(queryClient, profile)
       // Slight delay to avoid updating during push nav animation.
       setTimeout(() => {
-        updateProfileHistory(profile)
+        void updateProfileHistory(profile)
       }, 400)
     },
     [updateProfileHistory, queryClient],
@@ -264,11 +257,11 @@ export function SearchScreenShell({
       // @ts-expect-error route is not typesafe
       navigation.replace(route.name, parameters)
     } else {
-      setSearchText('')
+      setSearchTextWithRef('')
       navigation.setParams({q: '', tab: undefined})
       textInput.current?.focus()
     }
-  }, [navigation, route])
+  }, [navigation, route, setSearchTextWithRef])
 
   useFocusEffect(
     useCallback(() => {
@@ -483,15 +476,16 @@ let SearchScreenInner = ({
     }
   }, [tabParam])
 
-  const [activeTab, setActiveTab] = useState(getInitialTabIndex())
+  const [prevTabParam, setPrevTabParam] = useState(tabParam)
+  const [activeTab, setActiveTab] = useState(() => getInitialTabIndex())
 
-  // Update activeTab when tabParam changes
-  useLayoutEffect(() => {
+  if (tabParam !== prevTabParam) {
     const newTabIndex = getInitialTabIndex()
+    setPrevTabParam(tabParam)
     if (newTabIndex !== activeTab) {
       setActiveTab(newTabIndex)
     }
-  }, [tabParam, activeTab, getInitialTabIndex])
+  }
 
   const onPageSelected = useCallback(
     (index: number) => {

@@ -56,6 +56,8 @@ export function mergeUserContexts(
     /*
      * If we have a DID, but the existing deviceId is anonymous, use the DID as
      * the deviceId to ensure proper ordering of events in our event proxy.
+     * This matches the logic in `normalizeUserContext` where we fall back to
+     * the DID for the deviceId if we don't have a deviceId from other means.
      */
     deviceId = did
   } else if (did && deviceId !== did) {
@@ -63,6 +65,11 @@ export function mergeUserContexts(
      * If we have both a DID and a deviceId, but they don't match, we may be
      * overriding context to check a feature that is independent of a single
      * request handler lifecycle.
+     *
+     * Example: a ScopedFeatureGatesClient was created in the root request
+     * handler with a user context that has a DID, but later on in the request
+     * lifecycle we may check a gate using the DID of the author of the image
+     * we're returning as part of the response.
      */
     deviceId = did
     isDifferentDid = true
@@ -92,9 +99,10 @@ export function extractUserContextFromGrowthbookUserContext(
   userContext: GrowthBookUserContext,
 ): NormalizedUserContext {
   /*
-   * The values passed to GrowthBook should already have been
+   * The values passed to Growthbook already should have been
    * `NormalizedUserContext`, but for type safety we run them through the
-   * normalizer again to ensure we have all required fallback values.
+   * normalizer again to ensure we have all the required properties and
+   * fallbacks in place.
    */
   return normalizeUserContext({
     did: userContext.attributes?.did,
@@ -104,8 +112,9 @@ export function extractUserContextFromGrowthbookUserContext(
 }
 
 /**
- * Convert the `UserContext` into the `TrackingMetadata` format that we use for
- * analytics events.
+ * Convert the `UserContext` into the `TrackingMetadata` format that we
+ * use for our analytics events. This ensures that we have the same user
+ * properties as we do for events from our client app.
  */
 export function parsedUserContextToTrackingMetadata(
   userContext: NormalizedUserContext,

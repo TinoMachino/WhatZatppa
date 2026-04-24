@@ -86,6 +86,7 @@ function useKeyboardShortcuts() {
       scopes: ['global'],
       preventDefault: true,
       description: l`Focus the search field`,
+      useKey: true,
     },
     [hasSession, isModalActive, activeLightbox, isDrawerOpen],
   )

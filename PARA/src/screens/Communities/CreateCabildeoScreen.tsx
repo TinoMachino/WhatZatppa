@@ -175,6 +175,7 @@ export function CreateCabildeoScreen(_props: Props) {
                 <Text style={[styles.label, t.atoms.text]}>Comunidad *</Text>
                 <TextInput
                   accessibilityLabel="Text input field"
+                  accessibilityHint="Enter the primary community identifier"
                   style={[styles.input, t.atoms.bg_contrast_25, t.atoms.text]}
                   placeholder="p/Jalisco"
                   placeholderTextColor={t.palette.contrast_500}
@@ -189,6 +190,7 @@ export function CreateCabildeoScreen(_props: Props) {
                 </Text>
                 <TextInput
                   accessibilityLabel="Text input field"
+                  accessibilityHint="Enter the optional region for this cabildeo"
                   style={[styles.input, t.atoms.bg_contrast_25, t.atoms.text]}
                   placeholder="Ej. CDMX"
                   placeholderTextColor={t.palette.contrast_500}

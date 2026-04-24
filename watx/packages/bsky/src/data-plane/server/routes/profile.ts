@@ -1,21 +1,16 @@
 import { Timestamp } from '@bufbuild/protobuf'
 import { ServiceImpl } from '@connectrpc/connect'
 import { Selectable, sql } from 'kysely'
-import {
-  AppBskyNotificationDeclaration,
-  ChatBskyActorDeclaration,
-} from '@atproto/api'
 import { keyBy } from '@atproto/common'
-import {
-  LIVE_CABILDEO_ALLOWED_PHASES,
-  activeHostPresenceExistsSql,
-  mapActorCabildeoLive,
-} from '../cabildeo-live'
-import * as ComParaCommunityGovernance from '../../../lexicon/types/com/para/community/governance'
-import { app, chat } from '../../../lexicons.js'
 import { parseJsonBytes } from '../../../hydration/util'
+import { app, chat } from '../../../lexicons/index.js'
 import { Service } from '../../../proto/bsky_connect'
-import { VerificationMeta } from '../../../proto/bsky_pb'
+import {
+  ParaContributions,
+  ParaProfileStats,
+  ParaStatusView,
+  VerificationMeta,
+} from '../../../proto/bsky_pb'
 import { Database } from '../db'
 import { Verification } from '../db/tables/verification'
 import { getRecords } from './records'
@@ -33,7 +28,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     if (dids.length === 0) {
       return { actors: [] }
     }
-    const now = new Date()
     const profileUris = dids.map(
       (did) => `at://${did}/app.bsky.actor.profile/self`,
     )
@@ -58,7 +52,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       chatDeclarations,
       notifDeclarations,
       germDeclarations,
-      cabildeoLiveRows,
     ] = await Promise.all([
       db.db
         .selectFrom('actor')
@@ -87,35 +80,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       getRecords(db)({ uris: chatDeclarationUris }),
       getRecords(db)({ uris: notifDeclarationUris }),
       getRecords(db)({ uris: germDeclarationUris }),
-      db.db
-        .selectFrom('cabildeo_live_presence as live_presence')
-        .innerJoin(
-          'cabildeo_live_session as live_session',
-          'live_session.cabildeo',
-          'live_presence.cabildeo',
-        )
-        .innerJoin(
-          'cabildeo_cabildeo as live_cabildeo',
-          'live_cabildeo.uri',
-          'live_presence.cabildeo',
-        )
-        .where('live_presence.actorDid', 'in', dids)
-        .where(
-          sql<boolean>`"live_presence"."expiresAt" > ${now}`,
-        )
-        .where('live_session.endedAt', 'is', null)
-        .where('live_cabildeo.phase', 'in', [...LIVE_CABILDEO_ALLOWED_PHASES])
-        .where(activeHostPresenceExistsSql('live_session', now))
-        .select([
-          'live_presence.actorDid as actorDid',
-          'live_presence.cabildeo as cabildeo',
-          'live_presence.expiresAt as expiresAt',
-          'live_cabildeo.community as community',
-          'live_cabildeo.phase as phase',
-          'live_session.liveUri as liveUri',
-        ])
-        .orderBy('live_presence.expiresAt', 'desc')
-        .execute(),
     ])
 
     const verificationsBySubjectDid = verificationsReceived.reduce(
@@ -129,18 +93,12 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     )
 
     const byDid = keyBy(handlesRes, 'did')
-    const cabildeoLiveByDid = cabildeoLiveRows.reduce((acc, row) => {
-      if (!acc.has(row.actorDid)) {
-        acc.set(row.actorDid, mapActorCabildeoLive(row))
-      }
-      return acc
-    }, new Map<string, ReturnType<typeof mapActorCabildeoLive>>())
     const actors = dids.map((did, i) => {
       const row = byDid.get(did)
 
       const status = statuses.records[i]
 
-      const chatDeclaration = parseJsonBytes<ChatBskyActorDeclaration.Record>(
+      const chatDeclaration = parseJsonBytes(
         chat.bsky.actor.declaration.main,
         chatDeclarations.records[i].record,
       )
@@ -160,8 +118,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       const ageAssuranceForDids = new Set(returnAgeAssuranceForDids)
 
       const activitySubscription = () => {
-        const record =
-          parseJsonBytes<AppBskyNotificationDeclaration.Record>(
+        const record = parseJsonBytes(
           app.bsky.notification.declaration.main,
           notifDeclarations.records[i].record,
         )
@@ -236,7 +193,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
         profileTags: [],
         allowActivitySubscriptionsFrom: activitySubscription(),
         ageAssuranceStatus: ageAssuranceStatus(),
-        cabildeoLive: cabildeoLiveByDid.get(did),
       }
     })
     return { actors }
@@ -258,188 +214,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     return { dids }
   },
 
-  async getParaProfileStats(req) {
-    const { actorDid } = req
-    const [stats, status] = await Promise.all([
-      db.db
-        .selectFrom('para_profile_stats')
-        .where('did', '=', actorDid)
-        .selectAll()
-        .executeTakeFirst(),
-      db.db
-        .selectFrom('para_status')
-        .where('did', '=', actorDid)
-        .selectAll()
-        .executeTakeFirst(),
-    ])
-
-    return {
-      actorDid,
-      stats: {
-        influence: stats?.influence ?? 0,
-        votesReceivedAllTime: stats?.votesReceivedAllTime ?? 0,
-        votesCastAllTime: stats?.votesCastAllTime ?? 0,
-        contributions: {
-          policies: stats?.policies ?? 0,
-          matters: stats?.matters ?? 0,
-          comments: stats?.comments ?? 0,
-        },
-        activeIn: stats?.activeIn ?? [],
-        computedAt: stats?.computedAt ?? new Date().toISOString(),
-      },
-      status: status
-        ? {
-            status: status.status,
-            party: status.party ?? undefined,
-            community: status.community ?? undefined,
-            createdAt: status.createdAt,
-          }
-        : undefined,
-    }
-  },
-
-  async getParaCommunityGovernance(req) {
-    const normCommunity = normalizeCommunityKey(req.community)
-    const limit = req.limit > 0 ? req.limit : 50
-
-    const publishedGovernance = await getPublishedGovernanceRecord({
-      db,
-      community: req.community,
-      normalizedCommunity: normCommunity,
-    })
-
-    const members = await db.db
-      .selectFrom('para_status as ps')
-      .innerJoin('actor as a', 'a.did', 'ps.did')
-      .leftJoin('profile as p', (join) =>
-        join.onRef('p.creator', '=', 'ps.did').on('p.uri', 'like', '%/self'),
-      )
-      .leftJoin('para_profile_stats as s', 's.did', 'ps.did')
-      .where(
-        sql`regexp_replace(lower(translate(regexp_replace(coalesce(ps.community, ''), '^p/', '', 'i'), ${COMMUNITY_TRANSLATION_SOURCE}, ${COMMUNITY_TRANSLATION_TARGET})), '[^a-z0-9]+', '', 'g')`,
-        '=',
-        normCommunity,
-      )
-      .select([
-        'ps.did as did',
-        'a.handle as handle',
-        'p.displayName as displayName',
-        'p.avatarCid as avatarCid',
-        'ps.party as party',
-        's.influence as influence',
-        's.votesReceivedAllTime as votesReceivedAllTime',
-        's.votesCastAllTime as votesCastAllTime',
-      ])
-      .orderBy('s.influence', 'desc')
-      .limit(limit)
-      .execute()
-
-    const dids = members.map((m) => m.did)
-    const postCounts = dids.length
-      ? await db.db
-          .selectFrom('para_post')
-          .where('creator', 'in', dids)
-          .select([
-            'creator',
-            sql<number>`count(*)`.as('postCount'),
-            sql<number>`coalesce(sum(case when "postType" = 'policy' then 1 else 0 end), 0)`.as(
-              'policyPosts',
-            ),
-            sql<number>`coalesce(sum(case when "postType" = 'matter' then 1 else 0 end), 0)`.as(
-              'matterPosts',
-            ),
-          ])
-          .groupBy('creator')
-          .execute()
-      : []
-
-    const countsByDid = keyBy(postCounts, 'creator')
-    const mapped = members.map((member) => {
-      const counts = countsByDid.get(member.did)
-      const handle = member.handle ?? undefined
-      const avatar = member.avatarCid
-        ? `https://bsky.public.url/img/avatar/plain/${member.did}/${member.avatarCid}@jpeg`
-        : undefined
-      return {
-        did: member.did,
-        handle,
-        displayName: member.displayName ?? undefined,
-        avatar,
-        party: member.party ?? undefined,
-        influence: member.influence ?? 0,
-        votesReceivedAllTime: member.votesReceivedAllTime ?? 0,
-        votesCastAllTime: member.votesCastAllTime ?? 0,
-        policyPosts: counts?.policyPosts ?? 0,
-        matterPosts: counts?.matterPosts ?? 0,
-        postCount: counts?.postCount ?? 0,
-      }
-    })
-
-    const memberByDid = keyBy(mapped, 'did')
-    const moderators = (publishedGovernance?.moderators || []).map(
-      (moderator) => ({
-        member: resolveGovernanceMember(moderator, memberByDid),
-        role: moderator.role || 'Moderator',
-        badge: moderator.badge || 'Moderator',
-      }),
-    )
-
-    const officials = (publishedGovernance?.officials || []).map(
-      (official) => ({
-        member: resolveGovernanceMember(official, memberByDid),
-        office: official.office || 'Representative',
-        mandate: official.mandate || 'No mandate published yet.',
-      }),
-    )
-
-    const deputies = (publishedGovernance?.deputies || []).map((role) => {
-      const activeHolder = resolveGovernanceMember(
-        role.activeHolder || undefined,
-        memberByDid,
-      )
-      const applicants = (role.applicants || []).map((applicant) => {
-        if (!applicant) return 'Unknown applicant'
-        return (
-          applicant.displayName ||
-          applicant.handle ||
-          applicant.did ||
-          'Unknown applicant'
-        )
-      })
-      return {
-        tier: role.tier || 'Tier II',
-        role: role.role || 'Deputy Role',
-        activeHolder,
-        votesBackingRole: role.votes || activeHolder.votesReceivedAllTime,
-        applicants,
-      }
-    })
-
-    const policyPosts = mapped.reduce((acc, item) => acc + item.policyPosts, 0)
-    const matterPosts = mapped.reduce((acc, item) => acc + item.matterPosts, 0)
-    const visiblePosters = mapped.filter((item) => item.postCount > 0).length
-    const badgeHolders = mapped.filter(
-      (item) => item.policyPosts > 0 || item.matterPosts > 0,
-    ).length
-
-    return {
-      community: publishedGovernance?.community || req.community,
-      summary: {
-        members: mapped.length,
-        visiblePosters,
-        policyPosts,
-        matterPosts,
-        badgeHolders,
-      },
-      moderators,
-      officials,
-      deputies,
-      metadata: publishedGovernance?.metadata,
-      editHistory: publishedGovernance?.editHistory || [],
-      computedAt: new Date().toISOString(),
-    }
-  },
-
   async updateActorUpstreamStatus(req) {
     const { actorDid, upstreamStatus } = req
     await db.db
@@ -448,174 +222,45 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       .where('did', '=', actorDid)
       .execute()
   },
+
+  async getParaProfileStats(req) {
+    const [stats, status] = await Promise.all([
+      db.db
+        .selectFrom('para_profile_stats')
+        .selectAll()
+        .where('did', '=', req.actorDid)
+        .executeTakeFirst(),
+      db.db
+        .selectFrom('para_status')
+        .selectAll()
+        .where('did', '=', req.actorDid)
+        .executeTakeFirst(),
+    ])
+
+    return {
+      actorDid: req.actorDid,
+      stats: stats
+        ? new ParaProfileStats({
+            influence: stats.influence,
+            votesReceivedAllTime: stats.votesReceivedAllTime,
+            votesCastAllTime: stats.votesCastAllTime,
+            contributions: new ParaContributions({
+              policies: stats.policies,
+              matters: stats.matters,
+              comments: stats.comments,
+            }),
+            activeIn: stats.activeIn ?? [],
+            computedAt: stats.computedAt,
+          })
+        : undefined,
+      status: status
+        ? new ParaStatusView({
+            status: status.status,
+            party: status.party ?? undefined,
+            community: status.community ?? undefined,
+            createdAt: status.createdAt,
+          })
+        : undefined,
+    }
+  },
 })
-
-type GovernanceRecord = {
-  community?: string
-  communityId?: string
-  slug?: string
-  moderators?: GovernancePersonWithRole[]
-  officials?: GovernanceOfficial[]
-  deputies?: GovernanceDeputyRole[]
-  metadata?: GovernanceMetadata
-  editHistory?: GovernanceHistoryEntry[]
-}
-
-type GovernancePerson = {
-  did?: string
-  handle?: string
-  displayName?: string
-  avatar?: string
-}
-
-type GovernancePersonWithRole = GovernancePerson & {
-  role?: string
-  badge?: string
-}
-
-type GovernanceOfficial = GovernancePerson & {
-  office?: string
-  mandate?: string
-}
-
-type GovernanceApplicant = GovernancePerson
-
-type GovernanceDeputyRole = {
-  key?: string
-  tier?: string
-  role?: string
-  activeHolder?: GovernancePerson
-  votes?: number
-  applicants?: GovernanceApplicant[]
-}
-
-type GovernanceMetadata = {
-  termLengthDays?: number
-  reviewCadence?: string
-  escalationPath?: string
-  publicContact?: string
-  lastPublishedAt?: string
-  state?: string
-  matterFlairIds?: string[]
-  policyFlairIds?: string[]
-}
-
-type GovernanceHistoryEntry = {
-  id: string
-  action: string
-  actorDid?: string
-  actorHandle?: string
-  createdAt: string
-  summary: string
-}
-
-type GovernanceMemberView = {
-  did: string
-  handle?: string
-  displayName?: string
-  avatar?: string
-  party?: string
-  influence: number
-  votesReceivedAllTime: number
-  votesCastAllTime: number
-  policyPosts: number
-  matterPosts: number
-  postCount: number
-}
-
-const normalizeCommunityKey = (value: string) =>
-  value
-    .trim()
-    .replace(/^p\//i, '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
-
-const normalizeCommunitySlug = (value: string) =>
-  value
-    .trim()
-    .replace(/^p\//i, '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-const COMMUNITY_TRANSLATION_SOURCE =
-  'ÁÀÄÂÃáàäâãÉÈËÊéèëêÍÌÏÎíìïîÓÒÖÔÕóòöôõÚÙÜÛúùüûÑñÇç'
-const COMMUNITY_TRANSLATION_TARGET =
-  'AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuNnCc'
-
-const getPublishedGovernanceRecord = async ({
-  db,
-  community,
-  normalizedCommunity,
-}: {
-  db: Database
-  community: string
-  normalizedCommunity: string
-}): Promise<GovernanceRecord | null> => {
-  const slug = normalizeCommunitySlug(community)
-  const suffix = `/com.para.community.governance/${slug || 'community'}`
-
-  const slugMatch = await db.db
-    .selectFrom('record')
-    .select(['json'])
-    .where('uri', 'like', `%${suffix}`)
-    .orderBy('indexedAt', 'desc')
-    .executeTakeFirst()
-  if (slugMatch) {
-    return parseGovernanceRecord(slugMatch.json)
-  }
-
-  const recordMatch = await db.db
-    .selectFrom('record')
-    .select(['json'])
-    .where('uri', 'like', '%/com.para.community.governance/%')
-    .where(
-      sql`regexp_replace(lower(translate(regexp_replace(coalesce(("record"."json"::jsonb ->> 'community'), ''), '^p/', '', 'i'), ${COMMUNITY_TRANSLATION_SOURCE}, ${COMMUNITY_TRANSLATION_TARGET})), '[^a-z0-9]+', '', 'g')`,
-      '=',
-      normalizedCommunity,
-    )
-    .orderBy('indexedAt', 'desc')
-    .executeTakeFirst()
-
-  return recordMatch ? parseGovernanceRecord(recordMatch.json) : null
-}
-
-const parseGovernanceRecord = (json: string): GovernanceRecord | null => {
-  try {
-    const parsed = JSON.parse(json)
-    const validated = ComParaCommunityGovernance.validateRecord(parsed)
-    if (!validated.success) return null
-    return parsed
-  } catch {
-    return null
-  }
-}
-
-const resolveGovernanceMember = (
-  source: GovernancePerson | undefined,
-  memberByDid: Map<string, GovernanceMemberView>,
-) => {
-  const did = source?.did || ''
-  const matched = did ? memberByDid.get(did) : undefined
-  return {
-    did: did || matched?.did || '',
-    handle: source?.handle || matched?.handle,
-    displayName: source?.displayName || matched?.displayName,
-    avatar: source?.avatar || matched?.avatar,
-    party: matched?.party,
-    influence: matched?.influence ?? 0,
-    votesReceivedAllTime: matched?.votesReceivedAllTime ?? 0,
-    votesCastAllTime: matched?.votesCastAllTime ?? 0,
-    policyPosts: matched?.policyPosts ?? 0,
-    matterPosts: matched?.matterPosts ?? 0,
-  }
-}
-
-const stringOr = (value: unknown) =>
-  typeof value === 'string' && value.trim().length > 0
-    ? value.trim()
-    : undefined

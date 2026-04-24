@@ -57,18 +57,10 @@ const main = l.record<'literal:self', Main>(
     pronouns: l.optional(l.string({ maxGraphemes: 20, maxLength: 200 })),
     website: l.optional(l.string({ format: 'uri' })),
     avatar: l.optional(
-      l.blob({
-        accept: ['image/png', 'image/jpeg'],
-        maxSize: 1000000,
-        allowLegacy: false,
-      }),
+      l.blob({ accept: ['image/png', 'image/jpeg'], maxSize: 1000000 }),
     ),
     banner: l.optional(
-      l.blob({
-        accept: ['image/png', 'image/jpeg'],
-        maxSize: 1000000,
-        allowLegacy: false,
-      }),
+      l.blob({ accept: ['image/png', 'image/jpeg'], maxSize: 1000000 }),
     ),
     labels: l.optional(
       l.typedUnion(

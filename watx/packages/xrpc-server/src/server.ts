@@ -10,7 +10,6 @@ import express, {
   Router,
 } from 'express'
 import { LexValue } from '@atproto/lex-data'
-import { lexStringify } from '@atproto/lex-json'
 import { l } from '@atproto/lex-schema'
 import {
   LexXrpcProcedure,
@@ -18,6 +17,7 @@ import {
   LexXrpcSubscription,
   LexiconDoc,
   Lexicons,
+  lexToJson,
 } from '@atproto/lexicon'
 import {
   InternalServerError,
@@ -404,7 +404,7 @@ export class Server {
   ): RequestHandler {
     return this.createHandlerInternal<A, P, I, O>(
       this.createAuthVerifier(cfg),
-      this.createLexiconParamsVerifier<P>(nsid, def, cfg.opts),
+      this.createLexiconParamsVerifier<P>(nsid, def),
       this.createLexiconInputVerifier<I>(nsid, def, cfg.opts),
       this.createRouteRateLimiter(nsid, cfg),
       cfg.handler,
@@ -483,7 +483,8 @@ export class Server {
             // a stream, which would be a bug.
             await pipeline(output.body, res)
           } else if (encoding === 'application/json') {
-            res.send(lexStringify(output.body as LexValue))
+            const json = lexToJson(output.body)
+            res.json(json)
           } else {
             res.send(
               Buffer.isBuffer(output.body)
@@ -573,11 +574,8 @@ export class Server {
   private createLexiconParamsVerifier<P extends Params = Params>(
     nsid: string,
     def: LexXrpcQuery | LexXrpcProcedure | LexXrpcSubscription,
-    opts?: RouteOptions,
   ) {
-    return createLexiconParamsVerifier<P>(nsid, def, this.lex, {
-      parseLoose: opts?.paramsParseLoose,
-    })
+    return createLexiconParamsVerifier<P>(nsid, def, this.lex)
   }
 
   private createLexiconInputVerifier<I extends Input = Input>(
@@ -613,9 +611,7 @@ export class Server {
     ns: l.Main<M>,
     opts?: RouteOptions,
   ): ParamsVerifierInternal<LexMethodParams<M>> {
-    return createSchemaParamsVerifier<M>(ns, {
-      parseLoose: opts?.paramsParseLoose,
-    })
+    return createSchemaParamsVerifier<M>(ns, opts)
   }
 
   private createSchemaInputVerifier<M extends l.Procedure | l.Query>(

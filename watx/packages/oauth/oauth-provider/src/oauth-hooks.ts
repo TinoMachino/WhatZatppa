@@ -32,8 +32,8 @@ import {
   HcaptchaVerifyResult,
 } from './lib/hcaptcha.js'
 import { RequestMetadata } from './lib/http/request.js'
-import { Sub } from './oidc/sub.js'
 import { Awaitable, OmitKey } from './lib/util/type.js'
+import { Sub } from './oidc/sub.js'
 import { RequestId } from './request/request-id.js'
 import { AccessTokenPayload } from './signer/access-token-payload.js'
 import { TokenClaims } from './token/token-claims.js'
@@ -195,8 +195,8 @@ export type OAuthHooks = {
   /**
    * This hook is called when a sign-in attempt is rejected by the account
    * store due to invalid credentials (e.g. unknown identifier, wrong
-   * password). It is not called for unexpected server errors or flows that
-   * require an additional authentication factor.
+   * password). It is *not* called for unexpected server errors, nor for flows
+   * that require an additional authentication factor.
    *
    * `sub` is populated when the store throws an
    * {@link InvalidCredentialsError} that carries the matched subject

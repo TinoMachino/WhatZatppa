@@ -1,7 +1,7 @@
 import {type ChatBskyConvoGetConvoForMembers} from '@atproto/api'
 import {useMutation, useQueryClient} from '@tanstack/react-query'
 
-import {getDmServiceHeadersForServiceUrl} from '#/lib/constants'
+import {DM_SERVICE_HEADERS} from '#/lib/constants'
 import {logger} from '#/logger'
 import {useAgent} from '#/state/session'
 import {precacheConvoQuery} from './conversation'
@@ -15,15 +15,12 @@ export function useGetConvoForMembers({
 }) {
   const queryClient = useQueryClient()
   const agent = useAgent()
-  const dmServiceHeaders = getDmServiceHeadersForServiceUrl(
-    agent.serviceUrl.toString(),
-  )
 
   return useMutation({
     mutationFn: async (members: string[]) => {
       const {data} = await agent.chat.bsky.convo.getConvoForMembers(
         {members: members},
-        {headers: dmServiceHeaders},
+        {headers: DM_SERVICE_HEADERS},
       )
 
       return data

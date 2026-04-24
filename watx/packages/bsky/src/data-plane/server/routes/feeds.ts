@@ -1,11 +1,157 @@
 import { ServiceImpl } from '@connectrpc/connect'
-import { keyBy } from '@atproto/common'
 import { Service } from '../../../proto/bsky_connect'
-import { FeedType } from '../../../proto/bsky_pb'
+import {
+  FeedType,
+  ParaAuthorFeedItem,
+} from '../../../proto/bsky_pb'
 import { Database } from '../db'
 import { TimeCidKeyset, paginate } from '../db/pagination'
 
 export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
+  async getParaAuthorFeed(req) {
+    const { ref } = db.db.dynamic
+    let builder = db.db
+      .selectFrom('para_post')
+      .selectAll('para_post')
+      .where('creator', '=', req.actorDid)
+
+    const keyset = new TimeCidKeyset(
+      ref('para_post.sortAt'),
+      ref('para_post.cid'),
+    )
+
+    builder = paginate(builder, {
+      limit: req.limit,
+      cursor: req.cursor,
+      keyset,
+      tryIndex: true,
+    })
+
+    const posts = await builder.execute()
+
+    return {
+      items: posts.map(paraFeedItemFromRow),
+      cursor: keyset.packFromResult(posts),
+    }
+  },
+
+  async getParaTimeline(req) {
+    const { actorDid, limit, cursor } = req
+    const { ref } = db.db.dynamic
+
+    const keyset = new TimeCidKeyset(
+      ref('para_post.sortAt'),
+      ref('para_post.cid'),
+    )
+
+    let followQb = db.db
+      .selectFrom('para_post')
+      .innerJoin('follow', 'follow.subjectDid', 'para_post.creator')
+      .where('follow.creator', '=', actorDid)
+      .selectAll('para_post')
+
+    followQb = paginate(followQb, {
+      limit,
+      cursor,
+      keyset,
+      tryIndex: true,
+    })
+
+    let selfQb = db.db
+      .selectFrom('para_post')
+      .where('para_post.creator', '=', actorDid)
+      .selectAll('para_post')
+
+    selfQb = paginate(selfQb, {
+      limit: Math.min(limit, 10),
+      cursor,
+      keyset,
+      tryIndex: true,
+    })
+
+    const [followRes, selfRes] = await Promise.all([
+      followQb.execute(),
+      selfQb.execute(),
+    ])
+
+    const posts = [...followRes, ...selfRes]
+      .sort((a, b) => {
+        if (a.sortAt > b.sortAt) return -1
+        if (a.sortAt < b.sortAt) return 1
+        return a.cid > b.cid ? -1 : 1
+      })
+      .slice(0, limit)
+
+    return {
+      items: posts.map(paraFeedItemFromRow),
+      cursor: keyset.packFromResult(posts),
+    }
+  },
+
+  async getParaPosts(req) {
+    if (!req.uris.length) {
+      return { items: [] }
+    }
+
+    const posts = await db.db
+      .selectFrom('para_post')
+      .selectAll('para_post')
+      .where('uri', 'in', req.uris)
+      .execute()
+
+    const byUri = new Map(posts.map((post) => [post.uri, post]))
+
+    return {
+      items: req.uris
+        .map((uri) => byUri.get(uri))
+        .filter((post): post is NonNullable<typeof post> => !!post)
+        .map(paraFeedItemFromRow),
+    }
+  },
+
+  async getParaThread(req) {
+    const post = await db.db
+      .selectFrom('para_post')
+      .selectAll('para_post')
+      .where('uri', '=', req.postUri)
+      .executeTakeFirst()
+
+    if (!post) {
+      return {}
+    }
+
+    const [parents, replies] = await Promise.all([
+      post.replyRoot || post.replyParent
+        ? db.db
+            .selectFrom('para_post')
+            .selectAll('para_post')
+            .where('uri', 'in', [post.replyRoot, post.replyParent].filter(
+              (uri): uri is string => !!uri,
+            ))
+            .orderBy('sortAt', 'asc')
+            .limit(req.above || 80)
+            .execute()
+        : [],
+      db.db
+        .selectFrom('para_post')
+        .selectAll('para_post')
+        .where((qb) =>
+          qb
+            .where('replyRoot', '=', post.uri)
+            .orWhere('replyParent', '=', post.uri),
+        )
+        .orderBy('sortAt', 'asc')
+        .limit(req.below || 6)
+        .execute(),
+    ])
+
+    return {
+      post: paraFeedItemFromRow(post),
+      parents: parents.map(paraFeedItemFromRow),
+      replies: replies.map(paraFeedItemFromRow),
+    }
+  },
+
   async getAuthorFeed(req) {
     const { actorDid, limit, cursor, feedType } = req
     const { ref } = db.db.dynamic
@@ -68,187 +214,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     return {
       items: feedItems.map(feedItemFromRow),
       cursor: keyset.packFromResult(feedItems),
-    }
-  },
-
-  async getParaAuthorFeed(req) {
-    const { actorDid, limit, cursor } = req
-    const { ref } = db.db.dynamic
-
-    let builder = db.db
-      .selectFrom('para_post')
-      .selectAll('para_post')
-      .where('creator', '=', actorDid)
-
-    const keyset = new TimeCidKeyset(
-      ref('para_post.sortAt'),
-      ref('para_post.cid'),
-    )
-
-    builder = paginate(builder, {
-      limit,
-      cursor,
-      keyset,
-      tryIndex: true,
-    })
-
-    const posts = await builder.execute()
-
-    return {
-      items: posts.map((post) => ({
-        uri: post.uri,
-        cid: post.cid,
-        author: post.creator,
-        text: post.text,
-        createdAt: post.createdAt,
-        replyRoot: post.replyRoot ?? undefined,
-        replyParent: post.replyParent ?? undefined,
-        langs: post.langs ?? [],
-        tags: post.tags ?? [],
-        flairs: post.flairs ?? [],
-        postType: post.postType ?? undefined,
-      })),
-      cursor: keyset.packFromResult(posts),
-    }
-  },
-
-  async getParaTimeline(req) {
-    const { actorDid, limit, cursor } = req
-    const { ref } = db.db.dynamic
-
-    const keyset = new TimeCidKeyset(
-      ref('para_post.sortAt'),
-      ref('para_post.cid'),
-    )
-
-    let followQb = db.db
-      .selectFrom('para_post')
-      .innerJoin('follow', 'follow.subjectDid', 'para_post.creator')
-      .where('follow.creator', '=', actorDid)
-      .selectAll('para_post')
-
-    followQb = paginate(followQb, {
-      limit,
-      cursor,
-      keyset,
-      tryIndex: true,
-    })
-
-    let selfQb = db.db
-      .selectFrom('para_post')
-      .where('para_post.creator', '=', actorDid)
-      .selectAll('para_post')
-
-    selfQb = paginate(selfQb, {
-      limit: Math.min(limit, 10),
-      cursor,
-      keyset,
-      tryIndex: true,
-    })
-
-    const [followRes, selfRes] = await Promise.all([
-      followQb.execute(),
-      selfQb.execute(),
-    ])
-
-    const seen = new Set<string>()
-    const feedItems = [...followRes, ...selfRes]
-      .sort((a, b) => {
-        if (a.sortAt > b.sortAt) return -1
-        if (a.sortAt < b.sortAt) return 1
-        return a.cid > b.cid ? -1 : 1
-      })
-      .filter((item) => {
-        if (seen.has(item.uri)) return false
-        seen.add(item.uri)
-        return true
-      })
-      .slice(0, limit)
-
-    return {
-      items: feedItems.map((post) => ({
-        uri: post.uri,
-        cid: post.cid,
-        author: post.creator,
-        text: post.text,
-        createdAt: post.createdAt,
-        replyRoot: post.replyRoot ?? undefined,
-        replyParent: post.replyParent ?? undefined,
-        langs: post.langs ?? [],
-        tags: post.tags ?? [],
-        flairs: post.flairs ?? [],
-        postType: post.postType ?? undefined,
-      })),
-      cursor: keyset.packFromResult(feedItems),
-    }
-  },
-
-  async getParaPosts(req) {
-    const { uris } = req
-    const rows = uris.length
-      ? await db.db.selectFrom('para_post').where('uri', 'in', uris).selectAll().execute()
-      : []
-    const byUri = keyBy(rows, 'uri')
-
-    return {
-      items: uris
-        .map((uri) => byUri.get(uri))
-        .filter((item): item is NonNullable<typeof item> => !!item)
-        .map(paraFeedItemFromRow),
-    }
-  },
-
-  async getParaPostMeta(req) {
-    const { postUri } = req
-
-    const row = await db.db
-      .selectFrom('para_post')
-      .leftJoin('para_post_meta', 'para_post_meta.postUri', 'para_post.uri')
-      .leftJoin('post_agg', 'post_agg.uri', 'para_post.uri')
-      .where('para_post.uri', '=', postUri)
-      .select([
-        'para_post.uri as uri',
-        'para_post.creator as author',
-        'para_post.postType as postType',
-        'para_post.tags as postTags',
-        'para_post.flairs as postFlairs',
-        'para_post.createdAt as postCreatedAt',
-        'para_post_meta.postType as metaPostType',
-        'para_post_meta.official as official',
-        'para_post_meta.party as party',
-        'para_post_meta.community as community',
-        'para_post_meta.category as category',
-        'para_post_meta.tags as metaTags',
-        'para_post_meta.flairs as metaFlairs',
-        'para_post_meta.voteScore as metaVoteScore',
-        'para_post_meta.createdAt as metaCreatedAt',
-        'post_agg.likeCount as likeCount',
-      ])
-      .executeTakeFirst()
-
-    if (!row) {
-      return {}
-    }
-
-    const postType = row.metaPostType ?? row.postType ?? undefined
-    const voteScore = row.metaVoteScore ?? row.likeCount ?? 0
-
-    return {
-      post: {
-        uri: row.uri,
-        author: row.author,
-        postType,
-        official: row.official ?? undefined,
-        party: row.party ?? undefined,
-        community: row.community ?? undefined,
-        category: row.category ?? undefined,
-        tags: row.metaTags ?? row.postTags ?? [],
-        flairs: row.metaFlairs ?? row.postFlairs ?? [],
-        voteScore,
-        interactionMode:
-          postType === 'policy' ? 'policy_ballot' : 'reddit_votes',
-        createdAt: row.metaCreatedAt ?? row.postCreatedAt,
-      },
     }
   },
 
@@ -340,7 +305,7 @@ const feedItemFromRow = (row: { postUri: string; uri: string }) => {
   }
 }
 
-const paraFeedItemFromRow = (post: {
+const paraFeedItemFromRow = (row: {
   uri: string
   cid: string
   creator: string
@@ -352,16 +317,18 @@ const paraFeedItemFromRow = (post: {
   tags: string[] | null
   flairs: string[] | null
   postType: string | null
-}) => ({
-  uri: post.uri,
-  cid: post.cid,
-  author: post.creator,
-  text: post.text,
-  createdAt: post.createdAt,
-  replyRoot: post.replyRoot ?? undefined,
-  replyParent: post.replyParent ?? undefined,
-  langs: post.langs ?? [],
-  tags: post.tags ?? [],
-  flairs: post.flairs ?? [],
-  postType: post.postType ?? undefined,
-})
+}): ParaAuthorFeedItem => {
+  return new ParaAuthorFeedItem({
+    uri: row.uri,
+    cid: row.cid,
+    author: row.creator,
+    text: row.text,
+    createdAt: row.createdAt,
+    replyRoot: row.replyRoot ?? undefined,
+    replyParent: row.replyParent ?? undefined,
+    langs: row.langs ?? [],
+    tags: row.tags ?? [],
+    flairs: row.flairs ?? [],
+    postType: row.postType ?? undefined,
+  })
+}

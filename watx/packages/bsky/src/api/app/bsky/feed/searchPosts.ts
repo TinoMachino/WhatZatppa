@@ -1,5 +1,6 @@
 import { mapDefined } from '@atproto/common'
-import { Client } from '@atproto/lex'
+import { AtUriString, Client } from '@atproto/lex'
+import { Server } from '@atproto/xrpc-server'
 import { ServerConfig } from '../../../../config'
 import { AppContext } from '../../../../context'
 import { DataPlaneClient } from '../../../../data-plane'
@@ -9,8 +10,6 @@ import {
 } from '../../../../data-plane/server/util'
 import { HydrateCtx, Hydrator } from '../../../../hydration/hydrator'
 import { parseString } from '../../../../hydration/util'
-import { Server } from '../../../../lexicon'
-import { QueryParams } from '../../../../lexicon/types/app/bsky/feed/searchPosts'
 import { app } from '../../../../lexicons/index.js'
 import {
   HydrationFnInput,
@@ -30,7 +29,7 @@ export default function (server: Server, ctx: AppContext) {
     noBlocksOrTagged,
     presentation,
   )
-  server.app.bsky.feed.searchPosts({
+  server.add(app.bsky.feed.searchPosts, {
     auth: ctx.authVerifier.standardOptional,
     handler: async ({ auth, params, req }) => {
       const { viewer, isModService, skipViewerBlocks } =
@@ -61,13 +60,16 @@ export default function (server: Server, ctx: AppContext) {
   })
 }
 
-const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
+const skeleton = async (
+  inputs: SkeletonFnInput<Context, Params>,
+): Promise<Skeleton> => {
   const { ctx, params } = inputs
   const parsedQuery = parsePostSearchQuery(params.q, {
     author: params.author,
   })
 
   if (ctx.searchClient) {
+    // @NOTE cursors won't change on appview swap
     const res = await ctx.searchClient.call(
       app.bsky.unspecced.searchPostsSkeleton,
       {
@@ -84,10 +86,10 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
         until: params.until,
         url: params.url,
         viewer: params.hydrateCtx.viewer ?? undefined,
-      } as app.bsky.unspecced.searchPostsSkeleton.$Params,
+      },
     )
     return {
-      posts: res.posts.map(({ uri }) => uri),
+      posts: res.posts.map(({ uri }) => uri as AtUriString),
       cursor: parseString(res.cursor),
       parsedQuery,
     }
@@ -99,7 +101,7 @@ const skeleton = async (inputs: SkeletonFnInput<Context, Params>) => {
     cursor: params.cursor,
   })
   return {
-    posts: res.uris,
+    posts: res.uris as AtUriString[],
     cursor: parseString(res.cursor),
     parsedQuery,
   }
@@ -114,7 +116,7 @@ const hydration = async (
     params.hydrateCtx,
     undefined,
     {
-      processDynamicTagsForView: params.hydrateCtx.features.checkGate(
+      processDynamicTagsForView: params.hydrateCtx.features?.checkGate(
         params.hydrateCtx.features.Gate.SearchFilteringExplorationEnable,
       )
         ? 'search'
@@ -144,7 +146,7 @@ const noBlocksOrTagged = (inputs: RulesFnInput<Context, Params, Skeleton>) => {
 
     let tagged = false
     if (
-      params.hydrateCtx.features.checkGate(
+      params.hydrateCtx.features?.checkGate(
         params.hydrateCtx.features.Gate.SearchFilteringExplorationEnable,
       )
     ) {
@@ -186,13 +188,13 @@ type Context = {
   searchClient?: Client
 }
 
-type Params = QueryParams & {
+type Params = app.bsky.feed.searchPosts.$Params & {
   hydrateCtx: HydrateCtx
   isModService: boolean
 }
 
 type Skeleton = {
-  posts: string[]
+  posts: AtUriString[]
   hitsTotal?: number
   cursor?: string
   parsedQuery: PostSearchQuery

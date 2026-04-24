@@ -1,26 +1,31 @@
 import {useCallback} from 'react'
 import {useFocusEffect} from '@react-navigation/native'
+import {withSpring} from 'react-native-reanimated'
 
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {makeRecordUri} from '#/lib/strings/url-helpers'
-import {useSetMinimalShellMode} from '#/state/shell'
+import {useMinimalShellMode} from '#/state/shell'
 import {PostThread} from '#/screens/PostThread'
 import * as Layout from '#/components/Layout'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'PostThread'>
 export function PostThreadScreen({route}: Props) {
-  const setMinimalShellMode = useSetMinimalShellMode()
+  const {headerMode} = useMinimalShellMode()
+  const showHeader = useCallback(() => {
+    'worklet'
+    headerMode.set(() => withSpring(0, {overshootClamping: true}))
+  }, [headerMode])
 
   const {name, rkey} = route.params
   const uri = makeRecordUri(name, 'app.bsky.feed.post', rkey)
 
   useFocusEffect(
     useCallback(() => {
-      setMinimalShellMode(false)
-    }, [setMinimalShellMode]),
+      showHeader()
+    }, [showHeader]),
   )
 
   return (

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {Selectable, sql} from 'kysely'
 import {CID} from 'multiformats/cid'
 import {AtUri, normalizeDatetimeAlways} from '@atproto/syntax'

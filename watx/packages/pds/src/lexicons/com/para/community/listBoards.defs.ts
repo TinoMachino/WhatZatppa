@@ -55,6 +55,8 @@ type BoardView = {
     | 'blocked'
     | l.UnknownString
   viewerRoles?: string[]
+  status?: 'draft' | 'active' | l.UnknownString
+  founderStarterPackUri?: l.AtUriString
   createdAt: l.DatetimeString
 }
 
@@ -85,6 +87,8 @@ const boardView = l.typedObject<BoardView>(
     viewerRoles: l.optional(
       l.array(l.string({ maxGraphemes: 64, maxLength: 128 })),
     ),
+    status: l.optional(l.string<{ knownValues: ['draft', 'active'] }>()),
+    founderStarterPackUri: l.optional(l.string({ format: 'at-uri' })),
     createdAt: l.string({ format: 'datetime' }),
   }),
 )

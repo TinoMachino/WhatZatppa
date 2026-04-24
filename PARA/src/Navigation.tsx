@@ -46,7 +46,10 @@ import {
 import {bskyTitle} from '#/lib/strings/headings'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useSession} from '#/state/session'
-import {useLoggedOutViewControls} from '#/state/shell/logged-out'
+import {
+  useLoggedOutView,
+  useLoggedOutViewControls,
+} from '#/state/shell/logged-out'
 import {
   shouldRequestEmailConfirmation,
   snoozeEmailConfirmationPrompt,
@@ -104,6 +107,7 @@ import {LogScreen} from '#/screens/Log'
 import {AgentChatScreen} from '#/screens/Messages/AgentChat'
 import {MessagesScreen} from '#/screens/Messages/ChatList'
 import {MessagesConversationScreen} from '#/screens/Messages/Conversation'
+import {MessagesConversationSettingsScreen} from '#/screens/Messages/ConversationSettings'
 import {MessagesInboxScreen} from '#/screens/Messages/Inbox'
 import {MessagesSettingsScreen} from '#/screens/Messages/Settings'
 import {ModerationScreen} from '#/screens/Moderation'
@@ -657,6 +661,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Chat`), requireAuth: true}}
       />
       <Stack.Screen
+        name="MessagesConversationSettings"
+        getComponent={() => MessagesConversationSettingsScreen}
+        options={{title: title(msg`Chat settings`), requireAuth: true}}
+      />
+      <Stack.Screen
         name="AgentChat"
         getComponent={() => AgentChatScreen}
         options={{title: title(msg`Agent Chat`), requireAuth: true}}
@@ -850,11 +859,13 @@ function TabsNavigator({
 }: {
   layout?: React.ComponentProps<typeof Tab.Navigator>['layout']
 }) {
+  const {hasSession} = useSession()
+  const {showLoggedOut} = useLoggedOutView()
   const tabBar = useCallback(
     (props: JSX.IntrinsicAttributes & BottomTabBarProps) => (
-      <BottomBar {...props} />
+      hasSession && !showLoggedOut ? <BottomBar {...props} /> : null
     ),
-    [],
+    [hasSession, showLoggedOut],
   )
 
   return (

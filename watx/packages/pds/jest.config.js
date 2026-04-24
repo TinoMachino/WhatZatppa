@@ -5,7 +5,7 @@ module.exports = {
   // Jest requires all ESM dependencies to be transpiled (even if they are
   // dynamically import()ed).
   transformIgnorePatterns: [
-    `/node_modules/.pnpm/(?!(afinn-165|afinn-165-financialmarketnews|get-port|lande|natural|stopwords-iso|toygrad|uuid)@)`,
+    `/node_modules/.pnpm/(?!(afinn-165|get-port|lande|toygrad|uuid)@)`,
   ],
   testTimeout: 60000,
   setupFiles: ['<rootDir>/../../jest.setup.ts'],

@@ -5,6 +5,7 @@ import getPort from 'get-port'
 import * as ui8 from 'uint8arrays'
 import { AtpAgent } from '@atproto/api'
 import { Secp256k1Keypair, randomStr } from '@atproto/crypto'
+import { Client } from '@atproto/lex'
 import * as pds from '@atproto/pds'
 import { createSecretKeyObject } from '@atproto/pds'
 import { ADMIN_PASSWORD, EXAMPLE_LABELER, JWT_SECRET } from './const'
@@ -23,27 +24,20 @@ export class TestPds {
     const recoveryKey = (await Secp256k1Keypair.create()).did()
 
     const port = config.port || (await getPort())
-    // Keep bootstrap traffic on the local socket even when the PDS advertises
-    // a public hostname for shared-demo mode.
     const url = `http://localhost:${port}`
 
-    const blobstoreLoc =
-      config.blobstoreDiskLocation || path.join(os.tmpdir(), randomStr(8, 'base32'))
-    const dataDirectory =
-      config.dataDirectory || path.join(os.tmpdir(), randomStr(8, 'base32'))
+    const blobstoreLoc = path.join(os.tmpdir(), randomStr(8, 'base32'))
+    const dataDirectory = path.join(os.tmpdir(), randomStr(8, 'base32'))
     await fs.mkdir(dataDirectory, { recursive: true })
-    await fs.mkdir(blobstoreLoc, { recursive: true })
 
     const env: pds.ServerEnvironment = {
       devMode: true,
       port,
-      dataDirectory,
+      dataDirectory: dataDirectory,
       blobstoreDiskLocation: blobstoreLoc,
       recoveryDidKey: recoveryKey,
       adminPassword: ADMIN_PASSWORD,
       jwtSecret: JWT_SECRET,
-      emailSmtpUrl: process.env.PDS_EMAIL_SMTP_URL,
-      emailFromAddress: process.env.PDS_EMAIL_FROM_ADDRESS,
       // @NOTE ".example" will not actually work and is only used to display
       // multiple domains in the sing-up UI
       serviceHandleDomains: ['.test', '.example'],
@@ -68,11 +62,7 @@ export class TestPds {
       termsOfServiceUrl: 'https://bsky.social/about/support/tos',
       privacyPolicyUrl: 'https://bsky.social/about/support/privacy-policy',
       supportUrl: 'https://blueskyweb.zendesk.com/hc/en-us',
-    }
-    for (const [key, value] of Object.entries(config)) {
-      if (value !== undefined) {
-        ;(env as Record<string, unknown>)[key] = value
-      }
+      ...config,
     }
     const cfg = pds.envToCfg(env)
     const secrets = pds.envToSecrets(env)
@@ -88,10 +78,16 @@ export class TestPds {
     return this.server.ctx
   }
 
-  getClient(): AtpAgent {
+  getAgent(): AtpAgent {
     const agent = new AtpAgent({ service: this.url })
     agent.configureLabelers([EXAMPLE_LABELER])
     return agent
+  }
+
+  getClient(): Client {
+    const client = new Client({ service: this.url })
+    client.setLabelers([EXAMPLE_LABELER])
+    return client
   }
 
   adminAuth(): string {

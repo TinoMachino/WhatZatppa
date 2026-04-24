@@ -48,7 +48,10 @@ describe('Parameters', () => {
   beforeAll(async () => {
     s = await createServer(server)
     const { port } = s.address() as AddressInfo
-    client = new XrpcClient(`http://localhost:${port}`, LEXICONS)
+    client = new XrpcClient(
+      `http://localhost:${port}`,
+      structuredClone(LEXICONS),
+    )
   })
   afterAll(async () => {
     await closeServer(s)
@@ -167,7 +170,7 @@ const LOOSE_PARAMS_LEXICONS = [
         type: 'query',
         parameters: {
           type: 'params',
-          required: ['str', 'arr'],
+          required: ['str'],
           properties: {
             str: { type: 'string' },
             arr: { type: 'array', items: { type: 'string' } },
@@ -182,7 +185,7 @@ const LOOSE_PARAMS_LEXICONS = [
 ] as const satisfies LexiconDoc[]
 
 for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
-  describe(`paramsParseLoose with ${buildServer.name}`, () => {
+  describe(buildServer, () => {
     let s: http.Server
     let url: string
 
@@ -208,7 +211,7 @@ for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
       await closeServer(s)
     })
 
-    it('converts bracket[] syntax into repeated params', async () => {
+    it('converts bracket[] array syntax to standard params', async () => {
       const res = await fetch(
         `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[]=one&arr[]=two`,
       )
@@ -218,9 +221,9 @@ for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
       expect(body.arr).toEqual(['one', 'two'])
     })
 
-    it('converts bracket[n] syntax into repeated params', async () => {
+    it('converts bracket[n] array syntax to standard params', async () => {
       const res = await fetch(
-        `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[0]=one&arr[4]=two`,
+        `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[0]=one&arr[1]=two`,
       )
       expect(res.status).toBe(200)
       const body = await res.json()
@@ -228,13 +231,44 @@ for (const buildServer of [buildMethodLexicons, buildAddLexicons]) {
       expect(body.arr).toEqual(['one', 'two'])
     })
 
-    it('leaves standard repeated params untouched', async () => {
+    it('ignores empty indices when using bracket[n] syntax', async () => {
+      const res = await fetch(
+        `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[4]=one&arr[9]=two`,
+      )
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.str).toBe('hello')
+      expect(body.arr).toEqual(['one', 'two'])
+    })
+
+    it('still handles standard array syntax', async () => {
       const res = await fetch(
         `${url}/xrpc/io.example.looseParamsTest?str=hello&arr=one&arr=two`,
       )
       expect(res.status).toBe(200)
       const body = await res.json()
+      expect(body.str).toBe('hello')
       expect(body.arr).toEqual(['one', 'two'])
+    })
+
+    it('handles single bracket value', async () => {
+      const res = await fetch(
+        `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[]=only`,
+      )
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.str).toBe('hello')
+      expect(body.arr).toEqual(['only'])
+    })
+
+    it('handles single indexed bracket value', async () => {
+      const res = await fetch(
+        `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[0]=only`,
+      )
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.str).toBe('hello')
+      expect(body.arr).toEqual(['only'])
     })
   })
 }
@@ -247,11 +281,51 @@ describe('paramsParseLoose option', () => {
     expect(() => {
       server.method('io.example.looseParamsTest', {
         opts: { paramsParseLoose: true },
-        handler: (ctx: xrpcServer.HandlerContext) => ({
+        handler: () => ({
           encoding: 'application/json',
-          body: ctx.params,
+          body: {},
         }),
       })
     }).toThrow('paramsParseLoose is not supported with method()')
+    expect(() => {
+      server.method('io.example.looseParamsTest', {
+        opts: { paramsParseLoose: false },
+        handler: () => ({
+          encoding: 'application/json',
+          body: {},
+        }),
+      })
+    }).toThrow('paramsParseLoose is not supported with method()')
+  })
+})
+
+describe(buildAddLexicons, () => {
+  it('does not use loose parsing by default', async () => {
+    const server = await buildAddLexicons(LOOSE_PARAMS_LEXICONS, {
+      'io.example.looseParamsTest': (ctx: xrpcServer.HandlerContext) => ({
+        encoding: 'application/json',
+        body: ctx.params,
+      }),
+    })
+
+    await using httpServer = await createServer(server)
+    const { port } = httpServer.address() as AddressInfo
+    const url = `http://localhost:${port}`
+
+    // standard array syntax works
+    const res = await fetch(
+      `${url}/xrpc/io.example.looseParamsTest?str=hello&arr=one&arr=two`,
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.arr).toEqual(['one', 'two'])
+
+    // bracket syntax is not converted without paramsParseLoose
+    const bracketRes = await fetch(
+      `${url}/xrpc/io.example.looseParamsTest?str=hello&arr[]=one&arr[]=two`,
+    )
+    expect(bracketRes.status).toBe(200)
+    const bracketBody = await bracketRes.json()
+    expect(bracketBody.arr).toBeUndefined()
   })
 })

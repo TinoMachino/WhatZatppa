@@ -59,8 +59,6 @@ export class TestOzone {
       publicUrl: url,
       serverDid,
       signingKeyHex,
-      // Keep parallel test runs from saturating Postgres with ozone pools.
-      dbPoolSize: 4,
       ...config,
       adminPassword: ADMIN_PASSWORD,
       adminDids: [...(config.adminDids ?? []), admin.did],
@@ -105,7 +103,7 @@ export class TestOzone {
     return this.server.ctx
   }
 
-  getClient(): AtpAgent {
+  getAgent(): AtpAgent {
     const agent = new AtpAgent({ service: this.url })
     agent.configureLabelers([EXAMPLE_LABELER])
     return agent
@@ -116,62 +114,38 @@ export class TestOzone {
   }
 
   async addAdminDid(did: string) {
-    try {
-      await this.ctx.teamService(this.ctx.db).create({
-        did,
-        disabled: false,
-        handle: null,
-        displayName: null,
-        lastUpdatedBy: this.ctx.cfg.service.did,
-        role: 'tools.ozone.team.defs#roleAdmin',
-      })
-    } catch (e: any) {
-      if (e.code === '23505') {
-        // already exists, just fall through to push to cfg
-      } else {
-        throw e
-      }
-    }
+    await this.ctx.teamService(this.ctx.db).create({
+      did,
+      disabled: false,
+      handle: null,
+      displayName: null,
+      lastUpdatedBy: this.ctx.cfg.service.did,
+      role: 'tools.ozone.team.defs#roleAdmin',
+    })
     this.ctx.cfg.access.admins.push(did)
   }
 
   async addModeratorDid(did: string) {
-    try {
-      await this.ctx.teamService(this.ctx.db).create({
-        did,
-        disabled: false,
-        handle: null,
-        displayName: null,
-        lastUpdatedBy: this.ctx.cfg.service.did,
-        role: 'tools.ozone.team.defs#roleModerator',
-      })
-    } catch (e: any) {
-      if (e.code === '23505') {
-        // already exists
-      } else {
-        throw e
-      }
-    }
+    await this.ctx.teamService(this.ctx.db).create({
+      did,
+      disabled: false,
+      handle: null,
+      displayName: null,
+      lastUpdatedBy: this.ctx.cfg.service.did,
+      role: 'tools.ozone.team.defs#roleModerator',
+    })
     this.ctx.cfg.access.moderators.push(did)
   }
 
   async addTriageDid(did: string) {
-    try {
-      await this.ctx.teamService(this.ctx.db).create({
-        did,
-        disabled: false,
-        handle: null,
-        displayName: null,
-        lastUpdatedBy: this.ctx.cfg.service.did,
-        role: 'tools.ozone.team.defs#roleTriage',
-      })
-    } catch (e: any) {
-      if (e.code === '23505') {
-        // already exists
-      } else {
-        throw e
-      }
-    }
+    await this.ctx.teamService(this.ctx.db).create({
+      did,
+      disabled: false,
+      handle: null,
+      displayName: null,
+      lastUpdatedBy: this.ctx.cfg.service.did,
+      role: 'tools.ozone.team.defs#roleTriage',
+    })
     this.ctx.cfg.access.triage.push(did)
   }
 

@@ -37,7 +37,7 @@ export function ComposerPrompt() {
 
   const onPress = useCallback(() => {
     logger.metric('composerPrompt:press', {})
-    openComposer({logContext: 'ComposerPrompt'})
+    openComposer({logContext: 'Other'})
   }, [openComposer])
 
   const onPressImage = useCallback(async () => {
@@ -47,12 +47,8 @@ export function ComposerPrompt() {
     if (!IS_NATIVE) {
       const galleryRef = {current: null as (() => void) | null}
       openComposer({
-        openGallery: () => {
-          if (galleryRef.current) {
-            galleryRef.current()
-          }
-        },
-        logContext: 'ComposerPrompt',
+        openGallery: true,
+        logContext: 'Other',
       })
       // This will be called after the composer is mounted
       galleryRef.current = () => {
@@ -100,7 +96,7 @@ export function ComposerPrompt() {
           }))
 
         if (imageUris.length > 0) {
-          openComposer({imageUris, logContext: 'ComposerPrompt'})
+          openComposer({imageUris, logContext: 'Other'})
         }
       }
     } catch (err: any) {
@@ -141,7 +137,7 @@ export function ComposerPrompt() {
 
       openComposer({
         imageUris: IS_NATIVE ? imageUris : undefined,
-        logContext: 'ComposerPrompt',
+        logContext: 'Other',
       })
     } catch (err: any) {
       if (!String(err).toLowerCase().includes('cancel')) {

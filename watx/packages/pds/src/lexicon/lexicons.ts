@@ -18494,12 +18494,24 @@ export const schemaDict = {
     defs: {
       main: {
         type: 'record',
-        description: 'The cast vote on a deliberation.',
+        description:
+          'A signed civic vote. Cabildeo option votes use selectedOption; policy consensus votes use signal from -3 to +3.',
         key: 'tid',
         record: {
           type: 'object',
-          required: ['cabildeo', 'selectedOption', 'isDirect', 'createdAt'],
+          required: ['isDirect', 'createdAt'],
           properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'The proposal, policy, matter, or cabildeo record being voted on.',
+            },
+            subjectType: {
+              type: 'string',
+              knownValues: ['cabildeo', 'policy', 'matter', 'governance'],
+              description: 'Optional semantic type for clients and indexers.',
+            },
             cabildeo: {
               type: 'string',
               format: 'at-uri',
@@ -18507,6 +18519,18 @@ export const schemaDict = {
             selectedOption: {
               type: 'integer',
               minimum: 0,
+            },
+            signal: {
+              type: 'integer',
+              minimum: -3,
+              maximum: 3,
+              description:
+                'Weighted consensus signal for policy-style votes: -3 strong opposition, 0 neutral/abstain, +3 strong support.',
+            },
+            reason: {
+              type: 'string',
+              maxLength: 1000,
+              description: 'Optional voter rationale for the signal.',
             },
             isDirect: {
               type: 'boolean',
@@ -19147,6 +19171,14 @@ export const schemaDict = {
               maxLength: 128,
             },
           },
+          status: {
+            type: 'string',
+            knownValues: ['draft', 'active'],
+          },
+          founderStarterPackUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
           createdAt: {
             type: 'string',
             format: 'datetime',
@@ -19500,6 +19532,14 @@ export const schemaDict = {
               maxGraphemes: 64,
               maxLength: 128,
             },
+          },
+          status: {
+            type: 'string',
+            knownValues: ['draft', 'active'],
+          },
+          founderStarterPackUri: {
+            type: 'string',
+            format: 'at-uri',
           },
           createdAt: {
             type: 'string',

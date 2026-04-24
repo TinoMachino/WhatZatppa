@@ -4,6 +4,7 @@
 
 import { l } from '@atproto/lex'
 import * as ConvoDefs from '../convo/defs.defs.js'
+import * as ActorDefs from '../actor/defs.defs.js'
 
 const $nsid = 'chat.bsky.group.addMembers'
 
@@ -19,6 +20,13 @@ const main = l.procedure(
   }),
   l.jsonPayload({
     convo: l.ref<ConvoDefs.ConvoView>((() => ConvoDefs.convoView) as any),
+    addedMembers: l.optional(
+      l.array(
+        l.ref<ActorDefs.ProfileViewBasic>(
+          (() => ActorDefs.profileViewBasic) as any,
+        ),
+      ),
+    ),
   }),
   [
     'AccountSuspended',

@@ -3,11 +3,6 @@ import {
   BlobRef,
   LegacyBlobRef,
   enumBlobRefs,
-  getBlobCid,
-  getBlobCidString,
-  getBlobMime,
-  getBlobSize,
-  isBlobRef,
   isLegacyBlobRef,
   isTypedBlobRef,
 } from './blob.js'
@@ -26,7 +21,7 @@ const invalidBlobCid = parseCid(
   { flavor: 'cbor' },
 )
 
-describe(isBlobRef, () => {
+describe(isTypedBlobRef, () => {
   it('tests valid blobCid and lexCid', () => {
     expect(validBlobCid.code).toBe(0x55) // raw
     expect(validBlobCid.multihash.code).toBe(0x12) // sha2-256
@@ -36,7 +31,7 @@ describe(isBlobRef, () => {
 
   it('parses valid blob', () => {
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         ref: validBlobCid,
         mimeType: 'image/jpeg',
@@ -45,7 +40,7 @@ describe(isBlobRef, () => {
     ).toBe(true)
 
     expect(
-      isBlobRef(
+      isTypedBlobRef(
         {
           $type: 'blob',
           ref: invalidBlobCid,
@@ -60,7 +55,7 @@ describe(isBlobRef, () => {
 
   it('performs strict validation by default', () => {
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         ref: invalidBlobCid,
         mimeType: 'image/jpeg',
@@ -71,7 +66,7 @@ describe(isBlobRef, () => {
 
   it('rejects invalid inputs', () => {
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         ref: { $link: validBlobCid.toString() },
         mimeType: 'image/jpeg',
@@ -80,7 +75,7 @@ describe(isBlobRef, () => {
     ).toBe(false)
 
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         // $type: 'blob',
         ref: validBlobCid,
         mimeType: 'image/jpeg',
@@ -89,7 +84,7 @@ describe(isBlobRef, () => {
     ).toBe(false)
 
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         ref: validBlobCid,
         mimeType: { toString: () => 'image/jpeg' },
@@ -98,7 +93,7 @@ describe(isBlobRef, () => {
     ).toBe(false)
 
     expect(
-      isBlobRef(
+      isTypedBlobRef(
         {
           $type: 'blob',
           ref: { $link: validBlobCid.toString() },
@@ -110,7 +105,7 @@ describe(isBlobRef, () => {
     ).toBe(false)
 
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         mimeType: 'image/jpeg',
         size: 10000,
@@ -118,7 +113,7 @@ describe(isBlobRef, () => {
     ).toBe(false)
 
     expect(
-      isBlobRef(
+      isTypedBlobRef(
         {
           $type: 'blob',
           mimeType: 'image/jpeg',
@@ -128,15 +123,15 @@ describe(isBlobRef, () => {
       ),
     ).toBe(false)
 
-    expect(isBlobRef('not an object')).toBe(false)
-    expect(isBlobRef([])).toBe(false)
-    expect(isBlobRef(new Date())).toBe(false)
-    expect(isBlobRef(new Map())).toBe(false)
+    expect(isTypedBlobRef('not an object')).toBe(false)
+    expect(isTypedBlobRef([])).toBe(false)
+    expect(isTypedBlobRef(new Date())).toBe(false)
+    expect(isTypedBlobRef(new Map())).toBe(false)
   })
 
   it('rejects non-integer size', () => {
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         ref: validBlobCid,
         mimeType: 'image/jpeg',
@@ -147,7 +142,7 @@ describe(isBlobRef, () => {
 
   it('rejects invalid CID/multihash code', () => {
     expect(
-      isBlobRef(
+      isTypedBlobRef(
         {
           $type: 'blob',
           ref: validBlobCid,
@@ -159,7 +154,7 @@ describe(isBlobRef, () => {
     ).toBe(true)
 
     expect(
-      isBlobRef(
+      isTypedBlobRef(
         {
           $type: 'blob',
           ref: invalidBlobCid,
@@ -173,7 +168,7 @@ describe(isBlobRef, () => {
 
   it('rejects extra keys', () => {
     expect(
-      isBlobRef({
+      isTypedBlobRef({
         $type: 'blob',
         ref: validBlobCid,
         mimeType: 'image/jpeg',
@@ -183,7 +178,7 @@ describe(isBlobRef, () => {
     ).toBe(false)
 
     expect(
-      isBlobRef(
+      isTypedBlobRef(
         {
           $type: 'blob',
           ref: validBlobCid,
@@ -202,7 +197,7 @@ describe(isBlobRef, () => {
         'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG', // CID v0
       )
       expect(
-        isBlobRef(
+        isTypedBlobRef(
           {
             $type: 'blob',
             ref: cidV0,
@@ -216,26 +211,6 @@ describe(isBlobRef, () => {
   })
 })
 
-describe(isTypedBlobRef, () => {
-  it('acts as a compatibility alias for typed blob checks', () => {
-    expect(
-      isTypedBlobRef({
-        $type: 'blob',
-        ref: validBlobCid,
-        mimeType: 'image/jpeg',
-        size: 10000,
-      }),
-    ).toBe(true)
-
-    expect(
-      isTypedBlobRef({
-        cid: validBlobCid.toString(),
-        mimeType: 'image/jpeg',
-      }),
-    ).toBe(false)
-  })
-})
-
 describe(isLegacyBlobRef, () => {
   it('parses valid legacy blob', () => {
     expect(
@@ -246,14 +221,27 @@ describe(isLegacyBlobRef, () => {
     ).toBe(true)
 
     expect(
-      isLegacyBlobRef({
-        cid: invalidBlobCid.toString(),
-        mimeType: 'image/jpeg',
-      }),
+      isLegacyBlobRef(
+        {
+          cid: invalidBlobCid.toString(),
+          mimeType: 'image/jpeg',
+        },
+        { strict: false },
+      ),
     ).toBe(true)
   })
 
   it('rejects invalid inputs', () => {
+    expect(
+      isLegacyBlobRef(
+        {
+          cid: invalidBlobCid.toString(),
+          mimeType: 'image/jpeg',
+        },
+        { strict: true },
+      ),
+    ).toBe(false)
+
     expect(
       isLegacyBlobRef({
         cid: 'babbaaa',
@@ -413,39 +401,5 @@ describe(enumBlobRefs, () => {
       expect(refs).toHaveLength(1)
       expect(refs[0]).toBe(valid1)
     })
-  })
-})
-
-describe('blob helpers', () => {
-  const typed: BlobRef<RawCid> = {
-    $type: 'blob',
-    ref: validBlobCid,
-    mimeType: 'image/png',
-    size: 2048,
-  }
-
-  const legacy: LegacyBlobRef = {
-    cid: validBlobCid.toString(),
-    mimeType: 'image/gif',
-  }
-
-  it('reads mime and size safely', () => {
-    expect(getBlobMime(typed)).toBe('image/png')
-    expect(getBlobMime(legacy)).toBe('image/gif')
-    expect(getBlobSize(typed)).toBe(2048)
-    expect(getBlobSize(legacy)).toBeUndefined()
-  })
-
-  it('reads cid values from typed and legacy blobs', () => {
-    expect(getBlobCid(typed)).toBe(validBlobCid)
-    expect(getBlobCidString(typed)).toBe(validBlobCid.toString())
-    expect(getBlobCid(legacy).toString()).toBe(validBlobCid.toString())
-    expect(getBlobCidString(legacy)).toBe(validBlobCid.toString())
-  })
-
-  it('handles optional helper inputs', () => {
-    expect(getBlobMime()).toBeUndefined()
-    expect(getBlobCid()).toBeUndefined()
-    expect(getBlobCidString()).toBeUndefined()
   })
 })

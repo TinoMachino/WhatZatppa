@@ -13,8 +13,7 @@ import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRight} from '#/components
 import * as Layout from '#/components/Layout'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
-import {useAgeAssurance} from '#/ageAssurance'
-import {logger} from '#/ageAssurance'
+import {logger,useAgeAssurance} from '#/ageAssurance'
 
 export function AgeRestrictedScreen({
   children,

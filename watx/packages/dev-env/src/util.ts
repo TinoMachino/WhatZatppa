@@ -4,66 +4,29 @@ import { Secp256k1Keypair } from '@atproto/crypto'
 import { IdResolver } from '@atproto/identity'
 import { TestBsky } from './bsky'
 import { TestPds } from './pds'
-import { DidAndKey, DidServiceRewrite } from './types'
+import { DidAndKey } from './types'
 
-export const mockNetworkUtilities = (
-  pds: TestPds,
-  bsky?: TestBsky,
-  serviceRewrites: DidServiceRewrite[] = [],
-) => {
-  const rewrites: DidServiceRewrite[] = [
-    {
-      id: '#atproto_pds',
-      publicUrl: pds.ctx.cfg.service.publicUrl,
-      localUrl: `http://localhost:${pds.port}`,
-    },
-    ...serviceRewrites,
-  ]
-
-  mockResolvers(pds.ctx.idResolver, pds, rewrites)
+export const mockNetworkUtilities = (pds: TestPds, bsky?: TestBsky) => {
+  mockResolvers(pds.ctx.idResolver, pds)
   if (bsky) {
-    mockResolvers(bsky.ctx.idResolver, pds, rewrites)
-    mockResolvers(bsky.dataplane.idResolver, pds, rewrites)
+    mockResolvers(bsky.ctx.idResolver, pds)
+    mockResolvers(bsky.dataplane.idResolver, pds)
   }
 }
 
-const matchesServiceId = (
-  did: string | undefined,
-  serviceId: string | undefined,
-  expectedId: `#${string}`,
-) => {
-  if (!serviceId) return false
-  if (serviceId === expectedId) return true
-  return !!did && serviceId === `${did}${expectedId}`
-}
-
-export const mockResolvers = (
-  idResolver: IdResolver,
-  pds: TestPds,
-  serviceRewrites: DidServiceRewrite[] = [
-    {
-      id: '#atproto_pds',
-      publicUrl: pds.ctx.cfg.service.publicUrl,
-      localUrl: `http://localhost:${pds.port}`,
-    },
-  ],
-) => {
-  // Map local-service public URLs back to the local sockets when resolving from plc.
+export const mockResolvers = (idResolver: IdResolver, pds: TestPds) => {
+  // Map pds public url to its local url when resolving from plc
   const origResolveDid = idResolver.did.resolveNoCache
   idResolver.did.resolveNoCache = async (did: string) => {
     const result = await (origResolveDid.call(
       idResolver.did,
       did,
     ) as ReturnType<typeof origResolveDid>)
-    for (const service of result?.service ?? []) {
-      if (typeof service.serviceEndpoint !== 'string') continue
-      const rewrite = serviceRewrites.find((candidate) =>
-        matchesServiceId(result?.id, service.id, candidate.id),
-      )
-      if (!rewrite) continue
+    const service = result?.service?.find((svc) => svc.id === '#atproto_pds')
+    if (typeof service?.serviceEndpoint === 'string') {
       service.serviceEndpoint = service.serviceEndpoint.replace(
-        rewrite.publicUrl,
-        rewrite.localUrl,
+        pds.ctx.cfg.service.publicUrl,
+        `http://localhost:${pds.port}`,
       )
     }
     return result

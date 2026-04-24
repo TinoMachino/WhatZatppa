@@ -1,5 +1,12 @@
-import * as React from 'react'
-import {type JSX} from 'react'
+import {
+  forwardRef,
+  type JSX,
+  memo,
+  type MutableRefObject,
+  type ReactNode,
+  useCallback,
+  useState,
+} from 'react'
 import {type ScrollView, View} from 'react-native'
 import {useAnimatedRef} from 'react-native-reanimated'
 
@@ -16,7 +23,7 @@ import {TabBar} from './TabBar'
 export interface PagerWithHeaderChildParams {
   headerHeight: number
   isFocused: boolean
-  scrollElRef: React.MutableRefObject<ListMethods | ScrollView | null>
+  scrollElRef: MutableRefObject<ListMethods | ScrollView | null>
 }
 
 export interface PagerWithHeaderProps {
@@ -35,7 +42,7 @@ export interface PagerWithHeaderProps {
   onPageSelected?: (index: number) => void
   onCurrentPageSelected?: (index: number) => void
 }
-export const PagerWithHeader = React.forwardRef<PagerRef, PagerWithHeaderProps>(
+export const PagerWithHeader = forwardRef<PagerRef, PagerWithHeaderProps>(
   function PageWithHeaderImpl(
     {
       children,
@@ -49,9 +56,9 @@ export const PagerWithHeader = React.forwardRef<PagerRef, PagerWithHeaderProps>(
     }: PagerWithHeaderProps,
     ref,
   ) {
-    const [currentPage, setCurrentPage] = React.useState(0)
+    const [currentPage, setCurrentPage] = useState(0)
 
-    const renderTabBar = React.useCallback(
+    const renderTabBar = useCallback(
       (props: RenderTabBarFnProps) => {
         return (
           <PagerTabBar
@@ -76,7 +83,7 @@ export const PagerWithHeader = React.forwardRef<PagerRef, PagerWithHeaderProps>(
       ],
     )
 
-    const onPageSelectedInner = React.useCallback(
+    const onPageSelectedInner = useCallback(
       (index: number) => {
         setCurrentPage(index)
         onPageSelected?.(index)
@@ -133,7 +140,7 @@ let PagerTabBar = ({
   onCurrentPageSelected?: (index: number) => void
   onSelect?: (index: number) => void
   tabBarAnchor?: JSX.Element | null | undefined
-}): React.ReactNode => {
+}): ReactNode => {
   return (
     <>
       <Layout.Center>{renderHeader?.({setMinimumHeight: noop})}</Layout.Center>
@@ -162,7 +169,7 @@ let PagerTabBar = ({
     </>
   )
 }
-PagerTabBar = React.memo(PagerTabBar)
+PagerTabBar = memo(PagerTabBar)
 
 function PagerItem({
   isFocused,
@@ -178,7 +185,7 @@ function PagerItem({
   return renderTab({
     headerHeight: 0,
     isFocused,
-    scrollElRef: scrollElRef as React.MutableRefObject<
+    scrollElRef: scrollElRef as MutableRefObject<
       ListMethods | ScrollView | null
     >,
   })

@@ -7,10 +7,11 @@ import { isValidDid, validateNamespace } from './util'
 
 export default (ctx: AppContext): Partial<ServiceImpl<typeof Service>> => ({
   /**
-   * Deletes operation log rows for a specific actor and namespace.
-   *
-   * This is used as the final cleanup step after downstream deletion work has
-   * already been carried out elsewhere.
+   * This method is responsible for deleting log rows from the bsync db, it has
+   * no other downstream effects. This method is called from the dataplane in
+   * response to a data deletion request initiated by a moderator in Ozone.
+   * It's the final step of the deletion process, basically cleaning up the
+   * breadcrumbs that resulted in the state we store in the dataplane.
    */
   async deleteOperationsByActorAndNamespace(req, handlerCtx) {
     authWithApiKey(ctx, handlerCtx)
@@ -18,7 +19,7 @@ export default (ctx: AppContext): Partial<ServiceImpl<typeof Service>> => ({
 
     try {
       validateNamespace(req.namespace)
-    } catch {
+    } catch (error) {
       throw new ConnectError(
         'requested namespace for deletion is invalid NSID',
         Code.InvalidArgument,
@@ -37,7 +38,6 @@ export default (ctx: AppContext): Partial<ServiceImpl<typeof Service>> => ({
       .where('namespace', '=', req.namespace)
       .returning('id')
       .execute()
-
     return new DeleteOperationsByActorAndNamespaceResponse({
       deletedCount: deletedRows.length,
     })

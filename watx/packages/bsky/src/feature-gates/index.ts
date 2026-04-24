@@ -23,12 +23,12 @@ import {
 const FETCH_TIMEOUT = 3e3 // 3 seconds
 
 /**
- * StatSig used to default to every 10s, but I think 1m is fine.
+ * StatSig used to default to every 10s, but I think 1m is fine
  */
 const REFETCH_INTERVAL = 60e3 // 1 minute
 
 /**
- * These need to match what the client sends.
+ * These need to match what the client sends
  */
 const ANALYTICS_HEADER_DEVICE_ID = 'X-Bsky-Device-Id'
 const ANALYTICS_HEADER_SESSION_ID = 'X-Bsky-Session-Id'
@@ -90,16 +90,16 @@ export class FeatureGatesClient {
         },
         trackingCallback: (experiment, result, userContext) => {
           /**
-           * Experiments are only fired if a feature gate has an experiment
-           * attached in GrowthBook. Still, protect against noisy misconfigured
-           * experiments here.
+           * Experiments are only fired in a feature gate has an Experiment
+           * attached in Growthbook. Howerver, we want to be extra sure that a
+           * misconfigured experiment doesn't result in a huge increase in events, so we
+           * protect this here.
            */
           if (
             result.featureId &&
             IGNORE_METRICS_FOR_GATES.has(result.featureId as Gate)
-          ) {
+          )
             return
-          }
 
           this.metrics.track(
             'experiment:viewed',
@@ -133,7 +133,7 @@ export class FeatureGatesClient {
       }
 
       /**
-       * Set up periodic refresh of feature definitions.
+       * Set up periodic refresh of feature definitions
        *
        * @see https://docs.growthbook.io/lib/node#refreshing-features
        */
@@ -147,7 +147,7 @@ export class FeatureGatesClient {
         }
       }, REFETCH_INTERVAL)
 
-      /* Ready or not, here we come. */
+      /* Ready or not, here we come */
       this.ready = true
     } catch (err) {
       featureGatesLogger.error({ err }, 'Client initialization failed')
@@ -168,7 +168,7 @@ export class FeatureGatesClient {
    * Evaluate multiple feature gates for a given user, returning a map of gate
    * ID to boolean result.
    */
-  checkGates(
+  private checkGates(
     gates: Gate[],
     userContext: UserContext,
   ): CheckedFeatureGatesMap {
@@ -202,20 +202,20 @@ export class FeatureGatesClient {
 
   /**
    * Parse properties available in XRPC handlers to `UserContext`. The returned
-   * properties are used as GrowthBook attributes as well as the metadata
-   * payload for analytics events.
+   * proeprties are used as GrowthBook `attributes` as well as the metadata
+   * payload for our analytics events. This ensures that the same user properties
+   * are used for both feature gate targeting and analytics.
    */
   parseUserContextFromHandler({
     viewer,
     req,
   }: {
     /**
-     * The user's DID.
+     * The user's DID
      */
     viewer: string | null
     /**
-     * The express request object, used to extract analytics headers for the
-     * user context.
+     * The express request object, used to extract analytics headers for the user context
      */
     req: express.Request
   }): UserContext {

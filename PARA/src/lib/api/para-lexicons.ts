@@ -291,9 +291,13 @@ export interface CabildeoPositionRecord {
 }
 
 export interface CabildeoVoteRecord {
+  subject?: string // at-uri for the voted record; defaults to cabildeo for cabildeo option votes
+  subjectType?: 'cabildeo' | 'policy' | 'matter' | 'governance'
   cabildeo: string // at-uri
   createdAt: string
-  selectedOption: number
+  selectedOption?: number
+  signal?: -3 | -2 | -1 | 0 | 1 | 2 | 3
+  reason?: string
   isDirect: boolean
   delegatedFrom: string[] // DIDs of delegators
   effectivePower: number // √N for delegated, 1.0 for direct

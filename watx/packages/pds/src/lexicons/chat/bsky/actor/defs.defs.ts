@@ -41,6 +41,7 @@ type ProfileViewBasic = {
   kind?:
     | l.$Typed<DirectConvoMember>
     | l.$Typed<GroupConvoMember>
+    | l.$Typed<PastGroupConvoMember>
     | l.Unknown$TypedObject
 }
 
@@ -77,6 +78,7 @@ const profileViewBasic = l.typedObject<ProfileViewBasic>(
         [
           l.typedRef<DirectConvoMember>((() => directConvoMember) as any),
           l.typedRef<GroupConvoMember>((() => groupConvoMember) as any),
+          l.typedRef<PastGroupConvoMember>((() => pastGroupConvoMember) as any),
         ],
         false,
       ),
@@ -100,7 +102,7 @@ const directConvoMember = l.typedObject<DirectConvoMember>(
 
 export { directConvoMember }
 
-/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. A current group convo member. */
 type GroupConvoMember = {
   $type?: 'chat.bsky.actor.defs#groupConvoMember'
 
@@ -117,7 +119,7 @@ type GroupConvoMember = {
 
 export type { GroupConvoMember }
 
-/** [NOTE: This is under active development and should be considered unstable while this note is here]. */
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. A current group convo member. */
 const groupConvoMember = l.typedObject<GroupConvoMember>(
   $nsid,
   'groupConvoMember',
@@ -130,3 +132,19 @@ const groupConvoMember = l.typedObject<GroupConvoMember>(
 )
 
 export { groupConvoMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. A past group convo member. */
+type PastGroupConvoMember = {
+  $type?: 'chat.bsky.actor.defs#pastGroupConvoMember'
+}
+
+export type { PastGroupConvoMember }
+
+/** [NOTE: This is under active development and should be considered unstable while this note is here]. A past group convo member. */
+const pastGroupConvoMember = l.typedObject<PastGroupConvoMember>(
+  $nsid,
+  'pastGroupConvoMember',
+  l.object({}),
+)
+
+export { pastGroupConvoMember }

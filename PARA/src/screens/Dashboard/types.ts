@@ -12,4 +12,10 @@ export interface PolicyItem {
   state?: string
   color?: string
   verified?: boolean
+  cabildeoUri?: string
+  source?: 'cabildeo' | 'mock'
+  phase?: string
+  participantCount?: number
+  voteCount?: number
+  positionCount?: number
 }

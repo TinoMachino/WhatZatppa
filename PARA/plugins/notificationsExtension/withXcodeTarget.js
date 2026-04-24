@@ -1,4 +1,6 @@
-const {withXcodeProject} = require('@expo/config-plugins')
+const {withXcodeProject} = require('expo/config-plugins')
+
+const getBuildNumber = config => config.ios?.buildNumber ?? process.env.BSKY_IOS_BUILD_NUMBER ?? '1'
 
 const withXcodeTarget = (
   config,
@@ -6,6 +8,10 @@ const withXcodeTarget = (
 ) => {
   return withXcodeProject(config, config => {
     let pbxProject = config.modResults
+
+    if (pbxProject.pbxTargetByName(extensionName)) {
+      return config
+    }
 
     const target = pbxProject.addTarget(
       extensionName,
@@ -47,7 +53,7 @@ const withXcodeTarget = (
           buildSettingsObj.INFOPLIST_FILE = `"${extensionName}/Info.plist"`
           buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `"${extensionName}/${extensionName}.entitlements"`
           buildSettingsObj.CODE_SIGN_STYLE = 'Automatic'
-          buildSettingsObj.CURRENT_PROJECT_VERSION = `"${config.ios?.buildNumber}"`
+          buildSettingsObj.CURRENT_PROJECT_VERSION = `"${getBuildNumber(config)}"`
           buildSettingsObj.GENERATE_INFOPLIST_FILE = 'YES'
           buildSettingsObj.MARKETING_VERSION = `"${config.version}"`
           buildSettingsObj.PRODUCT_BUNDLE_IDENTIFIER = `"${config.ios?.bundleIdentifier}.${extensionName}"`
@@ -62,9 +68,8 @@ const withXcodeTarget = (
     pbxProject.addTargetAttribute(
       'DevelopmentTeam',
       'B3LX46C5HS',
-      extensionName,
+      target,
     )
-    pbxProject.addTargetAttribute('DevelopmentTeam', 'B3LX46C5HS')
 
     return config
   })

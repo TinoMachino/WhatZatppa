@@ -64,6 +64,8 @@ export async function castCabildeoVote(
   // are calculated network-side. The client just submits their intent.
   const fullRecord: CabildeoVoteRecord = {
     ...record,
+    subject: record.subject ?? record.cabildeo,
+    subjectType: record.subjectType ?? 'cabildeo',
     createdAt: new Date().toISOString(),
     delegatedFrom: [], // Set by AppView context later
     effectivePower: 1.0, // Base power, AppView calculates √N

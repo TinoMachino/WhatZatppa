@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {StyleSheet} from 'react-native'
+import {withSpring} from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import {
   type AppBskyActorDefs,
@@ -32,7 +33,7 @@ import {resetProfilePostsQueries} from '#/state/queries/post-feed'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useResolveDidQuery} from '#/state/queries/resolve-uri'
 import {useAgent, useSession} from '#/state/session'
-import {useSetMinimalShellMode} from '#/state/shell'
+import {useMinimalShellMode} from '#/state/shell'
 import {ProfileFeedgens} from '#/view/com/feeds/ProfileFeedgens'
 import {ProfileLists} from '#/view/com/lists/ProfileLists'
 import {PagerWithHeader} from '#/view/com/pager/PagerWithHeader'
@@ -175,7 +176,11 @@ function ProfileScreenLoaded({
 }) {
   const profile = useProfileShadow(profileUnshadowed)
   const {hasSession, currentAccount} = useSession()
-  const setMinimalShellMode = useSetMinimalShellMode()
+  const {headerMode} = useMinimalShellMode()
+  const showHeader = useCallback(() => {
+    'worklet'
+    headerMode.set(() => withSpring(0, {overshootClamping: true}))
+  }, [headerMode])
   const {openComposer} = useOpenComposer()
   const {
     data: labelerInfo,
@@ -366,11 +371,11 @@ function ProfileScreenLoaded({
 
   useFocusEffect(
     useCallback(() => {
-      setMinimalShellMode(false)
+      showHeader()
       return listenSoftReset(() => {
         scrollSectionToTop(currentPage)
       })
-    }, [setMinimalShellMode, currentPage, scrollSectionToTop]),
+    }, [showHeader, currentPage, scrollSectionToTop]),
   )
 
   const onPressCompose = () => {

@@ -16,8 +16,12 @@ const id = 'com.para.civic.vote'
 
 export interface Main {
   $type: 'com.para.civic.vote'
-  cabildeo: string
-  selectedOption: number
+  subject?: string
+  subjectType?: 'cabildeo' | 'policy' | 'matter' | 'governance' | (string & {})
+  cabildeo?: string
+  selectedOption?: number
+  signal?: number
+  reason?: string
   isDirect: boolean
   delegatedFrom?: string[]
   createdAt: string

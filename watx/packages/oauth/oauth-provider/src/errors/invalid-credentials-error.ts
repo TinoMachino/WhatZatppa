@@ -12,9 +12,11 @@ import { InvalidRequestError } from './invalid-request-error.js'
  * information is surfaced to the `onSignInFailed` hook and never sent back to
  * the client, so populating it does not affect the client-visible response.
  *
- * Only the subject identifier (DID) is carried, not a full `Account`, to
- * avoid embedding PII in an error that may be serialized by loggers or tools
- * walking the `.cause` chain.
+ * Only the subject identifier (DID) is carried — not a full `Account` — to
+ * avoid embedding PII (email, name, etc.) in an error that may be serialized
+ * by loggers or monitoring tools walking the `.cause` chain. Hook consumers
+ * that need richer profile info can resolve it from their own account store
+ * using `sub`.
  */
 export class InvalidCredentialsError extends InvalidRequestError {
   constructor(

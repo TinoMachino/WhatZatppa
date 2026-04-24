@@ -12,7 +12,7 @@ describe('auth', () => {
     network = await TestNetworkNoAppView.create({
       dbPostgresSchema: 'auth',
     })
-    agent = network.pds.getClient()
+    agent = network.pds.getAgent()
   })
 
   afterAll(async () => {
@@ -135,6 +135,7 @@ describe('auth', () => {
       return { status: res.status, body: await res.json() }
     }
 
+    // bob.test was created above with password 'password'.
     const unknownIdentifier = await probe({
       identifier: 'no-such-user.test',
       password: 'any-password',
@@ -161,12 +162,21 @@ describe('auth', () => {
       username: string
       password: string
     }) => {
+      // @NOTE We use undici's low-level `request` rather than fetch(),
+      // because the WHATWG fetch API treats `sec-fetch-*` as forbidden
+      // request headers and silently overwrites them with its own values
+      // (notably `sec-fetch-mode: cors` in Node). The endpoint requires
+      // `same-origin` here, so we need raw header control.
       const res = await undiciRequest(
         `${issuer.origin}/@atproto/oauth-provider/~api/sign-in`,
         {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
+            // The endpoint restricts fetches to same-origin navigations
+            // from either `/oauth/authorize` or `/account[/*]`. Use the
+            // first-party `/account` path so we don't need a live OAuth
+            // authorization request to exist in the request store.
             'sec-fetch-mode': 'same-origin',
             'sec-fetch-site': 'same-origin',
             origin: issuer.origin,
@@ -180,6 +190,7 @@ describe('auth', () => {
       return { status: res.statusCode, body: await res.body.json() }
     }
 
+    // bob.test was created above with password 'password'.
     const unknownIdentifier = await probe({
       username: 'no-such-user.test',
       password: 'any-password',

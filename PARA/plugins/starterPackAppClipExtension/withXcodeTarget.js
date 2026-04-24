@@ -1,4 +1,4 @@
-const {withXcodeProject} = require('@expo/config-plugins')
+const {withXcodeProject} = require('expo/config-plugins')
 
 const BUILD_PHASE_FILES = ['AppDelegate.swift', 'ViewController.swift']
 

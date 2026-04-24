@@ -5,7 +5,6 @@ import { Redis } from 'ioredis'
 import * as nodemailer from 'nodemailer'
 import * as ui8 from 'uint8arrays'
 import * as undici from 'undici'
-import { AtpAgent } from '@atproto/api'
 import { KmsKeypair, S3BlobStore } from '@atproto/aws'
 import * as crypto from '@atproto/crypto'
 import { IdResolver } from '@atproto/identity'
@@ -71,8 +70,6 @@ export type AppContextOptions = {
   reportingClient?: Client
   entrywayClient?: Client
   entrywayAdminClient?: Client
-  entrywayAgent?: AtpAgent
-  entrywayAdminAgent?: AtpAgent
   proxyAgent: undici.Dispatcher
   safeFetch: Fetch
   oauthProvider?: OAuthProvider
@@ -100,8 +97,6 @@ export class AppContext {
   public reportingClient: Client | undefined
   public entrywayClient: Client | undefined
   public entrywayAdminClient: Client | undefined
-  public entrywayAgent: AtpAgent | undefined
-  public entrywayAdminAgent: AtpAgent | undefined
   public proxyAgent: undici.Dispatcher
   public safeFetch: Fetch
   public authVerifier: AuthVerifier
@@ -128,8 +123,6 @@ export class AppContext {
     this.reportingClient = opts.reportingClient
     this.entrywayClient = opts.entrywayClient
     this.entrywayAdminClient = opts.entrywayAdminClient
-    this.entrywayAgent = opts.entrywayAgent
-    this.entrywayAdminAgent = opts.entrywayAdminAgent
     this.proxyAgent = opts.proxyAgent
     this.safeFetch = opts.safeFetch
     this.authVerifier = opts.authVerifier
@@ -190,9 +183,9 @@ export class AppContext {
 
     const backgroundQueue = new BackgroundQueue()
     const crawlers = new Crawlers(
+      backgroundQueue,
       cfg.service.hostname,
       cfg.crawlers,
-      backgroundQueue,
     )
     const sequencer = new Sequencer(
       cfg.db.sequencerDbLoc,
@@ -215,8 +208,9 @@ export class AppContext {
       ? new Client(
           { service: cfg.modService.url },
           {
-            validateResponse: cfg.service.devMode,
+            // Trust internal services to send us well-formed responses
             strictResponseProcessing: false,
+            validateResponse: cfg.service.devMode,
           },
         )
       : undefined
@@ -224,8 +218,9 @@ export class AppContext {
       ? new Client(
           { service: cfg.reportService.url },
           {
-            validateResponse: cfg.service.devMode,
+            // Trust internal services to send us well-formed responses
             strictResponseProcessing: false,
+            validateResponse: cfg.service.devMode,
           },
         )
       : undefined
@@ -233,39 +228,29 @@ export class AppContext {
       ? new Client(
           { service: cfg.entryway.url },
           {
-            validateResponse: cfg.service.devMode,
+            // Trust internal services to send us well-formed responses
             strictResponseProcessing: false,
+            validateResponse: cfg.service.devMode,
           },
         )
       : undefined
     const entrywayAdminClient =
       cfg.entryway && secrets.entrywayAdminToken
-        ? new Client({
-            service: cfg.entryway.url,
-          },
-          {
-            headers: {
-              authorization: basicAuthHeader(
-                'admin',
-                secrets.entrywayAdminToken,
-              ),
+        ? new Client(
+            { service: cfg.entryway.url },
+            {
+              headers: {
+                authorization: basicAuthHeader(
+                  'admin',
+                  secrets.entrywayAdminToken,
+                ),
+              },
+              // Trust internal services to send us well-formed responses
+              strictResponseProcessing: false,
+              validateResponse: cfg.service.devMode,
             },
-            validateResponse: cfg.service.devMode,
-            strictResponseProcessing: false,
-          })
+          )
         : undefined
-
-    const entrywayAgent = cfg.entryway
-      ? new AtpAgent({ service: cfg.entryway.url })
-      : undefined
-    let entrywayAdminAgent: AtpAgent | undefined
-    if (cfg.entryway && secrets.entrywayAdminToken) {
-      entrywayAdminAgent = new AtpAgent({ service: cfg.entryway.url })
-      entrywayAdminAgent.api.setHeader(
-        'authorization',
-        basicAuthHeader('admin', secrets.entrywayAdminToken),
-      )
-    }
 
     const jwtSecretKey = createSecretKeyObject(secrets.jwtSecret)
     const jwtPublicKey = cfg.entryway
@@ -516,8 +501,6 @@ export class AppContext {
       reportingClient,
       entrywayClient,
       entrywayAdminClient,
-      entrywayAgent,
-      entrywayAdminAgent,
       proxyAgent,
       safeFetch,
       authVerifier,

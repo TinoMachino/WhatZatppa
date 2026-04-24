@@ -2,24 +2,40 @@ import {MMKV} from '@bsky.app/react-native-mmkv'
 import {setPolyfills} from '@growthbook/growthbook'
 import {GrowthBook} from '@growthbook/growthbook-react'
 
+import {Logger} from '#/logger'
 import {getNavigationMetadata, type Metadata} from '#/analytics/metadata'
 import * as env from '#/env'
 
 export {Features} from '#/analytics/features/types'
 
+const logger = Logger.create(Logger.Context.GrowthBook)
 const CACHE = new MMKV({id: 'bsky_features_cache'})
 
 setPolyfills({
   localStorage: {
     getItem: key => {
-      const value = CACHE.getString(key)
-      return value != null ? JSON.parse(value) : null
+      return CACHE.getString(key) ?? null
     },
-    setItem: async (key, value) => {
-      CACHE.set(key, JSON.stringify(value))
+    setItem: (key, value) => {
+      CACHE.set(key, value)
     },
   },
 })
+
+function isGrowthBookLoggingEnabled() {
+  if (env.LOG_LEVEL === 'debug') {
+    return true
+  }
+
+  return env.LOG_DEBUG.split(',').some(filter => {
+    const normalized = filter.trim()
+    if (!normalized) return false
+
+    return new RegExp(
+      normalized.replace(/[^\w:*-]/g, '').replace(/\*/g, '.*'),
+    ).test(Logger.Context.GrowthBook)
+  })
+}
 
 /**
  * We vary the amount of time we wait for GrowthBook to fetch feature
@@ -27,7 +43,7 @@ setPolyfills({
  */
 export type FeatureFetchStrategy = 'prefer-low-latency' | 'prefer-fresh-gates'
 
-const TIMEOUT_INIT = 500 // TODO should base on p99 or something
+const TIMEOUT_INIT = 2000 // TODO should base on p99 or something
 const TIMEOUT_PREFER_LOW_LATENCY = 250
 const TIMEOUT_PREFER_FRESH_GATES = 1500
 
@@ -43,10 +59,15 @@ export const features = new GrowthBook({
  * that case, we may see a flash of uncustomized content until the
  * initialization completes.
  */
-export const init = new Promise<void>(async y => {
-  await features.init({timeout: TIMEOUT_INIT})
-  y()
-})
+export const init = (async () => {
+  const res = await features.init({timeout: TIMEOUT_INIT})
+  if (!res.success && isGrowthBookLoggingEnabled()) {
+    logger.warn('GrowthBook initialization failed or timed out', {
+      source: res.source,
+      safeMessage: res.error?.toString(),
+    })
+  }
+})()
 
 /**
  * Refresh feature gates from GrowthBook. Updates attributes based on the
@@ -73,7 +94,7 @@ export function setAttributes({
   session,
   preferences,
 }: Metadata) {
-  features.setAttributes({
+  void features.setAttributes({
     deviceId: base.deviceId,
     sessionId: base.sessionId,
     platform: base.platform,

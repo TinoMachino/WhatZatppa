@@ -10,6 +10,7 @@ import {Provider as HotkeysProvider} from '#/lib/hotkeys'
 import {type NavigationProp} from '#/lib/routes/types'
 import {useSession} from '#/state/session'
 import {useIsDrawerOpen, useSetDrawerOpen} from '#/state/shell'
+import {useLoggedOutView} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
 import {Lightbox} from '#/view/com/lightbox/Lightbox'
 import {ModalsContainer} from '#/view/com/modals/Modal'
@@ -44,6 +45,7 @@ function ShellInner() {
   const closeAllActiveElements = useCloseAllActiveElements()
 
   const {state: policyUpdateState} = usePolicyUpdateContext()
+  const {showLoggedOut} = useLoggedOutView()
   const welcomeModalControl = useWelcomeModal()
 
   useEffect(() => {
@@ -76,7 +78,7 @@ function ShellInner() {
         <NuxDialogs />
         <GlobalReportDialog />
 
-        {welcomeModalControl.isOpen && (
+        {welcomeModalControl.isOpen && !showLoggedOut && (
           <WelcomeModal control={welcomeModalControl} />
         )}
 

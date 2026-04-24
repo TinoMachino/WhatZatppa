@@ -223,11 +223,12 @@ function InnerApp() {
 }
 
 function App() {
-  const [isReady, setReady] = useState(false)
+  const [isReady, setIsReady] = useState(false)
+  const keyboardControllerProps = IS_IOS ? {preload: false} : undefined
 
   useEffect(() => {
     void Promise.all([initPersistedState(), setupDeviceId]).then(() =>
-      setReady(true),
+      setIsReady(true),
     )
   }, [])
 
@@ -242,7 +243,7 @@ function App() {
   return (
     <Geo.Provider>
       <A11yProvider>
-        <KeyboardControllerProvider>
+        <KeyboardControllerProvider {...keyboardControllerProps}>
           <OnboardingProvider>
             <AnalyticsContext>
               <SessionProvider>

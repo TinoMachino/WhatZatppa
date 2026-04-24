@@ -29,6 +29,7 @@ export type NotificationReason =
   | 'reply'
   | 'quote'
   | 'chat-message'
+  | 'chat-reaction'
   | 'starterpack-joined'
   | 'like-via-repost'
   | 'repost-via-repost'
@@ -50,7 +51,7 @@ export type NotificationPayload =
       recipientDid: string
     }
   | {
-      reason: 'chat-message'
+      reason: 'chat-message' | 'chat-reaction'
       convoId: string
       messageId: string
       recipientDid: string
@@ -192,7 +193,7 @@ export function useNotificationsHandler() {
     const handleNotification = (payload?: NotificationPayload) => {
       if (!payload) return
 
-      if (payload.reason === 'chat-message') {
+      if (payload.reason === 'chat-message' || payload.reason === 'chat-reaction') {
         logger.debug(`useNotificationsHandler: handling chat message`, {
           payload,
         })
@@ -270,7 +271,8 @@ export function useNotificationsHandler() {
         logger.debug('useNotificationsHandler: incoming', {e, payload})
 
         if (
-          payload.reason === 'chat-message' &&
+          (payload.reason === 'chat-message' ||
+            payload.reason === 'chat-reaction') &&
           payload.recipientDid === currentAccount?.did
         ) {
           const shouldAlert = payload.convoId !== currentConvoId
@@ -341,7 +343,8 @@ export function useNotificationsHandler() {
     // Whenever there's a stored payload, that means we had to switch accounts before handling the notification.
     // Whenever currentAccount changes, we should try to handle it again.
     if (
-      storedAccountSwitchPayload?.reason === 'chat-message' &&
+      (storedAccountSwitchPayload?.reason === 'chat-message' ||
+        storedAccountSwitchPayload?.reason === 'chat-reaction') &&
       currentAccount?.did === storedAccountSwitchPayload.recipientDid
     ) {
       handleNotification(storedAccountSwitchPayload)
@@ -429,6 +432,7 @@ export function notificationToURL(payload: NotificationPayload): string | null {
       return `/profile/${urip.host}`
     }
     case 'chat-message':
+    case 'chat-reaction':
       // should be handled separately
       return null
     case 'verified':

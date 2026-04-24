@@ -1,4 +1,4 @@
-const {withAndroidManifest} = require('@expo/config-plugins')
+const {withAndroidManifest} = require('expo/config-plugins')
 
 const withProcessTextQuery = config =>
   // eslint-disable-next-line no-shadow

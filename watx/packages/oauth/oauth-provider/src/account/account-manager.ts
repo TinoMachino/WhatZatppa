@@ -180,10 +180,21 @@ export class AccountManager {
           },
         )
       } catch (err) {
+        // Only notify for credential failures (e.g. unknown identifier, wrong
+        // password). Server errors and flows that require an additional factor
+        // (e.g. SecondAuthenticationFactorRequiredError) are not "failed
+        // sign-ins" and do not trigger the hook.
         if (err instanceof InvalidRequestError) {
+          // Stores that throw the more specific `InvalidCredentialsError`
+          // can attach the matched subject identifier to distinguish
+          // "identifier known, password wrong" from "identifier unknown".
+          // This information is only exposed to the hook and is never
+          // surfaced to the client.
           const isCredentialsError = err instanceof InvalidCredentialsError
           const sub = isCredentialsError ? err.sub ?? null : null
 
+          // Swallow any error from the hook itself so that it does not mask
+          // the underlying authentication failure being reported.
           try {
             await this.hooks.onSignInFailed?.call(null, {
               data,
@@ -198,6 +209,7 @@ export class AccountManager {
           }
 
           if (isCredentialsError) {
+            // Defensively downgrade to a plain InvalidRequestError
             throw new InvalidRequestError(err.error_description)
           }
         }

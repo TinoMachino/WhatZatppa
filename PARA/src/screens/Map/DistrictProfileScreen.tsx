@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react'
+import {type ReactNode, useMemo, useState} from 'react'
 import {ScrollView, TouchableOpacity, View} from 'react-native'
 import {Trans} from '@lingui/react/macro'
 
@@ -614,7 +614,7 @@ function ActivitySection<T>({
   fallbackLabel: string
   actionLabel: string
   onAction: () => void
-  renderItem: (item: T) => React.ReactNode
+  renderItem: (item: T) => ReactNode
 }) {
   const t = useTheme()
   const items = primaryItems.length > 0 ? primaryItems : fallbackItems

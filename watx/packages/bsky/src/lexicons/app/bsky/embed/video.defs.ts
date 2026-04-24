@@ -36,11 +36,7 @@ const main = l.typedObject<Main>(
   $nsid,
   'main',
   l.object({
-    video: l.blob({
-      accept: ['video/mp4'],
-      maxSize: 100000000,
-      allowLegacy: false,
-    }),
+    video: l.blob({ accept: ['video/mp4'], maxSize: 100000000 }),
     captions: l.optional(
       l.array(l.ref<Caption>((() => caption) as any), { maxLength: 20 }),
     ),
@@ -80,7 +76,7 @@ const caption = l.typedObject<Caption>(
   'caption',
   l.object({
     lang: l.string({ format: 'language' }),
-    file: l.blob({ accept: ['text/vtt'], maxSize: 20000, allowLegacy: false }),
+    file: l.blob({ accept: ['text/vtt'], maxSize: 20000 }),
   }),
 )
 

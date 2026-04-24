@@ -1,4 +1,5 @@
 import { AtpAgent } from '@atproto/api'
+import { DidString } from '@atproto/lex'
 import { TestPds } from './pds'
 
 export type ServiceUserDetails = {
@@ -16,58 +17,25 @@ export class ServiceProfile {
   protected constructor(
     protected pds: TestPds,
     /** @note assumes the session is already authenticated */
-    protected client: AtpAgent,
+    protected agent: AtpAgent,
     protected userDetails: ServiceUserDetails,
-  ) {
-    // Keep local dev-env requests pinned to the explicit service URL.
-    // The agent may switch to DID-doc advertised URLs (public/tunneled hostnames),
-    // which can point to the wrong local instance during migration bootstrap.
-    this.client.sessionManager.pdsUrl = undefined
-  }
+  ) {}
 
-  get did() {
-    return this.client.assertDid
-  }
-
-  static async getOrCreate(pds: TestPds, userDetails: ServiceUserDetails) {
-    const client = pds.getClient()
-    try {
-      await client.login({
-        identifier: userDetails.handle,
-        password: userDetails.password,
-      })
-    } catch (err) {
-      await client.createAccount(userDetails)
-    }
-    return client
+  get did(): DidString {
+    return this.agent.assertDid
   }
 
   async migrateTo(newPds: TestPds, options: ServiceMigrationOptions = {}) {
-    // Ensure serviceAuth is requested from the originating local PDS instance.
-    this.client.sessionManager.pdsUrl = undefined
+    const newAgent = newPds.getAgent()
 
-    const newClient = newPds.getClient()
-
-    try {
-      await newClient.login({
-        identifier: this.userDetails.handle,
-        password: this.userDetails.password,
-      })
-      this.pds = newPds
-      this.client = newClient
-      return
-    } catch (err) {
-      // continue with migration
-    }
-
-    const newPdsDesc = await newClient.com.atproto.server.describeServer()
-    const serviceAuth = await this.client.com.atproto.server.getServiceAuth({
+    const newPdsDesc = await newAgent.com.atproto.server.describeServer()
+    const serviceAuth = await this.agent.com.atproto.server.getServiceAuth({
       aud: newPdsDesc.data.did,
       lxm: 'com.atproto.server.createAccount',
     })
 
     const inviteCode = newPds.ctx.cfg.invites.required
-      ? await newClient.com.atproto.server
+      ? await newAgent.com.atproto.server
           .createInviteCode(
             { useCount: 1 },
             {
@@ -78,7 +46,7 @@ export class ServiceProfile {
           .then((res) => res.data.code)
       : undefined
 
-    await newClient.createAccount(
+    await newAgent.createAccount(
       {
         ...this.userDetails,
         inviteCode,
@@ -95,12 +63,12 @@ export class ServiceProfile {
     // process of migrating, that didDoc references the old PDS. In order to
     // avoid calling the old PDS, let's clear the pdsUrl, which will result in
     // the (new) serviceUrl being used.
-    newClient.sessionManager.pdsUrl = undefined
+    newAgent.sessionManager.pdsUrl = undefined
 
     const newDidCredentialsRes =
-      await newClient.com.atproto.identity.getRecommendedDidCredentials()
+      await newAgent.com.atproto.identity.getRecommendedDidCredentials()
 
-    await this.client.com.atproto.identity.requestPlcOperationSignature()
+    await this.agent.com.atproto.identity.requestPlcOperationSignature()
     const { token } = await this.pds.ctx.accountManager.db.db
       .selectFrom('email_token')
       .select('token')
@@ -113,15 +81,15 @@ export class ServiceProfile {
     Object.assign((op.verificationMethods ??= {}), options.verificationMethods)
 
     const signedPlcOperation =
-      await this.client.com.atproto.identity.signPlcOperation(op)
+      await this.agent.com.atproto.identity.signPlcOperation(op)
 
-    await newClient.com.atproto.identity.submitPlcOperation({
+    await newAgent.com.atproto.identity.submitPlcOperation({
       operation: signedPlcOperation.data.operation,
     })
 
-    await newClient.com.atproto.server.activateAccount()
+    await newAgent.com.atproto.server.activateAccount()
 
     this.pds = newPds
-    this.client = newClient
+    this.agent = newAgent
   }
 }

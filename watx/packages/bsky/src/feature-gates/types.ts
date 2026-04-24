@@ -39,14 +39,18 @@ export type TrackingMetadata = {
 }
 
 /**
- * Pre-evaluated feature gates map, returned by
- * `ScopedFeatureGatesClient.checkGates()`.
+ * Pre-evaluated feature gates map, the result of
+ * `ctx.FeatureGatesClient.checkGates()`
  */
 export type CheckedFeatureGatesMap = Map<Gate, boolean>
 
 /**
  * The primary interface for interacting with feature gates in the system. This
- * client is designed to be scoped to an XRPC handler lifecycle.
+ * client is designed to be used in the context of an XRPC handler, where we
+ * can parse the user context from the request and then create a scoped client
+ * for that request lifecycle. The client provides methods for checking multiple
+ * gates at once, as well as checking individual gates with optional user
+ * context overrides.
  */
 export type ScopedFeatureGatesClient = {
   Gate: typeof Gate

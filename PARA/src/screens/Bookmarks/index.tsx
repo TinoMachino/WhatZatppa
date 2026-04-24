@@ -145,7 +145,7 @@ function BookmarksInner() {
               key: bookmark.item.uri,
               bookmark: {
                 ...bookmark,
-                item: bookmark.item as $Typed<AppBskyFeedDefs.NotFoundPost>,
+                item: bookmark.item,
               },
             })
           }
@@ -155,7 +155,7 @@ function BookmarksInner() {
               key: bookmark.item.uri,
               bookmark: {
                 ...bookmark,
-                item: bookmark.item as $Typed<AppBskyFeedDefs.PostView>,
+                item: bookmark.item,
               },
             })
           }

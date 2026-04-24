@@ -31,18 +31,19 @@ export const SplashScreen = ({
   const {_} = useLingui()
   const t = useTheme()
   const {isTabletOrMobile: isMobileWeb} = useWebMediaQueries()
-  const [showClipOverlay, setShowClipOverlay] = useState(false)
+  const [showClipOverlay, setShowClipOverlay] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const getParams = new URLSearchParams(window.location.search)
+    return getParams.get('clip') === 'true'
+  })
 
   useEffect(() => {
-    const getParams = new URLSearchParams(window.location.search)
-    const clip = getParams.get('clip')
-    if (clip === 'true') {
-      setShowClipOverlay(true)
+    if (showClipOverlay) {
       postAppClipMessage({
         action: 'present',
       })
     }
-  }, [])
+  }, [showClipOverlay])
 
   return (
     <>
@@ -84,7 +85,11 @@ export const SplashScreen = ({
           <ErrorBoundary>
             <View style={[a.justify_center, a.align_center]}>
               <View style={[a.pb_sm, a.pt_5xl]}>
-                <Logotype width={172} fill={t.atoms.text.color} />
+                <Logotype
+                  width={172}
+                  fill={t.atoms.text.color}
+                  variant="strong"
+                />
               </View>
 
               <Text

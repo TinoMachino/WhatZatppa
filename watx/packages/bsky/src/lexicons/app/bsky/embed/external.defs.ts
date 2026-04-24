@@ -52,9 +52,7 @@ const external = l.typedObject<External>(
     uri: l.string({ format: 'uri' }),
     title: l.string(),
     description: l.string(),
-    thumb: l.optional(
-      l.blob({ accept: ['image/*'], maxSize: 1000000, allowLegacy: false }),
-    ),
+    thumb: l.optional(l.blob({ accept: ['image/*'], maxSize: 1000000 })),
   }),
 )
 

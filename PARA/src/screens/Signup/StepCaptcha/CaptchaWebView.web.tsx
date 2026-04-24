@@ -1,6 +1,6 @@
+/* eslint-disable react-native-a11y/has-valid-accessibility-descriptors */
 import {useCallback, useEffect, useState} from 'react'
-import {StyleSheet, View, TextInput, Button, Text, Linking} from 'react-native'
-import {atoms as a} from '#/alf'
+import {Button, StyleSheet, Text, TextInput, View} from 'react-native'
 
 // @ts-ignore web only, we will always redirect to the app on web (CORS)
 const REDIRECT_HOST = new URL(window.location.href).host
@@ -80,6 +80,8 @@ export function CaptchaWebView({
         style={styles.iframe}
         id="captcha-iframe"
         onLoad={onLoad}
+        title="Captcha challenge"
+        role="group"
       />
     </View>
   )

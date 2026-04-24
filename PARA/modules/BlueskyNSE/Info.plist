@@ -9,12 +9,16 @@
       <key>NSExtensionPrincipalClass</key>
       <string>$(PRODUCT_MODULE_NAME).NotificationService</string>
     </dict>
+    <key>NSUserActivityTypes</key>
+    <array>
+      <string>INSendMessageIntent</string>
+    </array>
     <key>MainAppScheme</key>
-    <string>bluesky</string>
+    <string>para</string>
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
     <key>CFBundleDisplayName</key>
-    <string>Bluesky Notifications</string>
+    <string>PARA Notifications</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>

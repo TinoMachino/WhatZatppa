@@ -498,8 +498,8 @@ message ActorInfo {
   optional AgeAssuranceStatus age_assurance_status = 19;
   reserved 20; // DO NOT REMOVE - see dataplane repo
   Record germ_record = 21;
-  optional ParaCabildeoLive cabildeo_live = 22;
-  string allow_group_chat_invites_from = 23;
+  string allow_group_chat_invites_from = 22;
+  optional ParaCabildeoLive cabildeo_live = 23;
 }
 
 message AgeAssuranceStatus {
@@ -1028,6 +1028,361 @@ message GetAuthorFeedResponse {
   string cursor = 2;
 }
 
+// - Returns recent posts authored by users followed by a given DID, paginated
+//     - `getTimeline`
+message GetTimelineRequest {
+  string actor_did = 1;
+  int32 limit = 2;
+  string cursor = 3;
+  bool exclude_replies = 4;
+  bool exclude_reposts = 5;
+  bool exclude_quotes = 6;
+}
+
+message GetTimelineResponse {
+  repeated TimelineFeedItem items = 1;
+  string cursor = 2;
+}
+
+message TimelineFeedItem {
+  string uri = 1;
+  string cid = 2;
+  string repost = 3;
+  string repost_cid = 4;
+  bool is_reply = 5;
+  bool is_repost = 6;
+  bool is_quote_post = 7;
+}
+
+// - Return recent post uris from users in list A
+//     - `getListFeed`
+//     - (This is essentially the same as `getTimeline` but instead of follows of a did, it is list items of a list)
+message GetListFeedRequest {
+  string list_uri = 1;
+  int32 limit = 2;
+  string cursor = 3;
+  bool exclude_replies = 4;
+  bool exclude_reposts = 5;
+  bool exclude_quotes = 6;
+}
+
+message GetListFeedResponse {
+  repeated TimelineFeedItem items = 1;
+  string cursor = 2;
+}
+
+//
+// Threads
+//
+
+// Return posts uris of any replies N levels above or M levels below post A
+message GetThreadRequest {
+  string post_uri = 1;
+  int32 above = 2;
+  int32 below = 3;
+}
+
+message GetThreadResponse {
+  repeated string uris = 1;
+}
+
+//
+// Search
+//
+
+// - Return DIDs of actors matching term, paginated
+//     - `searchActors` skeleton
+message SearchActorsRequest {
+  string term = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message SearchActorsResponse {
+  repeated string dids = 1;
+  string cursor = 2;
+}
+
+// - Return uris of posts matching term, paginated
+//     - `searchPosts` skeleton
+message SearchPostsRequest {
+  string term = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message SearchPostsResponse {
+  repeated string uris = 1;
+  string cursor = 2;
+}
+
+// - Return uris of starter packs matching term, paginated
+//     - `searchStarterPacks` skeleton
+message SearchStarterPacksRequest {
+  string term = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message SearchStarterPacksResponse {
+  repeated string uris = 1;
+  string cursor = 2;
+}
+
+//
+// Suggestions
+//
+
+// - Return DIDs of suggested follows for a user, excluding anyone they already follow
+//     - `getSuggestions`, `getSuggestedFollowsByActor`
+message GetFollowSuggestionsRequest {
+  string actor_did = 1;
+  string relative_to_did = 2;
+  int32 limit = 3;
+  string cursor = 4;
+}
+
+message GetFollowSuggestionsResponse {
+  repeated string dids = 1;
+  string cursor = 2;
+}
+
+message SuggestedEntity {
+  string tag = 1;
+  string subject = 2;
+  string subject_type = 3;
+  int64 priority = 4;
+}
+
+message GetSuggestedEntitiesRequest {
+  int32 limit = 1;
+  string cursor = 2;
+}
+
+message GetSuggestedEntitiesResponse {
+  repeated SuggestedEntity entities = 1;
+  string cursor = 2;
+}
+
+//
+// Labels
+//
+
+// - Get all labels on a subjects A, B, C (uri or did) issued by dids D, E, F…
+//     - label hydration on nearly every view
+message GetLabelsRequest {
+  repeated string subjects = 1;
+  repeated string issuers = 2;
+}
+
+message GetLabelsResponse {
+  repeated bytes labels = 1;
+}
+
+//
+// Starter packs
+//
+
+message GetActorStarterPacksRequest {
+  string actor_did = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message GetActorStarterPacksResponse {
+  repeated string uris = 1;
+  string cursor = 2;
+}
+
+//
+// Sync
+//
+
+// - Latest repo rev of user w/ DID
+//     - Read-after-write header in`getProfile`, `getProfiles`, `getActorLikes`, `getAuthorFeed`, `getListFeed`, `getPostThread`, `getTimeline`.  Could it be view dependent?
+message GetLatestRevRequest {
+  string actor_did = 1;
+}
+
+message GetLatestRevResponse {
+  string rev = 1;
+}
+
+
+message GetIdentityByDidRequest {
+  string did = 1;
+}
+message GetIdentityByDidResponse {
+  string did = 1;
+  string handle = 2;
+  bytes keys = 3;
+  bytes services = 4;
+  google.protobuf.Timestamp updated = 5;
+}
+
+message GetIdentityByHandleRequest {
+  string handle = 1;
+}
+message GetIdentityByHandleResponse {
+  string handle = 1;
+  string did = 2;
+  bytes keys = 3;
+  bytes services = 4;
+  google.protobuf.Timestamp updated = 5;
+}
+
+
+
+//
+// Moderation
+//
+
+message GetBlobTakedownRequest {
+  string did = 1;
+  string cid = 2;
+}
+
+message GetBlobTakedownResponse {
+  bool taken_down = 1;
+  string takedown_ref = 2;
+}
+
+
+
+message GetActorTakedownRequest {
+  string did = 1;
+}
+
+message GetActorTakedownResponse {
+  bool taken_down = 1;
+  string takedown_ref = 2;
+}
+
+message GetRecordTakedownRequest {
+  string record_uri = 1;
+}
+
+message GetRecordTakedownResponse {
+  bool taken_down = 1;
+  string takedown_ref = 2;
+}
+
+
+//
+// Bookmarks
+//
+message Bookmark {
+  StashRef ref = 1;
+  string subject_uri = 2;
+  string subject_cid = 3;
+  google.protobuf.Timestamp indexed_at = 4;
+}
+
+message GetBookmarksByActorAndSubjectsRequest {
+  string actor_did = 1;
+  repeated string uris = 2;
+}
+
+message GetBookmarksByActorAndSubjectsResponse {
+  repeated Bookmark bookmarks = 1;
+}
+
+message GetActorBookmarksRequest {
+  string actor_did = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message BookmarkInfo {
+  string key = 1; // stash key
+  string subject = 2;
+}
+
+message GetActorBookmarksResponse {
+  repeated BookmarkInfo bookmarks = 1;
+  string cursor = 2;
+}
+
+//
+// Drafts
+//
+
+
+message GetActorDraftsRequest {
+  string actor_did = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message DraftInfo {
+  string key = 1; // stash key
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  bytes payload = 4;
+}
+
+message GetActorDraftsResponse {
+  repeated DraftInfo drafts = 1;
+  string cursor = 2;
+}
+
+
+// Polo-backed Graph Endpoints
+
+
+
+// GetFollowsFollowing gets the list of DIDs that the actor follows that also follow the targets
+message GetFollowsFollowingRequest {
+  string actor_did = 1;
+  repeated string target_dids = 2;
+}
+
+message FollowsFollowing {
+  string target_did = 1;
+  repeated string dids = 2;
+}
+
+message GetFollowsFollowingResponse {
+  repeated FollowsFollowing results = 1;
+}
+
+message GetSitemapIndexRequest {
+  SitemapPageType type = 1;
+}
+
+message GetSitemapIndexResponse {
+  // GZIP compressed XML sitemap
+  bytes sitemap = 1;
+}
+
+// Sitemap HTTP paths are typically of the form `/type/yyyy-mm-dd/N.xml.gz`, i.e. `/users/2025-01-01/1.xml.gz`
+message GetSitemapPageRequest {
+  SitemapPageType type = 1;
+  google.protobuf.Timestamp date = 2;
+  // One-indexed
+  int32 bucket = 3;
+}
+
+enum SitemapPageType {
+  SITEMAP_PAGE_TYPE_UNSPECIFIED = 0;
+  SITEMAP_PAGE_TYPE_USER = 1;
+}
+
+message GetSitemapPageResponse {
+  // GZIP compressed XML sitemap
+  bytes sitemap = 1;
+}
+
+// Ping
+message PingRequest {}
+message PingResponse {}
+
+message StashRef {
+  string actor_did = 1;
+  string namespace = 2;
+  string key = 3;
+}
+
 // - Returns recent para posts authored by a given DID, paginated
 //     - `com.para.feed.getAuthorFeed`
 message GetParaAuthorFeedRequest {
@@ -1475,22 +1830,6 @@ message GetParaHighlightResponse {
   optional ParaHighlightView highlight = 1;
 }
 
-// - Returns recent posts authored by users followed by a given DID, paginated
-//     - `getTimeline`
-message GetTimelineRequest {
-  string actor_did = 1;
-  int32 limit = 2;
-  string cursor = 3;
-  bool exclude_replies = 4;
-  bool exclude_reposts = 5;
-  bool exclude_quotes = 6;
-}
-
-message GetTimelineResponse {
-  repeated TimelineFeedItem items = 1;
-  string cursor = 2;
-}
-
 // - Returns aggregate discourse metrics for a community
 //     - `com.para.discourse.getSnapshot`
 message GetParaDiscourseSnapshotRequest {
@@ -1552,345 +1891,6 @@ message ParaSentimentDistribution {
 
 message GetParaDiscourseSentimentResponse {
   ParaSentimentDistribution sentiment = 1;
-}
-
-message TimelineFeedItem {
-  string uri = 1;
-  string cid = 2;
-  string repost = 3;
-  string repost_cid = 4;
-  bool is_reply = 5;
-  bool is_repost = 6;
-  bool is_quote_post = 7;
-}
-
-// - Return recent post uris from users in list A
-//     - `getListFeed`
-//     - (This is essentially the same as `getTimeline` but instead of follows of a did, it is list items of a list)
-message GetListFeedRequest {
-  string list_uri = 1;
-  int32 limit = 2;
-  string cursor = 3;
-  bool exclude_replies = 4;
-  bool exclude_reposts = 5;
-  bool exclude_quotes = 6;
-}
-
-message GetListFeedResponse {
-  repeated TimelineFeedItem items = 1;
-  string cursor = 2;
-}
-
-//
-// Threads
-//
-
-// Return posts uris of any replies N levels above or M levels below post A
-message GetThreadRequest {
-  string post_uri = 1;
-  int32 above = 2;
-  int32 below = 3;
-}
-
-message GetThreadResponse {
-  repeated string uris = 1;
-}
-
-//
-// Search
-//
-
-// - Return DIDs of actors matching term, paginated
-//     - `searchActors` skeleton
-message SearchActorsRequest {
-  string term = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message SearchActorsResponse {
-  repeated string dids = 1;
-  string cursor = 2;
-}
-
-// - Return uris of posts matching term, paginated
-//     - `searchPosts` skeleton
-message SearchPostsRequest {
-  string term = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message SearchPostsResponse {
-  repeated string uris = 1;
-  string cursor = 2;
-}
-
-// - Return uris of starter packs matching term, paginated
-//     - `searchStarterPacks` skeleton
-message SearchStarterPacksRequest {
-  string term = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message SearchStarterPacksResponse {
-  repeated string uris = 1;
-  string cursor = 2;
-}
-
-//
-// Suggestions
-//
-
-// - Return DIDs of suggested follows for a user, excluding anyone they already follow
-//     - `getSuggestions`, `getSuggestedFollowsByActor`
-message GetFollowSuggestionsRequest {
-  string actor_did = 1;
-  string relative_to_did = 2;
-  int32 limit = 3;
-  string cursor = 4;
-}
-
-message GetFollowSuggestionsResponse {
-  repeated string dids = 1;
-  string cursor = 2;
-}
-
-message SuggestedEntity {
-  string tag = 1;
-  string subject = 2;
-  string subject_type = 3;
-  int64 priority = 4;
-}
-
-message GetSuggestedEntitiesRequest {
-  int32 limit = 1;
-  string cursor = 2;
-}
-
-message GetSuggestedEntitiesResponse {
-  repeated SuggestedEntity entities = 1;
-  string cursor = 2;
-}
-
-//
-// Labels
-//
-
-// - Get all labels on a subjects A, B, C (uri or did) issued by dids D, E, F…
-//     - label hydration on nearly every view
-message GetLabelsRequest {
-  repeated string subjects = 1;
-  repeated string issuers = 2;
-}
-
-message GetLabelsResponse {
-  repeated bytes labels = 1;
-}
-
-//
-// Starter packs
-//
-
-message GetActorStarterPacksRequest {
-  string actor_did = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message GetActorStarterPacksResponse {
-  repeated string uris = 1;
-  string cursor = 2;
-}
-
-//
-// Sync
-//
-
-// - Latest repo rev of user w/ DID
-//     - Read-after-write header in`getProfile`, `getProfiles`, `getActorLikes`, `getAuthorFeed`, `getListFeed`, `getPostThread`, `getTimeline`.  Could it be view dependent?
-message GetLatestRevRequest {
-  string actor_did = 1;
-}
-
-message GetLatestRevResponse {
-  string rev = 1;
-}
-
-
-message GetIdentityByDidRequest {
-  string did = 1;
-}
-message GetIdentityByDidResponse {
-  string did = 1;
-  string handle = 2;
-  bytes keys = 3;
-  bytes services = 4;
-  google.protobuf.Timestamp updated = 5;
-}
-
-message GetIdentityByHandleRequest {
-  string handle = 1;
-}
-message GetIdentityByHandleResponse {
-  string handle = 1;
-  string did = 2;
-  bytes keys = 3;
-  bytes services = 4;
-  google.protobuf.Timestamp updated = 5;
-}
-
-
-
-//
-// Moderation
-//
-
-message GetBlobTakedownRequest {
-  string did = 1;
-  string cid = 2;
-}
-
-message GetBlobTakedownResponse {
-  bool taken_down = 1;
-  string takedown_ref = 2;
-}
-
-
-
-message GetActorTakedownRequest {
-  string did = 1;
-}
-
-message GetActorTakedownResponse {
-  bool taken_down = 1;
-  string takedown_ref = 2;
-}
-
-message GetRecordTakedownRequest {
-  string record_uri = 1;
-}
-
-message GetRecordTakedownResponse {
-  bool taken_down = 1;
-  string takedown_ref = 2;
-}
-
-
-//
-// Bookmarks
-//
-message Bookmark {
-  StashRef ref = 1;
-  string subject_uri = 2;
-  string subject_cid = 3;
-  google.protobuf.Timestamp indexed_at = 4;
-}
-
-message GetBookmarksByActorAndSubjectsRequest {
-  string actor_did = 1;
-  repeated string uris = 2;
-}
-
-message GetBookmarksByActorAndSubjectsResponse {
-  repeated Bookmark bookmarks = 1;
-}
-
-message GetActorBookmarksRequest {
-  string actor_did = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message BookmarkInfo {
-  string key = 1; // stash key
-  string subject = 2;
-}
-
-message GetActorBookmarksResponse {
-  repeated BookmarkInfo bookmarks = 1;
-  string cursor = 2;
-}
-
-//
-// Drafts
-//
-
-
-message GetActorDraftsRequest {
-  string actor_did = 1;
-  int32 limit = 2;
-  string cursor = 3;
-}
-
-message DraftInfo {
-  string key = 1; // stash key
-  google.protobuf.Timestamp created_at = 2;
-  google.protobuf.Timestamp updated_at = 3;
-  bytes payload = 4;
-}
-
-message GetActorDraftsResponse {
-  repeated DraftInfo drafts = 1;
-  string cursor = 2;
-}
-
-
-// Polo-backed Graph Endpoints
-
-
-
-// GetFollowsFollowing gets the list of DIDs that the actor follows that also follow the targets
-message GetFollowsFollowingRequest {
-  string actor_did = 1;
-  repeated string target_dids = 2;
-}
-
-message FollowsFollowing {
-  string target_did = 1;
-  repeated string dids = 2;
-}
-
-message GetFollowsFollowingResponse {
-  repeated FollowsFollowing results = 1;
-}
-
-message GetSitemapIndexRequest {
-  SitemapPageType type = 1;
-}
-
-message GetSitemapIndexResponse {
-  // GZIP compressed XML sitemap
-  bytes sitemap = 1;
-}
-
-// Sitemap HTTP paths are typically of the form `/type/yyyy-mm-dd/N.xml.gz`, i.e. `/users/2025-01-01/1.xml.gz`
-message GetSitemapPageRequest {
-  SitemapPageType type = 1;
-  google.protobuf.Timestamp date = 2;
-  // One-indexed
-  int32 bucket = 3;
-}
-
-enum SitemapPageType {
-  SITEMAP_PAGE_TYPE_UNSPECIFIED = 0;
-  SITEMAP_PAGE_TYPE_USER = 1;
-}
-
-message GetSitemapPageResponse {
-  // GZIP compressed XML sitemap
-  bytes sitemap = 1;
-}
-
-// Ping
-message PingRequest {}
-message PingResponse {}
-
-message StashRef {
-  string actor_did = 1;
-  string namespace = 2;
-  string key = 3;
 }
 
 service Service {
@@ -2001,6 +2001,12 @@ service Service {
 
   // Feeds
   rpc GetAuthorFeed(GetAuthorFeedRequest) returns (GetAuthorFeedResponse);
+  rpc GetTimeline(GetTimelineRequest) returns (GetTimelineResponse);
+  rpc GetListFeed(GetListFeedRequest) returns (GetListFeedResponse);
+
+  // Threads
+  rpc GetThread(GetThreadRequest) returns (GetThreadResponse);
+
   rpc GetParaAuthorFeed(GetParaAuthorFeedRequest) returns (GetParaAuthorFeedResponse);
   rpc GetParaTimeline(GetParaTimelineRequest) returns (GetParaTimelineResponse);
   rpc GetParaPosts(GetParaPostsRequest) returns (GetParaPostsResponse);
@@ -2016,14 +2022,9 @@ service Service {
   rpc PutParaCabildeoLivePresence(PutParaCabildeoLivePresenceRequest) returns (PutParaCabildeoLivePresenceResponse);
   rpc GetParaHighlights(GetParaHighlightsRequest) returns (GetParaHighlightsResponse);
   rpc GetParaHighlight(GetParaHighlightRequest) returns (GetParaHighlightResponse);
-  rpc GetTimeline(GetTimelineRequest) returns (GetTimelineResponse);
-  rpc GetListFeed(GetListFeedRequest) returns (GetListFeedResponse);
   rpc GetParaDiscourseSnapshot(GetParaDiscourseSnapshotRequest) returns (GetParaDiscourseSnapshotResponse);
   rpc GetParaDiscourseTopics(GetParaDiscourseTopicsRequest) returns (GetParaDiscourseTopicsResponse);
   rpc GetParaDiscourseSentiment(GetParaDiscourseSentimentRequest) returns (GetParaDiscourseSentimentResponse);
-
-  // Threads
-  rpc GetThread(GetThreadRequest) returns (GetThreadResponse);
 
   // Search
   rpc SearchActors(SearchActorsRequest) returns (SearchActorsResponse);

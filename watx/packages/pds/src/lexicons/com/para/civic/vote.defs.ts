@@ -8,11 +8,36 @@ const $nsid = 'com.para.civic.vote'
 
 export { $nsid }
 
-/** The cast vote on a deliberation. */
+/** A signed civic vote. Cabildeo option votes use selectedOption; policy consensus votes use signal from -3 to +3. */
 type Main = {
   $type: 'com.para.civic.vote'
-  cabildeo: l.AtUriString
-  selectedOption: number
+
+  /**
+   * The proposal, policy, matter, or cabildeo record being voted on.
+   */
+  subject?: l.AtUriString
+
+  /**
+   * Optional semantic type for clients and indexers.
+   */
+  subjectType?:
+    | 'cabildeo'
+    | 'policy'
+    | 'matter'
+    | 'governance'
+    | l.UnknownString
+  cabildeo?: l.AtUriString
+  selectedOption?: number
+
+  /**
+   * Weighted consensus signal for policy-style votes: -3 strong opposition, 0 neutral/abstain, +3 strong support.
+   */
+  signal?: number
+
+  /**
+   * Optional voter rationale for the signal.
+   */
+  reason?: string
   isDirect: boolean
   delegatedFrom?: l.DidString[]
   createdAt: l.DatetimeString
@@ -20,13 +45,21 @@ type Main = {
 
 export type { Main }
 
-/** The cast vote on a deliberation. */
+/** A signed civic vote. Cabildeo option votes use selectedOption; policy consensus votes use signal from -3 to +3. */
 const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    cabildeo: l.string({ format: 'at-uri' }),
-    selectedOption: l.integer({ minimum: 0 }),
+    subject: l.optional(l.string({ format: 'at-uri' })),
+    subjectType: l.optional(
+      l.string<{
+        knownValues: ['cabildeo', 'policy', 'matter', 'governance']
+      }>(),
+    ),
+    cabildeo: l.optional(l.string({ format: 'at-uri' })),
+    selectedOption: l.optional(l.integer({ minimum: 0 })),
+    signal: l.optional(l.integer({ minimum: -3, maximum: 3 })),
+    reason: l.optional(l.string({ maxLength: 1000 })),
     isDirect: l.boolean(),
     delegatedFrom: l.optional(
       l.array(l.string({ format: 'did' }), { maxLength: 10000 }),

@@ -1,7 +1,6 @@
 import {Dimensions} from 'react-native'
 
-import {IS_WEB_SAFARI} from '#/env'
-import {IS_WEB} from '#/env'
+import {IS_WEB,IS_WEB_SAFARI} from '#/env'
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window')
 
@@ -24,6 +23,7 @@ export const embedPlayerSources = [
   'vimeo',
   'giphy',
   'tenor',
+  'klipy',
   'flickr',
 ] as const
 
@@ -44,6 +44,7 @@ export type EmbedPlayerType =
   | 'vimeo_video'
   | 'giphy_gif'
   | 'tenor_gif'
+  | 'klipy_gif'
   | 'flickr_album'
 
 export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
@@ -53,6 +54,7 @@ export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   twitch: 'Twitch',
   giphy: 'GIPHY',
   tenor: 'Tenor',
+  klipy: 'KLIPY',
   spotify: 'Spotify',
   appleMusic: 'Apple Music',
   soundcloud: 'SoundCloud',

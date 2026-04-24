@@ -143,6 +143,21 @@ const messageView = l.typedObject<MessageView>(
 
 export { messageView }
 
+type SystemMessageReferredUser = {
+  $type?: 'chat.bsky.convo.defs#systemMessageReferredUser'
+  did: l.DidString
+}
+
+export type { SystemMessageReferredUser }
+
+const systemMessageReferredUser = l.typedObject<SystemMessageReferredUser>(
+  $nsid,
+  'systemMessageReferredUser',
+  l.object({ did: l.string({ format: 'did' }) }),
+)
+
+export { systemMessageReferredUser }
+
 /** [NOTE: This is under active development and should be considered unstable while this note is here]. */
 type SystemMessageView = {
   $type?: 'chat.bsky.convo.defs#systemMessageView'
@@ -228,13 +243,13 @@ type SystemMessageDataAddMember = {
   /**
    * Current view of the member who was added.
    */
-  member: ActorDefs.ProfileViewBasic
+  member: SystemMessageReferredUser
 
   /**
    * Role the user was added to the group with. The role from 'member' will reflect the current data, not historical.
    */
   role: ActorDefs.MemberRole
-  addedBy: ActorDefs.ProfileViewBasic
+  addedBy: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataAddMember }
@@ -244,12 +259,12 @@ const systemMessageDataAddMember = l.typedObject<SystemMessageDataAddMember>(
   $nsid,
   'systemMessageDataAddMember',
   l.object({
-    member: l.ref<ActorDefs.ProfileViewBasic>(
-      (() => ActorDefs.profileViewBasic) as any,
+    member: l.ref<SystemMessageReferredUser>(
+      (() => systemMessageReferredUser) as any,
     ),
     role: l.ref<ActorDefs.MemberRole>((() => ActorDefs.memberRole) as any),
-    addedBy: l.ref<ActorDefs.ProfileViewBasic>(
-      (() => ActorDefs.profileViewBasic) as any,
+    addedBy: l.ref<SystemMessageReferredUser>(
+      (() => systemMessageReferredUser) as any,
     ),
   }),
 )
@@ -263,8 +278,8 @@ type SystemMessageDataRemoveMember = {
   /**
    * Current view of the member who was removed.
    */
-  member: ActorDefs.ProfileViewBasic
-  removedBy: ActorDefs.ProfileViewBasic
+  member: SystemMessageReferredUser
+  removedBy: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataRemoveMember }
@@ -275,11 +290,11 @@ const systemMessageDataRemoveMember =
     $nsid,
     'systemMessageDataRemoveMember',
     l.object({
-      member: l.ref<ActorDefs.ProfileViewBasic>(
-        (() => ActorDefs.profileViewBasic) as any,
+      member: l.ref<SystemMessageReferredUser>(
+        (() => systemMessageReferredUser) as any,
       ),
-      removedBy: l.ref<ActorDefs.ProfileViewBasic>(
-        (() => ActorDefs.profileViewBasic) as any,
+      removedBy: l.ref<SystemMessageReferredUser>(
+        (() => systemMessageReferredUser) as any,
       ),
     }),
   )
@@ -293,7 +308,7 @@ type SystemMessageDataMemberJoin = {
   /**
    * Current view of the member who joined.
    */
-  member: ActorDefs.ProfileViewBasic
+  member: SystemMessageReferredUser
 
   /**
    * Role the user was added to the group with. The role from 'member' will reflect the current data, not historical.
@@ -303,7 +318,7 @@ type SystemMessageDataMemberJoin = {
   /**
    * If join link was configured to require approval, this will be set to who approved the request. Undefined if approval was not required.
    */
-  approvedBy?: ActorDefs.ProfileViewBasic
+  approvedBy?: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataMemberJoin }
@@ -313,13 +328,13 @@ const systemMessageDataMemberJoin = l.typedObject<SystemMessageDataMemberJoin>(
   $nsid,
   'systemMessageDataMemberJoin',
   l.object({
-    member: l.ref<ActorDefs.ProfileViewBasic>(
-      (() => ActorDefs.profileViewBasic) as any,
+    member: l.ref<SystemMessageReferredUser>(
+      (() => systemMessageReferredUser) as any,
     ),
     role: l.ref<ActorDefs.MemberRole>((() => ActorDefs.memberRole) as any),
     approvedBy: l.optional(
-      l.ref<ActorDefs.ProfileViewBasic>(
-        (() => ActorDefs.profileViewBasic) as any,
+      l.ref<SystemMessageReferredUser>(
+        (() => systemMessageReferredUser) as any,
       ),
     ),
   }),
@@ -334,7 +349,7 @@ type SystemMessageDataMemberLeave = {
   /**
    * Current view of the member who left the group.
    */
-  member: ActorDefs.ProfileViewBasic
+  member: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataMemberLeave }
@@ -345,8 +360,8 @@ const systemMessageDataMemberLeave =
     $nsid,
     'systemMessageDataMemberLeave',
     l.object({
-      member: l.ref<ActorDefs.ProfileViewBasic>(
-        (() => ActorDefs.profileViewBasic) as any,
+      member: l.ref<SystemMessageReferredUser>(
+        (() => systemMessageReferredUser) as any,
       ),
     }),
   )
@@ -360,7 +375,7 @@ type SystemMessageDataLockConvo = {
   /**
    * Current view of the member who locked the group.
    */
-  lockedBy: ActorDefs.ProfileViewBasic
+  lockedBy: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataLockConvo }
@@ -370,8 +385,8 @@ const systemMessageDataLockConvo = l.typedObject<SystemMessageDataLockConvo>(
   $nsid,
   'systemMessageDataLockConvo',
   l.object({
-    lockedBy: l.ref<ActorDefs.ProfileViewBasic>(
-      (() => ActorDefs.profileViewBasic) as any,
+    lockedBy: l.ref<SystemMessageReferredUser>(
+      (() => systemMessageReferredUser) as any,
     ),
   }),
 )
@@ -385,7 +400,7 @@ type SystemMessageDataUnlockConvo = {
   /**
    * Current view of the member who unlocked the group.
    */
-  unlockedBy: ActorDefs.ProfileViewBasic
+  unlockedBy: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataUnlockConvo }
@@ -396,8 +411,8 @@ const systemMessageDataUnlockConvo =
     $nsid,
     'systemMessageDataUnlockConvo',
     l.object({
-      unlockedBy: l.ref<ActorDefs.ProfileViewBasic>(
-        (() => ActorDefs.profileViewBasic) as any,
+      unlockedBy: l.ref<SystemMessageReferredUser>(
+        (() => systemMessageReferredUser) as any,
       ),
     }),
   )
@@ -411,7 +426,7 @@ type SystemMessageDataLockConvoPermanently = {
   /**
    * Current view of the member who locked the group.
    */
-  lockedBy: ActorDefs.ProfileViewBasic
+  lockedBy: SystemMessageReferredUser
 }
 
 export type { SystemMessageDataLockConvoPermanently }
@@ -422,8 +437,8 @@ const systemMessageDataLockConvoPermanently =
     $nsid,
     'systemMessageDataLockConvoPermanently',
     l.object({
-      lockedBy: l.ref<ActorDefs.ProfileViewBasic>(
-        (() => ActorDefs.profileViewBasic) as any,
+      lockedBy: l.ref<SystemMessageReferredUser>(
+        (() => systemMessageReferredUser) as any,
       ),
     }),
   )
@@ -626,7 +641,7 @@ type ConvoView = {
   rev: string
 
   /**
-   * Members of this conversation. For direct convos, it will be an immutable list of the 2 members. For group convos, it will a list of important members (the first few members, the viewer, the member who invited the viewer, the member who sent the last message, the member who sent the last reaction), but will not contain the full list of members. NOTE: TBD an endpoint to list all members.
+   * Members of this conversation. For direct convos, it will be an immutable list of the 2 members. For group convos, it will a list of important members (the first few members, the viewer, the member who invited the viewer, the member who sent the last message, the member who sent the last reaction), but will not contain the full list of members. Use chat.bsky.convo.getConvoMembers to list all members.
    */
   members: ActorDefs.ProfileViewBasic[]
   lastMessage?:
@@ -721,6 +736,11 @@ type GroupConvo = {
    * The display name of the group conversation.
    */
   name: string
+
+  /**
+   * The total number of members in the group conversation.
+   */
+  memberCount: number
   joinLink?: GroupDefs.JoinLinkView
 
   /**
@@ -737,6 +757,7 @@ const groupConvo = l.typedObject<GroupConvo>(
   'groupConvo',
   l.object({
     name: l.string({ maxGraphemes: 128, maxLength: 1280 }),
+    memberCount: l.integer(),
     joinLink: l.optional(
       l.ref<GroupDefs.JoinLinkView>((() => GroupDefs.joinLinkView) as any),
     ),
@@ -1041,7 +1062,16 @@ type LogAddMember = {
   $type?: 'chat.bsky.convo.defs#logAddMember'
   rev: string
   convoId: string
-  message: SystemMessageDataAddMember
+
+  /**
+   * A system message with data of type #systemMessageDataAddMember
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogAddMember }
@@ -1053,8 +1083,11 @@ const logAddMember = l.typedObject<LogAddMember>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataAddMember>(
-      (() => systemMessageDataAddMember) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1066,7 +1099,16 @@ type LogRemoveMember = {
   $type?: 'chat.bsky.convo.defs#logRemoveMember'
   rev: string
   convoId: string
-  message: SystemMessageDataRemoveMember
+
+  /**
+   * A system message with data of type #systemMessageDataRemoveMember
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogRemoveMember }
@@ -1078,8 +1120,11 @@ const logRemoveMember = l.typedObject<LogRemoveMember>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataRemoveMember>(
-      (() => systemMessageDataRemoveMember) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1091,7 +1136,16 @@ type LogMemberJoin = {
   $type?: 'chat.bsky.convo.defs#logMemberJoin'
   rev: string
   convoId: string
-  message: SystemMessageDataMemberJoin
+
+  /**
+   * A system message with data of type #systemMessageDataMemberJoin
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogMemberJoin }
@@ -1103,8 +1157,11 @@ const logMemberJoin = l.typedObject<LogMemberJoin>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataMemberJoin>(
-      (() => systemMessageDataMemberJoin) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1116,7 +1173,16 @@ type LogMemberLeave = {
   $type?: 'chat.bsky.convo.defs#logMemberLeave'
   rev: string
   convoId: string
-  message: SystemMessageDataMemberLeave
+
+  /**
+   * A system message with data of type #systemMessageDataMemberLeave
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogMemberLeave }
@@ -1128,8 +1194,11 @@ const logMemberLeave = l.typedObject<LogMemberLeave>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataMemberLeave>(
-      (() => systemMessageDataMemberLeave) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1141,7 +1210,16 @@ type LogLockConvo = {
   $type?: 'chat.bsky.convo.defs#logLockConvo'
   rev: string
   convoId: string
-  message: SystemMessageDataLockConvo
+
+  /**
+   * A system message with data of type #systemMessageDataLockConvo
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogLockConvo }
@@ -1153,8 +1231,11 @@ const logLockConvo = l.typedObject<LogLockConvo>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataLockConvo>(
-      (() => systemMessageDataLockConvo) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1166,7 +1247,16 @@ type LogUnlockConvo = {
   $type?: 'chat.bsky.convo.defs#logUnlockConvo'
   rev: string
   convoId: string
-  message: SystemMessageDataUnlockConvo
+
+  /**
+   * A system message with data of type #systemMessageDataUnlockConvo
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogUnlockConvo }
@@ -1178,8 +1268,11 @@ const logUnlockConvo = l.typedObject<LogUnlockConvo>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataUnlockConvo>(
-      (() => systemMessageDataUnlockConvo) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1191,7 +1284,16 @@ type LogLockConvoPermanently = {
   $type?: 'chat.bsky.convo.defs#logLockConvoPermanently'
   rev: string
   convoId: string
-  message: SystemMessageDataLockConvoPermanently
+
+  /**
+   * A system message with data of type #systemMessageDataLockConvoPermanently
+   */
+  message: SystemMessageView
+
+  /**
+   * Profiles referred in the system message.
+   */
+  relatedProfiles: ActorDefs.ProfileViewBasic[]
 }
 
 export type { LogLockConvoPermanently }
@@ -1203,8 +1305,11 @@ const logLockConvoPermanently = l.typedObject<LogLockConvoPermanently>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataLockConvoPermanently>(
-      (() => systemMessageDataLockConvoPermanently) as any,
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
+    relatedProfiles: l.array(
+      l.ref<ActorDefs.ProfileViewBasic>(
+        (() => ActorDefs.profileViewBasic) as any,
+      ),
     ),
   }),
 )
@@ -1216,7 +1321,11 @@ type LogEditGroup = {
   $type?: 'chat.bsky.convo.defs#logEditGroup'
   rev: string
   convoId: string
-  message: SystemMessageDataEditGroup
+
+  /**
+   * A system message with data of type #systemMessageDataEditGroup
+   */
+  message: SystemMessageView
 }
 
 export type { LogEditGroup }
@@ -1228,9 +1337,7 @@ const logEditGroup = l.typedObject<LogEditGroup>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataEditGroup>(
-      (() => systemMessageDataEditGroup) as any,
-    ),
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
   }),
 )
 
@@ -1241,7 +1348,11 @@ type LogCreateJoinLink = {
   $type?: 'chat.bsky.convo.defs#logCreateJoinLink'
   rev: string
   convoId: string
-  message: SystemMessageDataCreateJoinLink
+
+  /**
+   * A system message with data of type #systemMessageDataCreateJoinLink
+   */
+  message: SystemMessageView
 }
 
 export type { LogCreateJoinLink }
@@ -1253,9 +1364,7 @@ const logCreateJoinLink = l.typedObject<LogCreateJoinLink>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataCreateJoinLink>(
-      (() => systemMessageDataCreateJoinLink) as any,
-    ),
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
   }),
 )
 
@@ -1266,7 +1375,11 @@ type LogEditJoinLink = {
   $type?: 'chat.bsky.convo.defs#logEditJoinLink'
   rev: string
   convoId: string
-  message: SystemMessageDataEditJoinLink
+
+  /**
+   * A system message with data of type #systemMessageDataEditJoinLink
+   */
+  message: SystemMessageView
 }
 
 export type { LogEditJoinLink }
@@ -1278,9 +1391,7 @@ const logEditJoinLink = l.typedObject<LogEditJoinLink>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataEditJoinLink>(
-      (() => systemMessageDataEditJoinLink) as any,
-    ),
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
   }),
 )
 
@@ -1291,7 +1402,11 @@ type LogEnableJoinLink = {
   $type?: 'chat.bsky.convo.defs#logEnableJoinLink'
   rev: string
   convoId: string
-  message: SystemMessageDataEnableJoinLink
+
+  /**
+   * A system message with data of type #systemMessageDataEnableJoinLink
+   */
+  message: SystemMessageView
 }
 
 export type { LogEnableJoinLink }
@@ -1303,9 +1418,7 @@ const logEnableJoinLink = l.typedObject<LogEnableJoinLink>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataEnableJoinLink>(
-      (() => systemMessageDataEnableJoinLink) as any,
-    ),
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
   }),
 )
 
@@ -1316,7 +1429,11 @@ type LogDisableJoinLink = {
   $type?: 'chat.bsky.convo.defs#logDisableJoinLink'
   rev: string
   convoId: string
-  message: SystemMessageDataDisableJoinLink
+
+  /**
+   * A system message with data of type #systemMessageDataDisableJoinLink
+   */
+  message: SystemMessageView
 }
 
 export type { LogDisableJoinLink }
@@ -1328,9 +1445,7 @@ const logDisableJoinLink = l.typedObject<LogDisableJoinLink>(
   l.object({
     rev: l.string(),
     convoId: l.string(),
-    message: l.ref<SystemMessageDataDisableJoinLink>(
-      (() => systemMessageDataDisableJoinLink) as any,
-    ),
+    message: l.ref<SystemMessageView>((() => systemMessageView) as any),
   }),
 )
 
