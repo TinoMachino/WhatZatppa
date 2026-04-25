@@ -10585,6 +10585,256 @@ export class GetParaPostMetaResponse extends Message<GetParaPostMetaResponse> {
 }
 
 /**
+ * @generated from message bsky.GetParaPolicyTallyRequest
+ */
+export class GetParaPolicyTallyRequest extends Message<GetParaPolicyTallyRequest> {
+  /**
+   * @generated from field: string post_uri = 1;
+   */
+  postUri = "";
+
+  constructor(data?: PartialMessage<GetParaPolicyTallyRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bsky.GetParaPolicyTallyRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "post_uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParaPolicyTallyRequest {
+    return new GetParaPolicyTallyRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetParaPolicyTallyRequest {
+    return new GetParaPolicyTallyRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetParaPolicyTallyRequest {
+    return new GetParaPolicyTallyRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetParaPolicyTallyRequest | PlainMessage<GetParaPolicyTallyRequest> | undefined, b: GetParaPolicyTallyRequest | PlainMessage<GetParaPolicyTallyRequest> | undefined): boolean {
+    return proto3.util.equals(GetParaPolicyTallyRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message bsky.ParaPolicySignalBucket
+ */
+export class ParaPolicySignalBucket extends Message<ParaPolicySignalBucket> {
+  /**
+   * @generated from field: int32 signal = 1;
+   */
+  signal = 0;
+
+  /**
+   * @generated from field: int32 count = 2;
+   */
+  count = 0;
+
+  constructor(data?: PartialMessage<ParaPolicySignalBucket>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bsky.ParaPolicySignalBucket";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "signal", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ParaPolicySignalBucket {
+    return new ParaPolicySignalBucket().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ParaPolicySignalBucket {
+    return new ParaPolicySignalBucket().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ParaPolicySignalBucket {
+    return new ParaPolicySignalBucket().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ParaPolicySignalBucket | PlainMessage<ParaPolicySignalBucket> | undefined, b: ParaPolicySignalBucket | PlainMessage<ParaPolicySignalBucket> | undefined): boolean {
+    return proto3.util.equals(ParaPolicySignalBucket, a, b);
+  }
+}
+
+/**
+ * @generated from message bsky.ParaPolicyTally
+ */
+export class ParaPolicyTally extends Message<ParaPolicyTally> {
+  /**
+   * @generated from field: string subject = 1;
+   */
+  subject = "";
+
+  /**
+   * @generated from field: string subject_type = 2;
+   */
+  subjectType = "";
+
+  /**
+   * @generated from field: string community = 3;
+   */
+  community = "";
+
+  /**
+   * @generated from field: int32 vote_count = 4;
+   */
+  voteCount = 0;
+
+  /**
+   * @generated from field: int32 direct_vote_count = 5;
+   */
+  directVoteCount = 0;
+
+  /**
+   * @generated from field: int32 delegated_vote_count = 6;
+   */
+  delegatedVoteCount = 0;
+
+  /**
+   * @generated from field: int32 signal_sum = 7;
+   */
+  signalSum = 0;
+
+  /**
+   * @generated from field: double signal_average = 8;
+   */
+  signalAverage = 0;
+
+  /**
+   * @generated from field: int32 eligible_voter_count = 9;
+   */
+  eligibleVoterCount = 0;
+
+  /**
+   * @generated from field: int32 quorum_target = 10;
+   */
+  quorumTarget = 0;
+
+  /**
+   * @generated from field: bool quorum_met = 11;
+   */
+  quorumMet = false;
+
+  /**
+   * @generated from field: bool official = 12;
+   */
+  official = false;
+
+  /**
+   * @generated from field: bool certified = 13;
+   */
+  certified = false;
+
+  /**
+   * @generated from field: string outcome = 14;
+   */
+  outcome = "";
+
+  /**
+   * @generated from field: string state = 15;
+   */
+  state = "";
+
+  /**
+   * @generated from field: repeated bsky.ParaPolicySignalBucket breakdown = 16;
+   */
+  breakdown: ParaPolicySignalBucket[] = [];
+
+  /**
+   * @generated from field: string computed_at = 17;
+   */
+  computedAt = "";
+
+  constructor(data?: PartialMessage<ParaPolicyTally>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bsky.ParaPolicyTally";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "subject", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "subject_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "community", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "vote_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "direct_vote_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "delegated_vote_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 7, name: "signal_sum", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 8, name: "signal_average", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 9, name: "eligible_voter_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "quorum_target", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "quorum_met", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "official", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "certified", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "outcome", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "breakdown", kind: "message", T: ParaPolicySignalBucket, repeated: true },
+    { no: 17, name: "computed_at", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ParaPolicyTally {
+    return new ParaPolicyTally().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ParaPolicyTally {
+    return new ParaPolicyTally().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ParaPolicyTally {
+    return new ParaPolicyTally().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ParaPolicyTally | PlainMessage<ParaPolicyTally> | undefined, b: ParaPolicyTally | PlainMessage<ParaPolicyTally> | undefined): boolean {
+    return proto3.util.equals(ParaPolicyTally, a, b);
+  }
+}
+
+/**
+ * @generated from message bsky.GetParaPolicyTallyResponse
+ */
+export class GetParaPolicyTallyResponse extends Message<GetParaPolicyTallyResponse> {
+  /**
+   * @generated from field: optional bsky.ParaPolicyTally tally = 1;
+   */
+  tally?: ParaPolicyTally;
+
+  constructor(data?: PartialMessage<GetParaPolicyTallyResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "bsky.GetParaPolicyTallyResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tally", kind: "message", T: ParaPolicyTally, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParaPolicyTallyResponse {
+    return new GetParaPolicyTallyResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetParaPolicyTallyResponse {
+    return new GetParaPolicyTallyResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetParaPolicyTallyResponse {
+    return new GetParaPolicyTallyResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetParaPolicyTallyResponse | PlainMessage<GetParaPolicyTallyResponse> | undefined, b: GetParaPolicyTallyResponse | PlainMessage<GetParaPolicyTallyResponse> | undefined): boolean {
+    return proto3.util.equals(GetParaPolicyTallyResponse, a, b);
+  }
+}
+
+/**
  * - Returns para profile stats and current para status for an actor
  *     - `com.para.actor.getProfileStats`
  *

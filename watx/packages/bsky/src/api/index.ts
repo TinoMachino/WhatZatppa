@@ -103,6 +103,7 @@ import getRecord from './com/atproto/repo/getRecord'
 import fetchLabels from './com/atproto/temp/fetchLabels'
 import getParaProfileStats from './com/para/actor/getProfileStats'
 import getParaCabildeo from './com/para/civic/getCabildeo'
+import getParaPolicyTally from './com/para/civic/getPolicyTally'
 import listParaCabildeoPositions from './com/para/civic/listCabildeoPositions'
 import listParaCabildeos from './com/para/civic/listCabildeos'
 import putParaLivePresence from './com/para/civic/putLivePresence'
@@ -237,6 +238,7 @@ export default function (server: Server, ctx: AppContext) {
   getParaProfileStats(paraServer, ctx)
   listParaCabildeos(paraServer, ctx)
   getParaCabildeo(paraServer, ctx)
+  getParaPolicyTally(paraServer, ctx)
   listParaCabildeoPositions(paraServer, ctx)
   putParaLivePresence(paraServer, ctx)
   getParaCommunityBoard(paraServer, ctx)

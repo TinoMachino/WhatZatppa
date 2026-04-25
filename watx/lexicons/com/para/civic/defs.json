@@ -192,6 +192,71 @@
         "compassQuadrant": { "type": "string", "maxLength": 100 },
         "createdAt": { "type": "string", "format": "datetime" }
       }
+    },
+    "policySignalBucket": {
+      "type": "object",
+      "required": ["signal", "count"],
+      "properties": {
+        "signal": { "type": "integer", "minimum": -3, "maximum": 3 },
+        "count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "policyTally": {
+      "type": "object",
+      "required": [
+        "subject",
+        "subjectType",
+        "community",
+        "voteCount",
+        "directVoteCount",
+        "delegatedVoteCount",
+        "signalSum",
+        "signalAverage",
+        "eligibleVoterCount",
+        "quorumTarget",
+        "quorumMet",
+        "official",
+        "certified",
+        "outcome",
+        "state",
+        "breakdown",
+        "computedAt"
+      ],
+      "properties": {
+        "subject": { "type": "string", "format": "at-uri" },
+        "subjectType": { "type": "string", "knownValues": ["policy"] },
+        "community": { "type": "string", "maxLength": 100 },
+        "voteCount": { "type": "integer", "minimum": 0 },
+        "directVoteCount": { "type": "integer", "minimum": 0 },
+        "delegatedVoteCount": { "type": "integer", "minimum": 0 },
+        "signalSum": { "type": "integer" },
+        "signalAverage": { "type": "string", "maxLength": 32 },
+        "eligibleVoterCount": { "type": "integer", "minimum": 0 },
+        "quorumTarget": { "type": "integer", "minimum": 1 },
+        "quorumMet": { "type": "boolean" },
+        "official": { "type": "boolean" },
+        "certified": { "type": "boolean" },
+        "outcome": {
+          "type": "string",
+          "knownValues": [
+            "insufficient_quorum",
+            "contested",
+            "passed",
+            "strong_passed",
+            "failed"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "knownValues": ["draft", "deliberation", "voting", "passed", "failed", "official"]
+        },
+        "breakdown": {
+          "type": "array",
+          "maxLength": 7,
+          "items": { "type": "ref", "ref": "#policySignalBucket" }
+        },
+        "computedAt": { "type": "string", "format": "datetime" }
+      }
     }
   }
 }

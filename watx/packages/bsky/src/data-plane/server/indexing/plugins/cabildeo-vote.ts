@@ -21,8 +21,10 @@ interface VoteRecord {
 }
 
 type CabildeoVote = Selectable<DatabaseSchemaType['cabildeo_vote']>
+type ParaPolicyVote = Selectable<DatabaseSchemaType['para_policy_vote']>
 type IndexedVote = {
-  record: CabildeoVote
+  cabildeoRecord?: CabildeoVote
+  policyRecord?: ParaPolicyVote
 }
 
 const lexId = 'com.para.civic.vote'
@@ -34,6 +36,39 @@ const insertFn = async (
   obj: VoteRecord,
   timestamp: string,
 ): Promise<IndexedVote | null> => {
+  if (obj.subjectType === 'policy' && obj.subject && typeof obj.signal === 'number') {
+    await db
+      .deleteFrom('para_policy_vote')
+      .where('subject', '=', obj.subject)
+      .where('subjectType', '=', obj.subjectType)
+      .where('creator', '=', uri.host)
+      .where('uri', '!=', uri.toString())
+      .execute()
+
+    const inserted = await db
+      .insertInto('para_policy_vote')
+      .values({
+        uri: uri.toString(),
+        cid: cid.toString(),
+        creator: uri.host,
+        subject: obj.subject,
+        subjectType: obj.subjectType,
+        signal: obj.signal,
+        isDirect: obj.isDirect ? (1 as const) : (0 as const),
+        delegatedFrom: obj.delegatedFrom?.length
+          ? sql<string[]>`${JSON.stringify(obj.delegatedFrom)}`
+          : null,
+        reason: obj.reason ?? null,
+        createdAt: normalizeDatetimeAlways(obj.createdAt),
+        indexedAt: timestamp,
+      })
+      .onConflict((oc) => oc.doNothing())
+      .returningAll()
+      .executeTakeFirst()
+
+    return inserted ? { policyRecord: inserted } : null
+  }
+
   if (!obj.cabildeo) {
     return null
   }
@@ -63,7 +98,7 @@ const insertFn = async (
     return null
   }
 
-  return { record: inserted }
+  return { cabildeoRecord: inserted }
 }
 
 const findDuplicate = async (): Promise<AtUri | null> => {
@@ -78,27 +113,39 @@ const deleteFn = async (
   db: DatabaseSchema,
   uri: AtUri,
 ): Promise<IndexedVote | null> => {
-  const deleted = await db
+  const deletedPolicy = await db
+    .deleteFrom('para_policy_vote')
+    .where('uri', '=', uri.toString())
+    .returningAll()
+    .executeTakeFirst()
+  if (deletedPolicy) {
+    return { policyRecord: deletedPolicy }
+  }
+
+  const deletedCabildeo = await db
     .deleteFrom('cabildeo_vote')
     .where('uri', '=', uri.toString())
     .returningAll()
     .executeTakeFirst()
 
-  return deleted ? { record: deleted } : null
+  return deletedCabildeo ? { cabildeoRecord: deletedCabildeo } : null
 }
 
 const notifsForDelete = (
   deleted: IndexedVote,
   _replacedBy: IndexedVote | null,
 ) => {
-  return { notifs: [], toDelete: [deleted.record.uri] }
+  const uri = deleted.policyRecord?.uri || deleted.cabildeoRecord?.uri
+  return { notifs: [], toDelete: uri ? [uri] : [] }
 }
 
 const updateAggregates = async (
   db: DatabaseSchema,
   indexed: IndexedVote,
 ) => {
-  await recomputeCabildeoAggregates(db, indexed.record.cabildeo)
+  if (indexed.cabildeoRecord) {
+    await recomputeCabildeoAggregates(db, indexed.cabildeoRecord.cabildeo)
+  }
 }
 
 export type PluginType = RecordProcessor<VoteRecord, IndexedVote>

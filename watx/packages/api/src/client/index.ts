@@ -300,6 +300,7 @@ import * as ComParaCivicCabildeo from './types/com/para/civic/cabildeo.js'
 import * as ComParaCivicDefs from './types/com/para/civic/defs.js'
 import * as ComParaCivicDelegation from './types/com/para/civic/delegation.js'
 import * as ComParaCivicGetCabildeo from './types/com/para/civic/getCabildeo.js'
+import * as ComParaCivicGetPolicyTally from './types/com/para/civic/getPolicyTally.js'
 import * as ComParaCivicListCabildeoPositions from './types/com/para/civic/listCabildeoPositions.js'
 import * as ComParaCivicListCabildeos from './types/com/para/civic/listCabildeos.js'
 import * as ComParaCivicPosition from './types/com/para/civic/position.js'
@@ -325,10 +326,8 @@ import * as ComParaHighlightAnnotation from './types/com/para/highlight/annotati
 import * as ComParaHighlightDefs from './types/com/para/highlight/defs.js'
 import * as ComParaHighlightGetHighlight from './types/com/para/highlight/getHighlight.js'
 import * as ComParaHighlightListHighlights from './types/com/para/highlight/listHighlights.js'
-import * as ComParaPost from './types/com/para/post.js'
 import * as ComParaSocialGetPostMeta from './types/com/para/social/getPostMeta.js'
 import * as ComParaSocialPostMeta from './types/com/para/social/postMeta.js'
-import * as ComParaStatus from './types/com/para/status.js'
 import * as ToolsOzoneCommunicationCreateTemplate from './types/tools/ozone/communication/createTemplate.js'
 import * as ToolsOzoneCommunicationDefs from './types/tools/ozone/communication/defs.js'
 import * as ToolsOzoneCommunicationDeleteTemplate from './types/tools/ozone/communication/deleteTemplate.js'
@@ -675,6 +674,7 @@ export * as ComParaCivicCabildeo from './types/com/para/civic/cabildeo.js'
 export * as ComParaCivicDefs from './types/com/para/civic/defs.js'
 export * as ComParaCivicDelegation from './types/com/para/civic/delegation.js'
 export * as ComParaCivicGetCabildeo from './types/com/para/civic/getCabildeo.js'
+export * as ComParaCivicGetPolicyTally from './types/com/para/civic/getPolicyTally.js'
 export * as ComParaCivicListCabildeoPositions from './types/com/para/civic/listCabildeoPositions.js'
 export * as ComParaCivicListCabildeos from './types/com/para/civic/listCabildeos.js'
 export * as ComParaCivicPosition from './types/com/para/civic/position.js'
@@ -700,10 +700,8 @@ export * as ComParaHighlightAnnotation from './types/com/para/highlight/annotati
 export * as ComParaHighlightDefs from './types/com/para/highlight/defs.js'
 export * as ComParaHighlightGetHighlight from './types/com/para/highlight/getHighlight.js'
 export * as ComParaHighlightListHighlights from './types/com/para/highlight/listHighlights.js'
-export * as ComParaPost from './types/com/para/post.js'
 export * as ComParaSocialGetPostMeta from './types/com/para/social/getPostMeta.js'
 export * as ComParaSocialPostMeta from './types/com/para/social/postMeta.js'
-export * as ComParaStatus from './types/com/para/status.js'
 export * as ToolsOzoneCommunicationCreateTemplate from './types/tools/ozone/communication/createTemplate.js'
 export * as ToolsOzoneCommunicationDefs from './types/tools/ozone/communication/defs.js'
 export * as ToolsOzoneCommunicationDeleteTemplate from './types/tools/ozone/communication/deleteTemplate.js'
@@ -5551,8 +5549,6 @@ export class ComGermnetworkDeclarationRecord {
 
 export class ComParaNS {
   _client: XrpcClient
-  post: ComParaPostRecord
-  status: ComParaStatusRecord
   actor: ComParaActorNS
   civic: ComParaCivicNS
   community: ComParaCommunityNS
@@ -5570,8 +5566,6 @@ export class ComParaNS {
     this.feed = new ComParaFeedNS(client)
     this.highlight = new ComParaHighlightNS(client)
     this.social = new ComParaSocialNS(client)
-    this.post = new ComParaPostRecord(client)
-    this.status = new ComParaStatusRecord(client)
   }
 }
 
@@ -5619,6 +5613,17 @@ export class ComParaCivicNS {
       undefined,
       opts,
     )
+  }
+
+  getPolicyTally(
+    params?: ComParaCivicGetPolicyTally.QueryParams,
+    opts?: ComParaCivicGetPolicyTally.CallOptions,
+  ): Promise<ComParaCivicGetPolicyTally.Response> {
+    return this._client
+      .call('com.para.civic.getPolicyTally', params, undefined, opts)
+      .catch((e) => {
+        throw ComParaCivicGetPolicyTally.toKnownErr(e)
+      })
   }
 
   listCabildeoPositions(
@@ -6609,169 +6614,6 @@ export class ComParaSocialPostMetaRecord {
       'com.atproto.repo.deleteRecord',
       undefined,
       { collection: 'com.para.social.postMeta', ...params },
-      { headers },
-    )
-  }
-}
-
-export class ComParaPostRecord {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-
-  async list(
-    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
-  ): Promise<{
-    cursor?: string
-    records: { uri: string; value: ComParaPost.Record }[]
-  }> {
-    const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'com.para.post',
-      ...params,
-    })
-    return res.data
-  }
-
-  async get(
-    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{ uri: string; cid: string; value: ComParaPost.Record }> {
-    const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'com.para.post',
-      ...params,
-    })
-    return res.data
-  }
-
-  async create(
-    params: OmitKey<
-      ComAtprotoRepoCreateRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<ComParaPost.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'com.para.post'
-    const res = await this._client.call(
-      'com.atproto.repo.createRecord',
-      undefined,
-      { collection, ...params, record: { ...record, $type: collection } },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async put(
-    params: OmitKey<
-      ComAtprotoRepoPutRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<ComParaPost.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'com.para.post'
-    const res = await this._client.call(
-      'com.atproto.repo.putRecord',
-      undefined,
-      { collection, ...params, record: { ...record, $type: collection } },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async delete(
-    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
-    headers?: Record<string, string>,
-  ): Promise<void> {
-    await this._client.call(
-      'com.atproto.repo.deleteRecord',
-      undefined,
-      { collection: 'com.para.post', ...params },
-      { headers },
-    )
-  }
-}
-
-export class ComParaStatusRecord {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-
-  async list(
-    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
-  ): Promise<{
-    cursor?: string
-    records: { uri: string; value: ComParaStatus.Record }[]
-  }> {
-    const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'com.para.status',
-      ...params,
-    })
-    return res.data
-  }
-
-  async get(
-    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{ uri: string; cid: string; value: ComParaStatus.Record }> {
-    const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'com.para.status',
-      ...params,
-    })
-    return res.data
-  }
-
-  async create(
-    params: OmitKey<
-      ComAtprotoRepoCreateRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<ComParaStatus.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'com.para.status'
-    const res = await this._client.call(
-      'com.atproto.repo.createRecord',
-      undefined,
-      {
-        collection,
-        rkey: 'self',
-        ...params,
-        record: { ...record, $type: collection },
-      },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async put(
-    params: OmitKey<
-      ComAtprotoRepoPutRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<ComParaStatus.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'com.para.status'
-    const res = await this._client.call(
-      'com.atproto.repo.putRecord',
-      undefined,
-      { collection, ...params, record: { ...record, $type: collection } },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async delete(
-    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
-    headers?: Record<string, string>,
-  ): Promise<void> {
-    await this._client.call(
-      'com.atproto.repo.deleteRecord',
-      undefined,
-      { collection: 'com.para.status', ...params },
       { headers },
     )
   }

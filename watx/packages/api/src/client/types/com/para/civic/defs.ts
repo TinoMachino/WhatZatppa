@@ -234,3 +234,63 @@ export function isPositionView<V>(v: V) {
 export function validatePositionView<V>(v: V) {
   return validate<PositionView & V>(v, id, hashPositionView)
 }
+
+export interface PolicySignalBucket {
+  $type?: 'com.para.civic.defs#policySignalBucket'
+  signal: number
+  count: number
+}
+
+const hashPolicySignalBucket = 'policySignalBucket'
+
+export function isPolicySignalBucket<V>(v: V) {
+  return is$typed(v, id, hashPolicySignalBucket)
+}
+
+export function validatePolicySignalBucket<V>(v: V) {
+  return validate<PolicySignalBucket & V>(v, id, hashPolicySignalBucket)
+}
+
+export interface PolicyTally {
+  $type?: 'com.para.civic.defs#policyTally'
+  subject: string
+  subjectType: 'policy' | (string & {})
+  community: string
+  voteCount: number
+  directVoteCount: number
+  delegatedVoteCount: number
+  signalSum: number
+  signalAverage: string
+  eligibleVoterCount: number
+  quorumTarget: number
+  quorumMet: boolean
+  official: boolean
+  certified: boolean
+  outcome:
+    | 'insufficient_quorum'
+    | 'contested'
+    | 'passed'
+    | 'strong_passed'
+    | 'failed'
+    | (string & {})
+  state:
+    | 'draft'
+    | 'deliberation'
+    | 'voting'
+    | 'passed'
+    | 'failed'
+    | 'official'
+    | (string & {})
+  breakdown: PolicySignalBucket[]
+  computedAt: string
+}
+
+const hashPolicyTally = 'policyTally'
+
+export function isPolicyTally<V>(v: V) {
+  return is$typed(v, id, hashPolicyTally)
+}
+
+export function validatePolicyTally<V>(v: V) {
+  return validate<PolicyTally & V>(v, id, hashPolicyTally)
+}

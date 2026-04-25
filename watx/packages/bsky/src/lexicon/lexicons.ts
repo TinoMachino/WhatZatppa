@@ -65,10 +65,6 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:app.bsky.actor.defs#statusView',
           },
-          cabildeoLive: {
-            type: 'ref',
-            ref: 'lex:com.para.civic.defs#cabildeoLive',
-          },
           debug: {
             type: 'unknown',
             description: 'Debug information for internal development',
@@ -134,10 +130,6 @@ export const schemaDict = {
           status: {
             type: 'ref',
             ref: 'lex:app.bsky.actor.defs#statusView',
-          },
-          cabildeoLive: {
-            type: 'ref',
-            ref: 'lex:com.para.civic.defs#cabildeoLive',
           },
           debug: {
             type: 'unknown',
@@ -229,10 +221,6 @@ export const schemaDict = {
           status: {
             type: 'ref',
             ref: 'lex:app.bsky.actor.defs#statusView',
-          },
-          cabildeoLive: {
-            type: 'ref',
-            ref: 'lex:com.para.civic.defs#cabildeoLive',
           },
           debug: {
             type: 'unknown',
@@ -9751,6 +9739,7 @@ export const schemaDict = {
             refs: [
               'lex:chat.bsky.actor.defs#directConvoMember',
               'lex:chat.bsky.actor.defs#groupConvoMember',
+              'lex:chat.bsky.actor.defs#pastGroupConvoMember',
             ],
           },
         },
@@ -9763,7 +9752,7 @@ export const schemaDict = {
       },
       groupConvoMember: {
         description:
-          '[NOTE: This is under active development and should be considered unstable while this note is here].',
+          '[NOTE: This is under active development and should be considered unstable while this note is here]. A current group convo member.',
         type: 'object',
         required: ['role'],
         properties: {
@@ -9780,6 +9769,13 @@ export const schemaDict = {
             ref: 'lex:chat.bsky.actor.defs#memberRole',
           },
         },
+      },
+      pastGroupConvoMember: {
+        description:
+          '[NOTE: This is under active development and should be considered unstable while this note is here]. A past group convo member.',
+        type: 'object',
+        required: [],
+        properties: {},
       },
     },
   },
@@ -10024,6 +10020,16 @@ export const schemaDict = {
           },
         },
       },
+      systemMessageReferredUser: {
+        type: 'object',
+        required: ['did'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+        },
+      },
       systemMessageView: {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here].',
@@ -10068,7 +10074,7 @@ export const schemaDict = {
           member: {
             description: 'Current view of the member who was added.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
           role: {
             description:
@@ -10078,7 +10084,7 @@ export const schemaDict = {
           },
           addedBy: {
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10091,11 +10097,11 @@ export const schemaDict = {
           member: {
             description: 'Current view of the member who was removed.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
           removedBy: {
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10108,7 +10114,7 @@ export const schemaDict = {
           member: {
             description: 'Current view of the member who joined.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
           role: {
             description:
@@ -10120,7 +10126,7 @@ export const schemaDict = {
             description:
               'If join link was configured to require approval, this will be set to who approved the request. Undefined if approval was not required.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10133,7 +10139,7 @@ export const schemaDict = {
           member: {
             description: 'Current view of the member who left the group.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10146,7 +10152,7 @@ export const schemaDict = {
           lockedBy: {
             description: 'Current view of the member who locked the group.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10159,7 +10165,7 @@ export const schemaDict = {
           unlockedBy: {
             description: 'Current view of the member who unlocked the group.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10172,7 +10178,7 @@ export const schemaDict = {
           lockedBy: {
             description: 'Current view of the member who locked the group.',
             type: 'ref',
-            ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageReferredUser',
           },
         },
       },
@@ -10298,7 +10304,7 @@ export const schemaDict = {
           },
           members: {
             description:
-              'Members of this conversation. For direct convos, it will be an immutable list of the 2 members. For group convos, it will a list of important members (the first few members, the viewer, the member who invited the viewer, the member who sent the last message, the member who sent the last reaction), but will not contain the full list of members. NOTE: TBD an endpoint to list all members.',
+              'Members of this conversation. For direct convos, it will be an immutable list of the 2 members. For group convos, it will a list of important members (the first few members, the viewer, the member who invited the viewer, the member who sent the last message, the member who sent the last reaction), but will not contain the full list of members. Use chat.bsky.convo.getConvoMembers to list all members.',
             type: 'array',
             items: {
               type: 'ref',
@@ -10350,13 +10356,18 @@ export const schemaDict = {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here].',
         type: 'object',
-        required: ['name', 'lockStatus'],
+        required: ['name', 'lockStatus', 'memberCount'],
         properties: {
           name: {
             type: 'string',
             description: 'The display name of the group conversation.',
             maxGraphemes: 128,
             maxLength: 1280,
+          },
+          memberCount: {
+            type: 'integer',
+            description:
+              'The total number of members in the group conversation.',
           },
           joinLink: {
             type: 'ref',
@@ -10577,7 +10588,7 @@ export const schemaDict = {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member was added to a group convo. The member who was added gets a logBeginConvo (to create the convo) but also a logAddMember (to show the system message as the first message the user sees).',
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10586,8 +10597,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataAddMember',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataAddMember',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10595,7 +10616,7 @@ export const schemaDict = {
         description:
           "[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member was removed from a group convo. The member who was removed gets a logLeaveConvo (to leave the convo) but not a logRemoveMember (because they already left, so can't see the system message).",
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10604,8 +10625,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataRemoveMember',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataRemoveMember',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10613,7 +10644,7 @@ export const schemaDict = {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member joined a group convo via join link. The member who was added gets a logBeginConvo (to create the convo) but also a logMemberJoin (to show the system message as the first message the user sees).',
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10622,8 +10653,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataMemberJoin',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataMemberJoin',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10631,7 +10672,7 @@ export const schemaDict = {
         description:
           "[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a member voluntarily left a group convo. The member who was removed gets a logLeaveConvo (to leave the convo) but not a logMemberLeave (because they already left, so can't see the system message).",
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10640,8 +10681,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataMemberLeave',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataMemberLeave',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10649,7 +10700,7 @@ export const schemaDict = {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was locked.',
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10658,8 +10709,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataLockConvo',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataLockConvo',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10667,7 +10728,7 @@ export const schemaDict = {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was unlocked.',
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10676,8 +10737,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataUnlockConvo',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataUnlockConvo',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10685,7 +10756,7 @@ export const schemaDict = {
         description:
           '[NOTE: This is under active development and should be considered unstable while this note is here]. Event indicating a group convo was locked permanently.',
         type: 'object',
-        required: ['rev', 'convoId', 'message'],
+        required: ['rev', 'convoId', 'message', 'relatedProfiles'],
         properties: {
           rev: {
             type: 'string',
@@ -10694,8 +10765,18 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataLockConvoPermanently',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataLockConvoPermanently',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
+          },
+          relatedProfiles: {
+            description: 'Profiles referred in the system message.',
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+            },
           },
         },
       },
@@ -10712,8 +10793,10 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataEditGroup',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataEditGroup',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
           },
         },
       },
@@ -10730,8 +10813,10 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataCreateJoinLink',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataCreateJoinLink',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
           },
         },
       },
@@ -10748,8 +10833,10 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataEditJoinLink',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataEditJoinLink',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
           },
         },
       },
@@ -10766,8 +10853,10 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataEnableJoinLink',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataEnableJoinLink',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
           },
         },
       },
@@ -10784,8 +10873,10 @@ export const schemaDict = {
             type: 'string',
           },
           message: {
+            description:
+              'A system message with data of type #systemMessageDataDisableJoinLink',
             type: 'ref',
-            ref: 'lex:chat.bsky.convo.defs#systemMessageDataDisableJoinLink',
+            ref: 'lex:chat.bsky.convo.defs#systemMessageView',
           },
         },
       },
@@ -11040,6 +11131,58 @@ export const schemaDict = {
       },
     },
   },
+  ChatBskyConvoGetConvoMembers: {
+    lexicon: 1,
+    id: 'chat.bsky.convo.getConvoMembers',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Returns a paginated list of members from a conversation.',
+        errors: [
+          {
+            name: 'InvalidConvo',
+          },
+        ],
+        parameters: {
+          type: 'params',
+          required: ['convoId'],
+          properties: {
+            convoId: {
+              type: 'string',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['members'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              members: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
   ChatBskyConvoGetLog: {
     lexicon: 1,
     id: 'chat.bsky.convo.getLog',
@@ -11153,6 +11296,15 @@ export const schemaDict = {
                     'lex:chat.bsky.convo.defs#deletedMessageView',
                     'lex:chat.bsky.convo.defs#systemMessageView',
                   ],
+                },
+              },
+              relatedProfiles: {
+                description:
+                  'Set of all members who authored or reacted to the returned messages. Members referred to by system messages are also included.',
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
                 },
               },
             },
@@ -11805,6 +11957,13 @@ export const schemaDict = {
               convo: {
                 type: 'ref',
                 ref: 'lex:chat.bsky.convo.defs#convoView',
+              },
+              addedMembers: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:chat.bsky.actor.defs#profileViewBasic',
+                },
               },
             },
           },
@@ -15819,15 +15978,16 @@ export const schemaDict = {
       main: {
         type: 'query',
         description:
-          'Get a signed token on behalf of the requesting DID for the requested service, which can be used to make an authenticated XRPC HTTP API request. Implemented by PDS, requires authentication, and constrained by session permissions.',
+          'Get a signed token on behalf of the requesting DID for the requested service.',
         parameters: {
           type: 'params',
           required: ['aud'],
           properties: {
             aud: {
               type: 'string',
+              format: 'did',
               description:
-                "The \"audience\" DID service reference for the intended recipient of the request. Syntax is a DID with a service endpoint id, separated by a hash (eg 'did:web:example.com#app_svc'). For OAuth clients, this field must exactly match the 'aud' granted via permission. Use of a bare DID (with no hash or service id) is deprecated, and does not work with OAuth clients.",
+                'The DID of the service that the token will be used to authenticate with',
             },
             exp: {
               type: 'integer',
@@ -15838,7 +15998,7 @@ export const schemaDict = {
               type: 'string',
               format: 'nsid',
               description:
-                'Lexicon (XRPC) method to bind the requested token to. This field is effectively required.',
+                'Lexicon (XRPC) method to bind the requested token to',
             },
           },
         },
@@ -18257,6 +18417,126 @@ export const schemaDict = {
           },
         },
       },
+      policySignalBucket: {
+        type: 'object',
+        required: ['signal', 'count'],
+        properties: {
+          signal: {
+            type: 'integer',
+            minimum: -3,
+            maximum: 3,
+          },
+          count: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      policyTally: {
+        type: 'object',
+        required: [
+          'subject',
+          'subjectType',
+          'community',
+          'voteCount',
+          'directVoteCount',
+          'delegatedVoteCount',
+          'signalSum',
+          'signalAverage',
+          'eligibleVoterCount',
+          'quorumTarget',
+          'quorumMet',
+          'official',
+          'certified',
+          'outcome',
+          'state',
+          'breakdown',
+          'computedAt',
+        ],
+        properties: {
+          subject: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          subjectType: {
+            type: 'string',
+            knownValues: ['policy'],
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          voteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          directVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegatedVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          signalSum: {
+            type: 'integer',
+          },
+          signalAverage: {
+            type: 'string',
+            maxLength: 32,
+          },
+          eligibleVoterCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          quorumTarget: {
+            type: 'integer',
+            minimum: 1,
+          },
+          quorumMet: {
+            type: 'boolean',
+          },
+          official: {
+            type: 'boolean',
+          },
+          certified: {
+            type: 'boolean',
+          },
+          outcome: {
+            type: 'string',
+            knownValues: [
+              'insufficient_quorum',
+              'contested',
+              'passed',
+              'strong_passed',
+              'failed',
+            ],
+          },
+          state: {
+            type: 'string',
+            knownValues: [
+              'draft',
+              'deliberation',
+              'voting',
+              'passed',
+              'failed',
+              'official',
+            ],
+          },
+          breakdown: {
+            type: 'array',
+            maxLength: 7,
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#policySignalBucket',
+            },
+          },
+          computedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
     },
   },
   ComParaCivicDelegation: {
@@ -18331,6 +18611,45 @@ export const schemaDict = {
             },
           },
         },
+      },
+    },
+  },
+  ComParaCivicGetPolicyTally: {
+    lexicon: 1,
+    id: 'com.para.civic.getPolicyTally',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get the weighted consensus tally for a policy post using civic vote signals from -3 to +3.',
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['tally'],
+            properties: {
+              tally: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.defs#policyTally',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+        ],
       },
     },
   },
@@ -20419,165 +20738,6 @@ export const schemaDict = {
       },
     },
   },
-  ComParaPost: {
-    lexicon: 1,
-    id: 'com.para.post',
-    defs: {
-      main: {
-        type: 'record',
-        description: 'Record containing a Para post.',
-        key: 'tid',
-        record: {
-          type: 'object',
-          required: ['text', 'createdAt'],
-          properties: {
-            text: {
-              type: 'string',
-              maxLength: 3000,
-              maxGraphemes: 300,
-              description:
-                'The primary post content. May be an empty string, if there are embeds.',
-            },
-            entities: {
-              type: 'array',
-              description: 'DEPRECATED: replaced by app.bsky.richtext.facet.',
-              items: {
-                type: 'ref',
-                ref: 'lex:com.para.post#entity',
-              },
-            },
-            facets: {
-              type: 'array',
-              description:
-                'Annotations of text (mentions, URLs, hashtags, etc)',
-              items: {
-                type: 'ref',
-                ref: 'lex:app.bsky.richtext.facet',
-              },
-            },
-            reply: {
-              type: 'ref',
-              ref: 'lex:com.para.post#replyRef',
-            },
-            embed: {
-              type: 'union',
-              refs: [
-                'lex:app.bsky.embed.images',
-                'lex:app.bsky.embed.video',
-                'lex:app.bsky.embed.external',
-                'lex:app.bsky.embed.record',
-                'lex:app.bsky.embed.recordWithMedia',
-              ],
-            },
-            langs: {
-              type: 'array',
-              description:
-                'Indicates human language of post primary text content.',
-              maxLength: 3,
-              items: {
-                type: 'string',
-                format: 'language',
-              },
-            },
-            labels: {
-              type: 'union',
-              description:
-                'Self-label values for this post. Effectively content warnings.',
-              refs: ['lex:com.atproto.label.defs#selfLabels'],
-            },
-            tags: {
-              type: 'array',
-              description:
-                'Additional hashtags, in addition to any included in post text and facets.',
-              maxLength: 8,
-              items: {
-                type: 'string',
-                maxLength: 640,
-                maxGraphemes: 64,
-              },
-            },
-            flairs: {
-              type: 'array',
-              description:
-                'Optional para-specific flairs associated with the post.',
-              maxLength: 10,
-              items: {
-                type: 'string',
-                maxLength: 128,
-              },
-            },
-            postType: {
-              type: 'string',
-              description:
-                'Optional para-specific post type (policy, matter, meme, etc).',
-              maxLength: 64,
-            },
-            title: {
-              type: 'string',
-              maxLength: 300,
-              maxGraphemes: 300,
-              description:
-                'Optional title for policy or proposal posts, summarizing the content.',
-            },
-            createdAt: {
-              type: 'string',
-              format: 'datetime',
-              description:
-                'Client-declared timestamp when this post was originally created.',
-            },
-          },
-        },
-      },
-      replyRef: {
-        type: 'object',
-        required: ['root', 'parent'],
-        properties: {
-          root: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
-          },
-          parent: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
-          },
-        },
-      },
-      entity: {
-        type: 'object',
-        description: 'Deprecated: use facets instead.',
-        required: ['index', 'type', 'value'],
-        properties: {
-          index: {
-            type: 'ref',
-            ref: 'lex:com.para.post#textSlice',
-          },
-          type: {
-            type: 'string',
-            description: "Expected values are 'mention' and 'link'.",
-          },
-          value: {
-            type: 'string',
-          },
-        },
-      },
-      textSlice: {
-        type: 'object',
-        description:
-          'Deprecated. Use app.bsky.richtext instead -- A text segment. Start is inclusive, end is exclusive. Indices are for utf16-encoded strings.',
-        required: ['start', 'end'],
-        properties: {
-          start: {
-            type: 'integer',
-            minimum: 0,
-          },
-          end: {
-            type: 'integer',
-            minimum: 0,
-          },
-        },
-      },
-    },
-  },
   ComParaSocialGetPostMeta: {
     lexicon: 1,
     id: 'com.para.social.getPostMeta',
@@ -20724,40 +20884,5173 @@ export const schemaDict = {
       },
     },
   },
-  ComParaStatus: {
+  ToolsOzoneCommunicationCreateTemplate: {
     lexicon: 1,
-    id: 'com.para.status',
+    id: 'tools.ozone.communication.createTemplate',
     defs: {
       main: {
-        type: 'record',
-        description: 'Current public status for a Para account.',
-        key: 'literal:self',
-        record: {
-          type: 'object',
-          required: ['status', 'createdAt'],
+        type: 'procedure',
+        description:
+          'Administrative action to create a new, re-usable communication (email for now) template.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['subject', 'contentMarkdown', 'name'],
+            properties: {
+              name: {
+                type: 'string',
+                description: 'Name of the template.',
+              },
+              contentMarkdown: {
+                type: 'string',
+                description:
+                  'Content of the template, markdown supported, can contain variable placeholders.',
+              },
+              subject: {
+                type: 'string',
+                description: 'Subject of the message, used in emails.',
+              },
+              lang: {
+                type: 'string',
+                format: 'language',
+                description: 'Message language.',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+                description: 'DID of the user who is creating the template.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.communication.defs#templateView',
+          },
+        },
+        errors: [
+          {
+            name: 'DuplicateTemplateName',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneCommunicationDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.communication.defs',
+    defs: {
+      templateView: {
+        type: 'object',
+        required: [
+          'id',
+          'name',
+          'contentMarkdown',
+          'disabled',
+          'lastUpdatedBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        properties: {
+          id: {
+            type: 'string',
+          },
+          name: {
+            type: 'string',
+            description: 'Name of the template.',
+          },
+          subject: {
+            type: 'string',
+            description:
+              'Content of the template, can contain markdown and variable placeholders.',
+          },
+          contentMarkdown: {
+            type: 'string',
+            description: 'Subject of the message, used in emails.',
+          },
+          disabled: {
+            type: 'boolean',
+          },
+          lang: {
+            type: 'string',
+            format: 'language',
+            description: 'Message language.',
+          },
+          lastUpdatedBy: {
+            type: 'string',
+            format: 'did',
+            description: 'DID of the user who last updated the template.',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneCommunicationDeleteTemplate: {
+    lexicon: 1,
+    id: 'tools.ozone.communication.deleteTemplate',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Delete a communication template.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneCommunicationListTemplates: {
+    lexicon: 1,
+    id: 'tools.ozone.communication.listTemplates',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get list of all communication templates.',
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['communicationTemplates'],
+            properties: {
+              communicationTemplates: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.communication.defs#templateView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneCommunicationUpdateTemplate: {
+    lexicon: 1,
+    id: 'tools.ozone.communication.updateTemplate',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Administrative action to update an existing communication template. Allows passing partial fields to patch specific fields only.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: {
+                type: 'string',
+                description: 'ID of the template to be updated.',
+              },
+              name: {
+                type: 'string',
+                description: 'Name of the template.',
+              },
+              lang: {
+                type: 'string',
+                format: 'language',
+                description: 'Message language.',
+              },
+              contentMarkdown: {
+                type: 'string',
+                description:
+                  'Content of the template, markdown supported, can contain variable placeholders.',
+              },
+              subject: {
+                type: 'string',
+                description: 'Subject of the message, used in emails.',
+              },
+              updatedBy: {
+                type: 'string',
+                format: 'did',
+                description: 'DID of the user who is updating the template.',
+              },
+              disabled: {
+                type: 'boolean',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.communication.defs#templateView',
+          },
+        },
+        errors: [
+          {
+            name: 'DuplicateTemplateName',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneHostingGetAccountHistory: {
+    lexicon: 1,
+    id: 'tools.ozone.hosting.getAccountHistory',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get account history, e.g. log of updated email addresses or other identity information.',
+        parameters: {
+          type: 'params',
+          required: ['did'],
           properties: {
-            status: {
+            did: {
               type: 'string',
-              maxLength: 300,
-              maxGraphemes: 300,
-              description: "User's public status message.",
+              format: 'did',
             },
-            party: {
+            events: {
+              type: 'array',
+              items: {
+                type: 'string',
+                knownValues: [
+                  'accountCreated',
+                  'emailUpdated',
+                  'emailConfirmed',
+                  'passwordUpdated',
+                  'handleUpdated',
+                ],
+              },
+            },
+            cursor: {
               type: 'string',
-              maxLength: 64,
-              maxGraphemes: 64,
-              description: 'Optional political party affiliation.',
             },
-            community: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['events'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              events: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.hosting.getAccountHistory#event',
+                },
+              },
+            },
+          },
+        },
+      },
+      event: {
+        type: 'object',
+        required: ['details', 'createdBy', 'createdAt'],
+        properties: {
+          details: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.hosting.getAccountHistory#accountCreated',
+              'lex:tools.ozone.hosting.getAccountHistory#emailUpdated',
+              'lex:tools.ozone.hosting.getAccountHistory#emailConfirmed',
+              'lex:tools.ozone.hosting.getAccountHistory#passwordUpdated',
+              'lex:tools.ozone.hosting.getAccountHistory#handleUpdated',
+            ],
+          },
+          createdBy: {
+            type: 'string',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      accountCreated: {
+        type: 'object',
+        required: [],
+        properties: {
+          email: {
+            type: 'string',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+        },
+      },
+      emailUpdated: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: {
+            type: 'string',
+          },
+        },
+      },
+      emailConfirmed: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: {
+            type: 'string',
+          },
+        },
+      },
+      passwordUpdated: {
+        type: 'object',
+        required: [],
+        properties: {},
+      },
+      handleUpdated: {
+        type: 'object',
+        required: ['handle'],
+        properties: {
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationCancelScheduledActions: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.cancelScheduledActions',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Cancel all pending scheduled moderation actions for specified subjects',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['subjects'],
+            properties: {
+              subjects: {
+                type: 'array',
+                maxLength: 100,
+                items: {
+                  type: 'string',
+                  format: 'did',
+                },
+                description:
+                  'Array of DID subjects to cancel scheduled actions for',
+              },
+              comment: {
+                type: 'string',
+                description:
+                  'Optional comment describing the reason for cancellation',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.cancelScheduledActions#cancellationResults',
+          },
+        },
+      },
+      cancellationResults: {
+        type: 'object',
+        required: ['succeeded', 'failed'],
+        properties: {
+          succeeded: {
+            type: 'array',
+            items: {
               type: 'string',
-              maxLength: 64,
-              maxGraphemes: 64,
-              description: 'Optional primary community label.',
+              format: 'did',
             },
-            createdAt: {
+            description:
+              'DIDs for which all pending scheduled actions were successfully cancelled',
+          },
+          failed: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:tools.ozone.moderation.cancelScheduledActions#failedCancellation',
+            },
+            description:
+              'DIDs for which cancellation failed with error details',
+          },
+        },
+      },
+      failedCancellation: {
+        type: 'object',
+        required: ['did', 'error'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          error: {
+            type: 'string',
+          },
+          errorCode: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.defs',
+    defs: {
+      modEventView: {
+        type: 'object',
+        required: [
+          'id',
+          'event',
+          'subject',
+          'subjectBlobCids',
+          'createdBy',
+          'createdAt',
+        ],
+        properties: {
+          id: {
+            type: 'integer',
+          },
+          event: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#modEventTakedown',
+              'lex:tools.ozone.moderation.defs#modEventReverseTakedown',
+              'lex:tools.ozone.moderation.defs#modEventComment',
+              'lex:tools.ozone.moderation.defs#modEventReport',
+              'lex:tools.ozone.moderation.defs#modEventLabel',
+              'lex:tools.ozone.moderation.defs#modEventAcknowledge',
+              'lex:tools.ozone.moderation.defs#modEventEscalate',
+              'lex:tools.ozone.moderation.defs#modEventMute',
+              'lex:tools.ozone.moderation.defs#modEventUnmute',
+              'lex:tools.ozone.moderation.defs#modEventMuteReporter',
+              'lex:tools.ozone.moderation.defs#modEventUnmuteReporter',
+              'lex:tools.ozone.moderation.defs#modEventEmail',
+              'lex:tools.ozone.moderation.defs#modEventResolveAppeal',
+              'lex:tools.ozone.moderation.defs#modEventDivert',
+              'lex:tools.ozone.moderation.defs#modEventTag',
+              'lex:tools.ozone.moderation.defs#accountEvent',
+              'lex:tools.ozone.moderation.defs#identityEvent',
+              'lex:tools.ozone.moderation.defs#recordEvent',
+              'lex:tools.ozone.moderation.defs#modEventPriorityScore',
+              'lex:tools.ozone.moderation.defs#ageAssuranceEvent',
+              'lex:tools.ozone.moderation.defs#ageAssuranceOverrideEvent',
+              'lex:tools.ozone.moderation.defs#ageAssurancePurgeEvent',
+              'lex:tools.ozone.moderation.defs#revokeAccountCredentialsEvent',
+              'lex:tools.ozone.moderation.defs#scheduleTakedownEvent',
+              'lex:tools.ozone.moderation.defs#cancelScheduledTakedownEvent',
+            ],
+          },
+          subject: {
+            type: 'union',
+            refs: [
+              'lex:com.atproto.admin.defs#repoRef',
+              'lex:com.atproto.repo.strongRef',
+              'lex:chat.bsky.convo.defs#messageRef',
+            ],
+          },
+          subjectBlobCids: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          createdBy: {
+            type: 'string',
+            format: 'did',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          creatorHandle: {
+            type: 'string',
+          },
+          subjectHandle: {
+            type: 'string',
+          },
+          modTool: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#modTool',
+          },
+        },
+      },
+      modEventViewDetail: {
+        type: 'object',
+        required: [
+          'id',
+          'event',
+          'subject',
+          'subjectBlobs',
+          'createdBy',
+          'createdAt',
+        ],
+        properties: {
+          id: {
+            type: 'integer',
+          },
+          event: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#modEventTakedown',
+              'lex:tools.ozone.moderation.defs#modEventReverseTakedown',
+              'lex:tools.ozone.moderation.defs#modEventComment',
+              'lex:tools.ozone.moderation.defs#modEventReport',
+              'lex:tools.ozone.moderation.defs#modEventLabel',
+              'lex:tools.ozone.moderation.defs#modEventAcknowledge',
+              'lex:tools.ozone.moderation.defs#modEventEscalate',
+              'lex:tools.ozone.moderation.defs#modEventMute',
+              'lex:tools.ozone.moderation.defs#modEventUnmute',
+              'lex:tools.ozone.moderation.defs#modEventMuteReporter',
+              'lex:tools.ozone.moderation.defs#modEventUnmuteReporter',
+              'lex:tools.ozone.moderation.defs#modEventEmail',
+              'lex:tools.ozone.moderation.defs#modEventResolveAppeal',
+              'lex:tools.ozone.moderation.defs#modEventDivert',
+              'lex:tools.ozone.moderation.defs#modEventTag',
+              'lex:tools.ozone.moderation.defs#accountEvent',
+              'lex:tools.ozone.moderation.defs#identityEvent',
+              'lex:tools.ozone.moderation.defs#recordEvent',
+              'lex:tools.ozone.moderation.defs#modEventPriorityScore',
+              'lex:tools.ozone.moderation.defs#ageAssuranceEvent',
+              'lex:tools.ozone.moderation.defs#ageAssuranceOverrideEvent',
+              'lex:tools.ozone.moderation.defs#ageAssurancePurgeEvent',
+              'lex:tools.ozone.moderation.defs#revokeAccountCredentialsEvent',
+              'lex:tools.ozone.moderation.defs#scheduleTakedownEvent',
+              'lex:tools.ozone.moderation.defs#cancelScheduledTakedownEvent',
+            ],
+          },
+          subject: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#repoView',
+              'lex:tools.ozone.moderation.defs#repoViewNotFound',
+              'lex:tools.ozone.moderation.defs#recordView',
+              'lex:tools.ozone.moderation.defs#recordViewNotFound',
+            ],
+          },
+          subjectBlobs: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:tools.ozone.moderation.defs#blobView',
+            },
+          },
+          createdBy: {
+            type: 'string',
+            format: 'did',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          modTool: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#modTool',
+          },
+        },
+      },
+      subjectStatusView: {
+        type: 'object',
+        required: ['id', 'subject', 'createdAt', 'updatedAt', 'reviewState'],
+        properties: {
+          id: {
+            type: 'integer',
+          },
+          subject: {
+            type: 'union',
+            refs: [
+              'lex:com.atproto.admin.defs#repoRef',
+              'lex:com.atproto.repo.strongRef',
+              'lex:chat.bsky.convo.defs#messageRef',
+            ],
+          },
+          hosting: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#accountHosting',
+              'lex:tools.ozone.moderation.defs#recordHosting',
+            ],
+          },
+          subjectBlobCids: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'cid',
+            },
+          },
+          subjectRepoHandle: {
+            type: 'string',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Timestamp referencing when the last update was made to the moderation status of the subject',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Timestamp referencing the first moderation status impacting event was emitted on the subject',
+          },
+          reviewState: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#subjectReviewState',
+          },
+          comment: {
+            type: 'string',
+            description: 'Sticky comment on the subject.',
+          },
+          priorityScore: {
+            type: 'integer',
+            description:
+              'Numeric value representing the level of priority. Higher score means higher priority.',
+            minimum: 0,
+            maximum: 100,
+          },
+          muteUntil: {
+            type: 'string',
+            format: 'datetime',
+          },
+          muteReportingUntil: {
+            type: 'string',
+            format: 'datetime',
+          },
+          lastReviewedBy: {
+            type: 'string',
+            format: 'did',
+          },
+          lastReviewedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          lastReportedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          lastAppealedAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Timestamp referencing when the author of the subject appealed a moderation action',
+          },
+          takendown: {
+            type: 'boolean',
+          },
+          appealed: {
+            type: 'boolean',
+            description:
+              'True indicates that the a previously taken moderator action was appealed against, by the author of the content. False indicates last appeal was resolved by moderators.',
+          },
+          suspendUntil: {
+            type: 'string',
+            format: 'datetime',
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          accountStats: {
+            description: 'Statistics related to the account subject',
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#accountStats',
+          },
+          recordsStats: {
+            description:
+              "Statistics related to the record subjects authored by the subject's account",
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#recordsStats',
+          },
+          accountStrike: {
+            description:
+              'Strike information for the account (account-level only)',
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#accountStrike',
+          },
+          ageAssuranceState: {
+            type: 'string',
+            description: 'Current age assurance state of the subject.',
+            knownValues: ['pending', 'assured', 'unknown', 'reset', 'blocked'],
+          },
+          ageAssuranceUpdatedBy: {
+            type: 'string',
+            description:
+              'Whether or not the last successful update to age assurance was made by the user or admin.',
+            knownValues: ['admin', 'user'],
+          },
+        },
+      },
+      subjectView: {
+        description:
+          "Detailed view of a subject. For record subjects, the author's repo and profile will be returned.",
+        type: 'object',
+        required: ['type', 'subject'],
+        properties: {
+          type: {
+            type: 'ref',
+            ref: 'lex:com.atproto.moderation.defs#subjectType',
+          },
+          subject: {
+            type: 'string',
+          },
+          status: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#subjectStatusView',
+          },
+          repo: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#repoViewDetail',
+          },
+          profile: {
+            type: 'union',
+            refs: [],
+          },
+          record: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#recordViewDetail',
+          },
+        },
+      },
+      accountStats: {
+        description: 'Statistics about a particular account subject',
+        type: 'object',
+        properties: {
+          reportCount: {
+            description: 'Total number of reports on the account',
+            type: 'integer',
+          },
+          appealCount: {
+            description:
+              'Total number of appeals against a moderation action on the account',
+            type: 'integer',
+          },
+          suspendCount: {
+            description: 'Number of times the account was suspended',
+            type: 'integer',
+          },
+          escalateCount: {
+            description: 'Number of times the account was escalated',
+            type: 'integer',
+          },
+          takedownCount: {
+            description: 'Number of times the account was taken down',
+            type: 'integer',
+          },
+        },
+      },
+      recordsStats: {
+        description: 'Statistics about a set of record subject items',
+        type: 'object',
+        properties: {
+          totalReports: {
+            description:
+              'Cumulative sum of the number of reports on the items in the set',
+            type: 'integer',
+          },
+          reportedCount: {
+            description: 'Number of items that were reported at least once',
+            type: 'integer',
+          },
+          escalatedCount: {
+            description: 'Number of items that were escalated at least once',
+            type: 'integer',
+          },
+          appealedCount: {
+            description: 'Number of items that were appealed at least once',
+            type: 'integer',
+          },
+          subjectCount: {
+            description: 'Total number of item in the set',
+            type: 'integer',
+          },
+          pendingCount: {
+            description:
+              'Number of item currently in "reviewOpen" or "reviewEscalated" state',
+            type: 'integer',
+          },
+          processedCount: {
+            description:
+              'Number of item currently in "reviewNone" or "reviewClosed" state',
+            type: 'integer',
+          },
+          takendownCount: {
+            description: 'Number of item currently taken down',
+            type: 'integer',
+          },
+        },
+      },
+      accountStrike: {
+        description: 'Strike information for an account',
+        type: 'object',
+        properties: {
+          activeStrikeCount: {
+            description:
+              'Current number of active strikes (excluding expired strikes)',
+            type: 'integer',
+          },
+          totalStrikeCount: {
+            description:
+              'Total number of strikes ever received (including expired strikes)',
+            type: 'integer',
+          },
+          firstStrikeAt: {
+            description: 'Timestamp of the first strike received',
+            type: 'string',
+            format: 'datetime',
+          },
+          lastStrikeAt: {
+            description: 'Timestamp of the most recent strike received',
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      subjectReviewState: {
+        type: 'string',
+        knownValues: [
+          'tools.ozone.moderation.defs#reviewOpen',
+          'tools.ozone.moderation.defs#reviewEscalated',
+          'tools.ozone.moderation.defs#reviewClosed',
+          'tools.ozone.moderation.defs#reviewNone',
+        ],
+      },
+      reviewOpen: {
+        type: 'token',
+        description:
+          'Moderator review status of a subject: Open. Indicates that the subject needs to be reviewed by a moderator',
+      },
+      reviewEscalated: {
+        type: 'token',
+        description:
+          'Moderator review status of a subject: Escalated. Indicates that the subject was escalated for review by a moderator',
+      },
+      reviewClosed: {
+        type: 'token',
+        description:
+          'Moderator review status of a subject: Closed. Indicates that the subject was already reviewed and resolved by a moderator',
+      },
+      reviewNone: {
+        type: 'token',
+        description:
+          'Moderator review status of a subject: Unnecessary. Indicates that the subject does not need a review at the moment but there is probably some moderation related metadata available for it',
+      },
+      modEventTakedown: {
+        type: 'object',
+        description: 'Take down a subject permanently or temporarily',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          durationInHours: {
+            type: 'integer',
+            description:
+              'Indicates how long the takedown should be in effect before automatically expiring.',
+          },
+          acknowledgeAccountSubjects: {
+            type: 'boolean',
+            description:
+              'If true, all other reports on content authored by this account will be resolved (acknowledged).',
+          },
+          policies: {
+            type: 'array',
+            maxLength: 5,
+            items: {
+              type: 'string',
+            },
+            description:
+              'Names/Keywords of the policies that drove the decision.',
+          },
+          severityLevel: {
+            type: 'string',
+            description:
+              "Severity level of the violation (e.g., 'sev-0', 'sev-1', 'sev-2', etc.).",
+          },
+          targetServices: {
+            type: 'array',
+            items: {
+              type: 'string',
+              knownValues: ['appview', 'pds'],
+            },
+            description:
+              'List of services where the takedown should be applied. If empty or not provided, takedown is applied on all configured services.',
+          },
+          strikeCount: {
+            type: 'integer',
+            description:
+              'Number of strikes to assign to the user for this violation.',
+          },
+          strikeExpiresAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'When the strike should expire. If not provided, the strike never expires.',
+          },
+        },
+      },
+      modEventReverseTakedown: {
+        type: 'object',
+        description: 'Revert take down action on a subject',
+        properties: {
+          comment: {
+            type: 'string',
+            description: 'Describe reasoning behind the reversal.',
+          },
+          policies: {
+            type: 'array',
+            maxLength: 5,
+            items: {
+              type: 'string',
+            },
+            description:
+              'Names/Keywords of the policy infraction for which takedown is being reversed.',
+          },
+          severityLevel: {
+            type: 'string',
+            description:
+              "Severity level of the violation. Usually set from the last policy infraction's severity.",
+          },
+          strikeCount: {
+            type: 'integer',
+            description:
+              "Number of strikes to subtract from the user's strike count. Usually set from the last policy infraction's severity.",
+          },
+        },
+      },
+      modEventResolveAppeal: {
+        type: 'object',
+        description: 'Resolve appeal on a subject',
+        properties: {
+          comment: {
+            type: 'string',
+            description: 'Describe resolution.',
+          },
+        },
+      },
+      modEventComment: {
+        type: 'object',
+        description:
+          'Add a comment to a subject. An empty comment will clear any previously set sticky comment.',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          sticky: {
+            type: 'boolean',
+            description: 'Make the comment persistent on the subject',
+          },
+        },
+      },
+      modEventReport: {
+        type: 'object',
+        description: 'Report a subject',
+        required: ['reportType'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          isReporterMuted: {
+            type: 'boolean',
+            description:
+              "Set to true if the reporter was muted from reporting at the time of the event. These reports won't impact the reviewState of the subject.",
+          },
+          reportType: {
+            type: 'ref',
+            ref: 'lex:com.atproto.moderation.defs#reasonType',
+          },
+        },
+      },
+      modEventLabel: {
+        type: 'object',
+        description: 'Apply/Negate labels on a subject',
+        required: ['createLabelVals', 'negateLabelVals'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          createLabelVals: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          negateLabelVals: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          durationInHours: {
+            type: 'integer',
+            description:
+              'Indicates how long the label will remain on the subject. Only applies on labels that are being added.',
+          },
+        },
+      },
+      modEventPriorityScore: {
+        type: 'object',
+        description:
+          'Set priority score of the subject. Higher score means higher priority.',
+        required: ['score'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          score: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 100,
+          },
+        },
+      },
+      ageAssuranceEvent: {
+        type: 'object',
+        description:
+          'Age assurance info coming directly from users. Only works on DID subjects.',
+        required: ['createdAt', 'status', 'attemptId'],
+        properties: {
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'The date and time of this write operation.',
+          },
+          attemptId: {
+            type: 'string',
+            description:
+              'The unique identifier for this instance of the age assurance flow, in UUID format.',
+          },
+          status: {
+            type: 'string',
+            description: 'The status of the Age Assurance process.',
+            knownValues: ['unknown', 'pending', 'assured'],
+          },
+          access: {
+            type: 'ref',
+            ref: 'lex:app.bsky.ageassurance.defs#access',
+          },
+          countryCode: {
+            type: 'string',
+            description:
+              'The ISO 3166-1 alpha-2 country code provided when beginning the Age Assurance flow.',
+          },
+          regionCode: {
+            type: 'string',
+            description:
+              'The ISO 3166-2 region code provided when beginning the Age Assurance flow.',
+          },
+          initIp: {
+            type: 'string',
+            description: 'The IP address used when initiating the AA flow.',
+          },
+          initUa: {
+            type: 'string',
+            description: 'The user agent used when initiating the AA flow.',
+          },
+          completeIp: {
+            type: 'string',
+            description: 'The IP address used when completing the AA flow.',
+          },
+          completeUa: {
+            type: 'string',
+            description: 'The user agent used when completing the AA flow.',
+          },
+        },
+      },
+      ageAssuranceOverrideEvent: {
+        type: 'object',
+        description:
+          'Age assurance status override by moderators. Only works on DID subjects.',
+        required: ['comment', 'status'],
+        properties: {
+          status: {
+            type: 'string',
+            description:
+              'The status to be set for the user decided by a moderator, overriding whatever value the user had previously. Use reset to default to original state.',
+            knownValues: ['assured', 'reset', 'blocked'],
+          },
+          access: {
+            type: 'ref',
+            ref: 'lex:app.bsky.ageassurance.defs#access',
+          },
+          comment: {
+            type: 'string',
+            minLength: 1,
+            description: 'Comment describing the reason for the override.',
+          },
+        },
+      },
+      ageAssurancePurgeEvent: {
+        type: 'object',
+        description:
+          'Purges all age assurance events for the subject. Only works on DID subjects. Moderator-only.',
+        required: ['comment'],
+        properties: {
+          comment: {
+            type: 'string',
+            minLength: 1,
+            description: 'Comment describing the reason for the purge.',
+          },
+        },
+      },
+      revokeAccountCredentialsEvent: {
+        type: 'object',
+        description:
+          'Account credentials revocation by moderators. Only works on DID subjects.',
+        required: ['comment'],
+        properties: {
+          comment: {
+            minLength: 1,
+            type: 'string',
+            description: 'Comment describing the reason for the revocation.',
+          },
+        },
+      },
+      modEventAcknowledge: {
+        type: 'object',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          acknowledgeAccountSubjects: {
+            type: 'boolean',
+            description:
+              'If true, all other reports on content authored by this account will be resolved (acknowledged).',
+          },
+        },
+      },
+      modEventEscalate: {
+        type: 'object',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+        },
+      },
+      modEventMute: {
+        type: 'object',
+        description: 'Mute incoming reports on a subject',
+        required: ['durationInHours'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          durationInHours: {
+            type: 'integer',
+            description: 'Indicates how long the subject should remain muted.',
+          },
+        },
+      },
+      modEventUnmute: {
+        type: 'object',
+        description: 'Unmute action on a subject',
+        properties: {
+          comment: {
+            type: 'string',
+            description: 'Describe reasoning behind the reversal.',
+          },
+        },
+      },
+      modEventMuteReporter: {
+        type: 'object',
+        description: 'Mute incoming reports from an account',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          durationInHours: {
+            type: 'integer',
+            description:
+              'Indicates how long the account should remain muted. Falsy value here means a permanent mute.',
+          },
+        },
+      },
+      modEventUnmuteReporter: {
+        type: 'object',
+        description: 'Unmute incoming reports from an account',
+        properties: {
+          comment: {
+            type: 'string',
+            description: 'Describe reasoning behind the reversal.',
+          },
+        },
+      },
+      modEventEmail: {
+        type: 'object',
+        description: 'Keep a log of outgoing email to a user',
+        required: ['subjectLine'],
+        properties: {
+          subjectLine: {
+            type: 'string',
+            description: 'The subject line of the email sent to the user.',
+          },
+          content: {
+            type: 'string',
+            description: 'The content of the email sent to the user.',
+          },
+          comment: {
+            type: 'string',
+            description: 'Additional comment about the outgoing comm.',
+          },
+          policies: {
+            type: 'array',
+            maxLength: 5,
+            items: {
+              type: 'string',
+            },
+            description:
+              'Names/Keywords of the policies that necessitated the email.',
+          },
+          severityLevel: {
+            type: 'string',
+            description:
+              "Severity level of the violation. Normally 'sev-1' that adds strike on repeat offense",
+          },
+          strikeCount: {
+            type: 'integer',
+            description:
+              'Number of strikes to assign to the user for this violation. Normally 0 as an indicator of a warning and only added as a strike on a repeat offense.',
+          },
+          strikeExpiresAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'When the strike should expire. If not provided, the strike never expires.',
+          },
+          isDelivered: {
+            type: 'boolean',
+            description:
+              "Indicates whether the email was successfully delivered to the user's inbox.",
+          },
+        },
+      },
+      modEventDivert: {
+        type: 'object',
+        description:
+          "Divert a record's blobs to a 3rd party service for further scanning/tagging",
+        properties: {
+          comment: {
+            type: 'string',
+          },
+        },
+      },
+      modEventTag: {
+        type: 'object',
+        description: 'Add/Remove a tag on a subject',
+        required: ['add', 'remove'],
+        properties: {
+          add: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description:
+              "Tags to be added to the subject. If already exists, won't be duplicated.",
+          },
+          remove: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description:
+              "Tags to be removed to the subject. Ignores a tag If it doesn't exist, won't be duplicated.",
+          },
+          comment: {
+            type: 'string',
+            description: 'Additional comment about added/removed tags.',
+          },
+        },
+      },
+      accountEvent: {
+        type: 'object',
+        description:
+          'Logs account status related events on a repo subject. Normally captured by automod from the firehose and emitted to ozone for historical tracking.',
+        required: ['timestamp', 'active'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          active: {
+            type: 'boolean',
+            description:
+              'Indicates that the account has a repository which can be fetched from the host that emitted this event.',
+          },
+          status: {
+            type: 'string',
+            knownValues: [
+              'unknown',
+              'deactivated',
+              'deleted',
+              'takendown',
+              'suspended',
+              'tombstoned',
+            ],
+          },
+          timestamp: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      identityEvent: {
+        type: 'object',
+        description:
+          'Logs identity related events on a repo subject. Normally captured by automod from the firehose and emitted to ozone for historical tracking.',
+        required: ['timestamp'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          pdsHost: {
+            type: 'string',
+            format: 'uri',
+          },
+          tombstone: {
+            type: 'boolean',
+          },
+          timestamp: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      recordEvent: {
+        type: 'object',
+        description:
+          'Logs lifecycle event on a record subject. Normally captured by automod from the firehose and emitted to ozone for historical tracking.',
+        required: ['timestamp', 'op'],
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          op: {
+            type: 'string',
+            knownValues: ['create', 'update', 'delete'],
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          timestamp: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      scheduleTakedownEvent: {
+        type: 'object',
+        description: 'Logs a scheduled takedown action for an account.',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          executeAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          executeAfter: {
+            type: 'string',
+            format: 'datetime',
+          },
+          executeUntil: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      cancelScheduledTakedownEvent: {
+        type: 'object',
+        description:
+          'Logs cancellation of a scheduled takedown action for an account.',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+        },
+      },
+      repoView: {
+        type: 'object',
+        required: [
+          'did',
+          'handle',
+          'relatedRecords',
+          'indexedAt',
+          'moderation',
+        ],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          email: {
+            type: 'string',
+          },
+          relatedRecords: {
+            type: 'array',
+            items: {
+              type: 'unknown',
+            },
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          moderation: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#moderation',
+          },
+          invitedBy: {
+            type: 'ref',
+            ref: 'lex:com.atproto.server.defs#inviteCode',
+          },
+          invitesDisabled: {
+            type: 'boolean',
+          },
+          inviteNote: {
+            type: 'string',
+          },
+          deactivatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          threatSignatures: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.atproto.admin.defs#threatSignature',
+            },
+          },
+        },
+      },
+      repoViewDetail: {
+        type: 'object',
+        required: [
+          'did',
+          'handle',
+          'relatedRecords',
+          'indexedAt',
+          'moderation',
+        ],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          email: {
+            type: 'string',
+          },
+          relatedRecords: {
+            type: 'array',
+            items: {
+              type: 'unknown',
+            },
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          moderation: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#moderationDetail',
+          },
+          labels: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.atproto.label.defs#label',
+            },
+          },
+          invitedBy: {
+            type: 'ref',
+            ref: 'lex:com.atproto.server.defs#inviteCode',
+          },
+          invites: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.atproto.server.defs#inviteCode',
+            },
+          },
+          invitesDisabled: {
+            type: 'boolean',
+          },
+          inviteNote: {
+            type: 'string',
+          },
+          emailConfirmedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          deactivatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          threatSignatures: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.atproto.admin.defs#threatSignature',
+            },
+          },
+        },
+      },
+      repoViewNotFound: {
+        type: 'object',
+        required: ['did'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+        },
+      },
+      recordView: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'value',
+          'blobCids',
+          'indexedAt',
+          'moderation',
+          'repo',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          value: {
+            type: 'unknown',
+          },
+          blobCids: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'cid',
+            },
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          moderation: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#moderation',
+          },
+          repo: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#repoView',
+          },
+        },
+      },
+      recordViewDetail: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'value',
+          'blobs',
+          'indexedAt',
+          'moderation',
+          'repo',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          value: {
+            type: 'unknown',
+          },
+          blobs: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:tools.ozone.moderation.defs#blobView',
+            },
+          },
+          labels: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.atproto.label.defs#label',
+            },
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          moderation: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#moderationDetail',
+          },
+          repo: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#repoView',
+          },
+        },
+      },
+      recordViewNotFound: {
+        type: 'object',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+        },
+      },
+      moderation: {
+        type: 'object',
+        properties: {
+          subjectStatus: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#subjectStatusView',
+          },
+        },
+      },
+      moderationDetail: {
+        type: 'object',
+        properties: {
+          subjectStatus: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#subjectStatusView',
+          },
+        },
+      },
+      blobView: {
+        type: 'object',
+        required: ['cid', 'mimeType', 'size', 'createdAt'],
+        properties: {
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          mimeType: {
+            type: 'string',
+          },
+          size: {
+            type: 'integer',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          details: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#imageDetails',
+              'lex:tools.ozone.moderation.defs#videoDetails',
+            ],
+          },
+          moderation: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#moderation',
+          },
+        },
+      },
+      imageDetails: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+        },
+      },
+      videoDetails: {
+        type: 'object',
+        required: ['width', 'height', 'length'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+          length: {
+            type: 'integer',
+          },
+        },
+      },
+      accountHosting: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: {
+            type: 'string',
+            knownValues: [
+              'takendown',
+              'suspended',
+              'deleted',
+              'deactivated',
+              'unknown',
+            ],
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          deletedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          deactivatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          reactivatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      recordHosting: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: {
+            type: 'string',
+            knownValues: ['deleted', 'unknown'],
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          deletedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      reporterStats: {
+        type: 'object',
+        required: [
+          'did',
+          'accountReportCount',
+          'recordReportCount',
+          'reportedAccountCount',
+          'reportedRecordCount',
+          'takendownAccountCount',
+          'takendownRecordCount',
+          'labeledAccountCount',
+          'labeledRecordCount',
+        ],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          accountReportCount: {
+            type: 'integer',
+            description:
+              'The total number of reports made by the user on accounts.',
+          },
+          recordReportCount: {
+            type: 'integer',
+            description:
+              'The total number of reports made by the user on records.',
+          },
+          reportedAccountCount: {
+            type: 'integer',
+            description: 'The total number of accounts reported by the user.',
+          },
+          reportedRecordCount: {
+            type: 'integer',
+            description: 'The total number of records reported by the user.',
+          },
+          takendownAccountCount: {
+            type: 'integer',
+            description:
+              "The total number of accounts taken down as a result of the user's reports.",
+          },
+          takendownRecordCount: {
+            type: 'integer',
+            description:
+              "The total number of records taken down as a result of the user's reports.",
+          },
+          labeledAccountCount: {
+            type: 'integer',
+            description:
+              "The total number of accounts labeled as a result of the user's reports.",
+          },
+          labeledRecordCount: {
+            type: 'integer',
+            description:
+              "The total number of records labeled as a result of the user's reports.",
+          },
+        },
+      },
+      modTool: {
+        type: 'object',
+        description:
+          'Moderation tool information for tracing the source of the action',
+        required: ['name'],
+        properties: {
+          name: {
+            type: 'string',
+            description:
+              "Name/identifier of the source (e.g., 'automod', 'ozone/workspace')",
+          },
+          meta: {
+            type: 'unknown',
+            description: 'Additional arbitrary metadata about the source',
+          },
+        },
+      },
+      timelineEventPlcCreate: {
+        type: 'token',
+        description:
+          'Moderation event timeline event for a PLC create operation',
+      },
+      timelineEventPlcOperation: {
+        type: 'token',
+        description:
+          'Moderation event timeline event for generic PLC operation',
+      },
+      timelineEventPlcTombstone: {
+        type: 'token',
+        description:
+          'Moderation event timeline event for a PLC tombstone operation',
+      },
+      scheduledActionView: {
+        type: 'object',
+        description: 'View of a scheduled moderation action',
+        required: ['id', 'action', 'did', 'createdBy', 'createdAt', 'status'],
+        properties: {
+          id: {
+            type: 'integer',
+            description: 'Auto-incrementing row ID',
+          },
+          action: {
+            type: 'string',
+            knownValues: ['takedown'],
+            description: 'Type of action to be executed',
+          },
+          eventData: {
+            type: 'unknown',
+            description:
+              'Serialized event object that will be propagated to the event when performed',
+          },
+          did: {
+            type: 'string',
+            format: 'did',
+            description: 'Subject DID for the action',
+          },
+          executeAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'Exact time to execute the action',
+          },
+          executeAfter: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Earliest time to execute the action (for randomized scheduling)',
+          },
+          executeUntil: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Latest time to execute the action (for randomized scheduling)',
+          },
+          randomizeExecution: {
+            type: 'boolean',
+            description:
+              'Whether execution time should be randomized within the specified range',
+          },
+          createdBy: {
+            type: 'string',
+            format: 'did',
+            description: 'DID of the user who created this scheduled action',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'When the scheduled action was created',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'When the scheduled action was last updated',
+          },
+          status: {
+            type: 'string',
+            knownValues: ['pending', 'executed', 'cancelled', 'failed'],
+            description: 'Current status of the scheduled action',
+          },
+          lastExecutedAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'When the action was last attempted to be executed',
+          },
+          lastFailureReason: {
+            type: 'string',
+            description: 'Reason for the last execution failure',
+          },
+          executionEventId: {
+            type: 'integer',
+            description:
+              'ID of the moderation event created when action was successfully executed',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationEmitEvent: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.emitEvent',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Take a moderation action on an actor.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['event', 'subject', 'createdBy'],
+            properties: {
+              event: {
+                type: 'union',
+                refs: [
+                  'lex:tools.ozone.moderation.defs#modEventTakedown',
+                  'lex:tools.ozone.moderation.defs#modEventAcknowledge',
+                  'lex:tools.ozone.moderation.defs#modEventEscalate',
+                  'lex:tools.ozone.moderation.defs#modEventComment',
+                  'lex:tools.ozone.moderation.defs#modEventLabel',
+                  'lex:tools.ozone.moderation.defs#modEventReport',
+                  'lex:tools.ozone.moderation.defs#modEventMute',
+                  'lex:tools.ozone.moderation.defs#modEventUnmute',
+                  'lex:tools.ozone.moderation.defs#modEventMuteReporter',
+                  'lex:tools.ozone.moderation.defs#modEventUnmuteReporter',
+                  'lex:tools.ozone.moderation.defs#modEventReverseTakedown',
+                  'lex:tools.ozone.moderation.defs#modEventResolveAppeal',
+                  'lex:tools.ozone.moderation.defs#modEventEmail',
+                  'lex:tools.ozone.moderation.defs#modEventDivert',
+                  'lex:tools.ozone.moderation.defs#modEventTag',
+                  'lex:tools.ozone.moderation.defs#accountEvent',
+                  'lex:tools.ozone.moderation.defs#identityEvent',
+                  'lex:tools.ozone.moderation.defs#recordEvent',
+                  'lex:tools.ozone.moderation.defs#modEventPriorityScore',
+                  'lex:tools.ozone.moderation.defs#ageAssuranceEvent',
+                  'lex:tools.ozone.moderation.defs#ageAssuranceOverrideEvent',
+                  'lex:tools.ozone.moderation.defs#ageAssurancePurgeEvent',
+                  'lex:tools.ozone.moderation.defs#revokeAccountCredentialsEvent',
+                  'lex:tools.ozone.moderation.defs#scheduleTakedownEvent',
+                  'lex:tools.ozone.moderation.defs#cancelScheduledTakedownEvent',
+                ],
+              },
+              subject: {
+                type: 'union',
+                refs: [
+                  'lex:com.atproto.admin.defs#repoRef',
+                  'lex:com.atproto.repo.strongRef',
+                ],
+              },
+              subjectBlobCids: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                  format: 'cid',
+                },
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+              },
+              modTool: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.moderation.defs#modTool',
+              },
+              externalId: {
+                type: 'string',
+                description:
+                  'An optional external ID for the event, used to deduplicate events from external systems. Fails when an event of same type with the same external ID exists for the same subject.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#modEventView',
+          },
+        },
+        errors: [
+          {
+            name: 'SubjectHasAction',
+          },
+          {
+            name: 'DuplicateExternalId',
+            description:
+              'An event with the same external ID already exists for the subject.',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneModerationGetAccountTimeline: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getAccountTimeline',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get timeline of all available events of an account. This includes moderation events, account history and did history.',
+        parameters: {
+          type: 'params',
+          required: ['did'],
+          properties: {
+            did: {
+              type: 'string',
+              format: 'did',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['timeline'],
+            properties: {
+              timeline: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.getAccountTimeline#timelineItem',
+                },
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'RepoNotFound',
+          },
+        ],
+      },
+      timelineItem: {
+        type: 'object',
+        required: ['day', 'summary'],
+        properties: {
+          day: {
+            type: 'string',
+          },
+          summary: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:tools.ozone.moderation.getAccountTimeline#timelineItemSummary',
+            },
+          },
+        },
+      },
+      timelineItemSummary: {
+        type: 'object',
+        required: ['eventSubjectType', 'eventType', 'count'],
+        properties: {
+          eventSubjectType: {
+            type: 'string',
+            knownValues: ['account', 'record', 'chat'],
+          },
+          eventType: {
+            type: 'string',
+            knownValues: [
+              'tools.ozone.moderation.defs#modEventTakedown',
+              'tools.ozone.moderation.defs#modEventReverseTakedown',
+              'tools.ozone.moderation.defs#modEventComment',
+              'tools.ozone.moderation.defs#modEventReport',
+              'tools.ozone.moderation.defs#modEventLabel',
+              'tools.ozone.moderation.defs#modEventAcknowledge',
+              'tools.ozone.moderation.defs#modEventEscalate',
+              'tools.ozone.moderation.defs#modEventMute',
+              'tools.ozone.moderation.defs#modEventUnmute',
+              'tools.ozone.moderation.defs#modEventMuteReporter',
+              'tools.ozone.moderation.defs#modEventUnmuteReporter',
+              'tools.ozone.moderation.defs#modEventEmail',
+              'tools.ozone.moderation.defs#modEventResolveAppeal',
+              'tools.ozone.moderation.defs#modEventDivert',
+              'tools.ozone.moderation.defs#modEventTag',
+              'tools.ozone.moderation.defs#accountEvent',
+              'tools.ozone.moderation.defs#identityEvent',
+              'tools.ozone.moderation.defs#recordEvent',
+              'tools.ozone.moderation.defs#modEventPriorityScore',
+              'tools.ozone.moderation.defs#revokeAccountCredentialsEvent',
+              'tools.ozone.moderation.defs#ageAssuranceEvent',
+              'tools.ozone.moderation.defs#ageAssuranceOverrideEvent',
+              'tools.ozone.moderation.defs#timelineEventPlcCreate',
+              'tools.ozone.moderation.defs#timelineEventPlcOperation',
+              'tools.ozone.moderation.defs#timelineEventPlcTombstone',
+              'tools.ozone.hosting.getAccountHistory#accountCreated',
+              'tools.ozone.hosting.getAccountHistory#emailConfirmed',
+              'tools.ozone.hosting.getAccountHistory#passwordUpdated',
+              'tools.ozone.hosting.getAccountHistory#handleUpdated',
+              'tools.ozone.moderation.defs#scheduleTakedownEvent',
+              'tools.ozone.moderation.defs#cancelScheduledTakedownEvent',
+            ],
+          },
+          count: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationGetEvent: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getEvent',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get details about a moderation event.',
+        parameters: {
+          type: 'params',
+          required: ['id'],
+          properties: {
+            id: {
+              type: 'integer',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#modEventViewDetail',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationGetRecord: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getRecord',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get details about a record.',
+        parameters: {
+          type: 'params',
+          required: ['uri'],
+          properties: {
+            uri: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            cid: {
+              type: 'string',
+              format: 'cid',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#recordViewDetail',
+          },
+        },
+        errors: [
+          {
+            name: 'RecordNotFound',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneModerationGetRecords: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getRecords',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get details about some records.',
+        parameters: {
+          type: 'params',
+          required: ['uris'],
+          properties: {
+            uris: {
+              type: 'array',
+              maxLength: 100,
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['records'],
+            properties: {
+              records: {
+                type: 'array',
+                items: {
+                  type: 'union',
+                  refs: [
+                    'lex:tools.ozone.moderation.defs#recordViewDetail',
+                    'lex:tools.ozone.moderation.defs#recordViewNotFound',
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationGetRepo: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getRepo',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get details about a repository.',
+        parameters: {
+          type: 'params',
+          required: ['did'],
+          properties: {
+            did: {
+              type: 'string',
+              format: 'did',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.defs#repoViewDetail',
+          },
+        },
+        errors: [
+          {
+            name: 'RepoNotFound',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneModerationGetReporterStats: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getReporterStats',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get reporter stats for a list of users.',
+        parameters: {
+          type: 'params',
+          required: ['dids'],
+          properties: {
+            dids: {
+              type: 'array',
+              maxLength: 100,
+              items: {
+                type: 'string',
+                format: 'did',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['stats'],
+            properties: {
+              stats: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.defs#reporterStats',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationGetRepos: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getRepos',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get details about some repositories.',
+        parameters: {
+          type: 'params',
+          required: ['dids'],
+          properties: {
+            dids: {
+              type: 'array',
+              maxLength: 100,
+              items: {
+                type: 'string',
+                format: 'did',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['repos'],
+            properties: {
+              repos: {
+                type: 'array',
+                items: {
+                  type: 'union',
+                  refs: [
+                    'lex:tools.ozone.moderation.defs#repoViewDetail',
+                    'lex:tools.ozone.moderation.defs#repoViewNotFound',
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationGetSubjects: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.getSubjects',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get details about subjects.',
+        parameters: {
+          type: 'params',
+          required: ['subjects'],
+          properties: {
+            subjects: {
+              type: 'array',
+              maxLength: 100,
+              minLength: 1,
+              items: {
+                type: 'string',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['subjects'],
+            properties: {
+              subjects: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.defs#subjectView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationListScheduledActions: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.listScheduledActions',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'List scheduled moderation actions with optional filtering',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['statuses'],
+            properties: {
+              startsAfter: {
+                type: 'string',
+                format: 'datetime',
+                description:
+                  'Filter actions scheduled to execute after this time',
+              },
+              endsBefore: {
+                type: 'string',
+                format: 'datetime',
+                description:
+                  'Filter actions scheduled to execute before this time',
+              },
+              subjects: {
+                type: 'array',
+                maxLength: 100,
+                items: {
+                  type: 'string',
+                  format: 'did',
+                },
+                description: 'Filter actions for specific DID subjects',
+              },
+              statuses: {
+                type: 'array',
+                minLength: 1,
+                items: {
+                  type: 'string',
+                  knownValues: ['pending', 'executed', 'cancelled', 'failed'],
+                },
+                description: 'Filter actions by status',
+              },
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 100,
+                default: 50,
+                description: 'Maximum number of results to return',
+              },
+              cursor: {
+                type: 'string',
+                description: 'Cursor for pagination',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['actions'],
+            properties: {
+              actions: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.defs#scheduledActionView',
+                },
+              },
+              cursor: {
+                type: 'string',
+                description: 'Cursor for next page of results',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationQueryEvents: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.queryEvents',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'List moderation events related to a subject.',
+        parameters: {
+          type: 'params',
+          properties: {
+            types: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'The types of events (fully qualified string in the format of tools.ozone.moderation.defs#modEvent<name>) to filter by. If not specified, all events are returned.',
+            },
+            createdBy: {
+              type: 'string',
+              format: 'did',
+            },
+            sortDirection: {
+              type: 'string',
+              default: 'desc',
+              enum: ['asc', 'desc'],
+              description:
+                'Sort direction for the events. Defaults to descending order of created at timestamp.',
+            },
+            createdAfter: {
               type: 'string',
               format: 'datetime',
+              description: 'Retrieve events created after a given timestamp',
             },
+            createdBefore: {
+              type: 'string',
+              format: 'datetime',
+              description: 'Retrieve events created before a given timestamp',
+            },
+            subject: {
+              type: 'string',
+              format: 'uri',
+            },
+            collections: {
+              type: 'array',
+              maxLength: 20,
+              description:
+                "If specified, only events where the subject belongs to the given collections will be returned. When subjectType is set to 'account', this will be ignored.",
+              items: {
+                type: 'string',
+                format: 'nsid',
+              },
+            },
+            subjectType: {
+              type: 'string',
+              description:
+                "If specified, only events where the subject is of the given type (account or record) will be returned. When this is set to 'account' the 'collections' parameter will be ignored. When includeAllUserRecords or subject is set, this will be ignored.",
+              knownValues: ['account', 'record'],
+            },
+            includeAllUserRecords: {
+              type: 'boolean',
+              default: false,
+              description:
+                "If true, events on all record types (posts, lists, profile etc.) or records from given 'collections' param, owned by the did are returned.",
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            hasComment: {
+              type: 'boolean',
+              description: 'If true, only events with comments are returned',
+            },
+            comment: {
+              type: 'string',
+              description:
+                'If specified, only events with comments containing the keyword are returned. Apply || separator to use multiple keywords and match using OR condition.',
+            },
+            addedLabels: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'If specified, only events where all of these labels were added are returned',
+            },
+            removedLabels: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'If specified, only events where all of these labels were removed are returned',
+            },
+            addedTags: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'If specified, only events where all of these tags were added are returned',
+            },
+            removedTags: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'If specified, only events where all of these tags were removed are returned',
+            },
+            reportTypes: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+            policies: {
+              type: 'array',
+              items: {
+                type: 'string',
+                description:
+                  'If specified, only events where the action policies match any of the given policies are returned',
+              },
+            },
+            modTool: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'If specified, only events where the modTool name matches any of the given values are returned',
+            },
+            batchId: {
+              type: 'string',
+              description:
+                'If specified, only events where the batchId matches the given value are returned',
+            },
+            ageAssuranceState: {
+              type: 'string',
+              description:
+                'If specified, only events where the age assurance state matches the given value are returned',
+              knownValues: [
+                'pending',
+                'assured',
+                'unknown',
+                'reset',
+                'blocked',
+              ],
+            },
+            withStrike: {
+              type: 'boolean',
+              description:
+                'If specified, only events where strikeCount value is set are returned.',
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['events'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              events: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.defs#modEventView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationQueryStatuses: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.queryStatuses',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'View moderation statuses of subjects (record or repo).',
+        parameters: {
+          type: 'params',
+          properties: {
+            queueCount: {
+              type: 'integer',
+              description:
+                'Number of queues being used by moderators. Subjects will be split among all queues.',
+            },
+            queueIndex: {
+              type: 'integer',
+              description:
+                'Index of the queue to fetch subjects from. Works only when queueCount value is specified.',
+            },
+            queueSeed: {
+              type: 'string',
+              description: 'A seeder to shuffle/balance the queue items.',
+            },
+            includeAllUserRecords: {
+              type: 'boolean',
+              description:
+                "All subjects, or subjects from given 'collections' param, belonging to the account specified in the 'subject' param will be returned.",
+            },
+            subject: {
+              type: 'string',
+              format: 'uri',
+              description: 'The subject to get the status for.',
+            },
+            comment: {
+              type: 'string',
+              description: 'Search subjects by keyword from comments',
+            },
+            reportedAfter: {
+              type: 'string',
+              format: 'datetime',
+              description: 'Search subjects reported after a given timestamp',
+            },
+            reportedBefore: {
+              type: 'string',
+              format: 'datetime',
+              description: 'Search subjects reported before a given timestamp',
+            },
+            reviewedAfter: {
+              type: 'string',
+              format: 'datetime',
+              description: 'Search subjects reviewed after a given timestamp',
+            },
+            hostingDeletedAfter: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Search subjects where the associated record/account was deleted after a given timestamp',
+            },
+            hostingDeletedBefore: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Search subjects where the associated record/account was deleted before a given timestamp',
+            },
+            hostingUpdatedAfter: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Search subjects where the associated record/account was updated after a given timestamp',
+            },
+            hostingUpdatedBefore: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Search subjects where the associated record/account was updated before a given timestamp',
+            },
+            hostingStatuses: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description:
+                'Search subjects by the status of the associated record/account',
+            },
+            reviewedBefore: {
+              type: 'string',
+              format: 'datetime',
+              description: 'Search subjects reviewed before a given timestamp',
+            },
+            includeMuted: {
+              type: 'boolean',
+              description:
+                "By default, we don't include muted subjects in the results. Set this to true to include them.",
+            },
+            onlyMuted: {
+              type: 'boolean',
+              description:
+                'When set to true, only muted subjects and reporters will be returned.',
+            },
+            reviewState: {
+              type: 'string',
+              description: 'Specify when fetching subjects in a certain state',
+              knownValues: [
+                'tools.ozone.moderation.defs#reviewOpen',
+                'tools.ozone.moderation.defs#reviewClosed',
+                'tools.ozone.moderation.defs#reviewEscalated',
+                'tools.ozone.moderation.defs#reviewNone',
+              ],
+            },
+            ignoreSubjects: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'uri',
+              },
+            },
+            lastReviewedBy: {
+              type: 'string',
+              format: 'did',
+              description:
+                'Get all subject statuses that were reviewed by a specific moderator',
+            },
+            sortField: {
+              type: 'string',
+              default: 'lastReportedAt',
+              enum: [
+                'lastReviewedAt',
+                'lastReportedAt',
+                'reportedRecordsCount',
+                'takendownRecordsCount',
+                'priorityScore',
+              ],
+            },
+            sortDirection: {
+              type: 'string',
+              default: 'desc',
+              enum: ['asc', 'desc'],
+            },
+            takendown: {
+              type: 'boolean',
+              description: 'Get subjects that were taken down',
+            },
+            appealed: {
+              type: 'boolean',
+              description: 'Get subjects in unresolved appealed status',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            tags: {
+              type: 'array',
+              maxLength: 25,
+              items: {
+                type: 'string',
+                description:
+                  'Items in this array are applied with OR filters. To apply AND filter, put all tags in the same string and separate using && characters',
+              },
+            },
+            excludeTags: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+            cursor: {
+              type: 'string',
+            },
+            collections: {
+              type: 'array',
+              maxLength: 20,
+              description:
+                "If specified, subjects belonging to the given collections will be returned. When subjectType is set to 'account', this will be ignored.",
+              items: {
+                type: 'string',
+                format: 'nsid',
+              },
+            },
+            subjectType: {
+              type: 'string',
+              description:
+                "If specified, subjects of the given type (account or record) will be returned. When this is set to 'account' the 'collections' parameter will be ignored. When includeAllUserRecords or subject is set, this will be ignored.",
+              knownValues: ['account', 'record'],
+            },
+            minAccountSuspendCount: {
+              type: 'integer',
+              description:
+                'If specified, only subjects that belong to an account that has at least this many suspensions will be returned.',
+            },
+            minReportedRecordsCount: {
+              type: 'integer',
+              description:
+                'If specified, only subjects that belong to an account that has at least this many reported records will be returned.',
+            },
+            minTakendownRecordsCount: {
+              type: 'integer',
+              description:
+                'If specified, only subjects that belong to an account that has at least this many taken down records will be returned.',
+            },
+            minPriorityScore: {
+              minimum: 0,
+              maximum: 100,
+              type: 'integer',
+              description:
+                'If specified, only subjects that have priority score value above the given value will be returned.',
+            },
+            minStrikeCount: {
+              type: 'integer',
+              minimum: 1,
+              description:
+                'If specified, only subjects that belong to an account that has at least this many active strikes will be returned.',
+            },
+            ageAssuranceState: {
+              type: 'string',
+              description:
+                'If specified, only subjects with the given age assurance state will be returned.',
+              knownValues: [
+                'pending',
+                'assured',
+                'unknown',
+                'reset',
+                'blocked',
+              ],
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['subjectStatuses'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              subjectStatuses: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.defs#subjectStatusView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationScheduleAction: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.scheduleAction',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Schedule a moderation action to be executed at a future time',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['action', 'subjects', 'createdBy', 'scheduling'],
+            properties: {
+              action: {
+                type: 'union',
+                refs: ['lex:tools.ozone.moderation.scheduleAction#takedown'],
+              },
+              subjects: {
+                type: 'array',
+                maxLength: 100,
+                items: {
+                  type: 'string',
+                  format: 'did',
+                },
+                description: 'Array of DID subjects to schedule the action for',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+              },
+              scheduling: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.moderation.scheduleAction#schedulingConfig',
+              },
+              modTool: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.moderation.defs#modTool',
+                description:
+                  'This will be propagated to the moderation event when it is applied',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.moderation.scheduleAction#scheduledActionResults',
+          },
+        },
+      },
+      takedown: {
+        type: 'object',
+        description: 'Schedule a takedown action',
+        properties: {
+          comment: {
+            type: 'string',
+          },
+          durationInHours: {
+            type: 'integer',
+            description:
+              'Indicates how long the takedown should be in effect before automatically expiring.',
+          },
+          acknowledgeAccountSubjects: {
+            type: 'boolean',
+            description:
+              'If true, all other reports on content authored by this account will be resolved (acknowledged).',
+          },
+          policies: {
+            type: 'array',
+            maxLength: 5,
+            items: {
+              type: 'string',
+            },
+            description:
+              'Names/Keywords of the policies that drove the decision.',
+          },
+          severityLevel: {
+            type: 'string',
+            description:
+              "Severity level of the violation (e.g., 'sev-0', 'sev-1', 'sev-2', etc.).",
+          },
+          strikeCount: {
+            type: 'integer',
+            description:
+              'Number of strikes to assign to the user when takedown is applied.',
+          },
+          strikeExpiresAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'When the strike should expire. If not provided, the strike never expires.',
+          },
+          emailContent: {
+            type: 'string',
+            description: 'Email content to be sent to the user upon takedown.',
+          },
+          emailSubject: {
+            type: 'string',
+            description:
+              'Subject of the email to be sent to the user upon takedown.',
+          },
+        },
+      },
+      schedulingConfig: {
+        type: 'object',
+        description: 'Configuration for when the action should be executed',
+        properties: {
+          executeAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'Exact time to execute the action',
+          },
+          executeAfter: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Earliest time to execute the action (for randomized scheduling)',
+          },
+          executeUntil: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Latest time to execute the action (for randomized scheduling)',
+          },
+        },
+      },
+      scheduledActionResults: {
+        type: 'object',
+        required: ['succeeded', 'failed'],
+        properties: {
+          succeeded: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'did',
+            },
+          },
+          failed: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:tools.ozone.moderation.scheduleAction#failedScheduling',
+            },
+          },
+        },
+      },
+      failedScheduling: {
+        type: 'object',
+        required: ['subject', 'error'],
+        properties: {
+          subject: {
+            type: 'string',
+            format: 'did',
+          },
+          error: {
+            type: 'string',
+          },
+          errorCode: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneModerationSearchRepos: {
+    lexicon: 1,
+    id: 'tools.ozone.moderation.searchRepos',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Find repositories based on a search term.',
+        parameters: {
+          type: 'params',
+          properties: {
+            term: {
+              type: 'string',
+              description: "DEPRECATED: use 'q' instead",
+            },
+            q: {
+              type: 'string',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['repos'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              repos: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.moderation.defs#repoView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneReportDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.report.defs',
+    defs: {
+      reasonType: {
+        type: 'string',
+        knownValues: [
+          'tools.ozone.report.defs#reasonAppeal',
+          'tools.ozone.report.defs#reasonOther',
+          'tools.ozone.report.defs#reasonViolenceAnimal',
+          'tools.ozone.report.defs#reasonViolenceThreats',
+          'tools.ozone.report.defs#reasonViolenceGraphicContent',
+          'tools.ozone.report.defs#reasonViolenceGlorification',
+          'tools.ozone.report.defs#reasonViolenceExtremistContent',
+          'tools.ozone.report.defs#reasonViolenceTrafficking',
+          'tools.ozone.report.defs#reasonViolenceOther',
+          'tools.ozone.report.defs#reasonSexualAbuseContent',
+          'tools.ozone.report.defs#reasonSexualNCII',
+          'tools.ozone.report.defs#reasonSexualDeepfake',
+          'tools.ozone.report.defs#reasonSexualAnimal',
+          'tools.ozone.report.defs#reasonSexualUnlabeled',
+          'tools.ozone.report.defs#reasonSexualOther',
+          'tools.ozone.report.defs#reasonChildSafetyCSAM',
+          'tools.ozone.report.defs#reasonChildSafetyGroom',
+          'tools.ozone.report.defs#reasonChildSafetyPrivacy',
+          'tools.ozone.report.defs#reasonChildSafetyHarassment',
+          'tools.ozone.report.defs#reasonChildSafetyOther',
+          'tools.ozone.report.defs#reasonHarassmentTroll',
+          'tools.ozone.report.defs#reasonHarassmentTargeted',
+          'tools.ozone.report.defs#reasonHarassmentHateSpeech',
+          'tools.ozone.report.defs#reasonHarassmentDoxxing',
+          'tools.ozone.report.defs#reasonHarassmentOther',
+          'tools.ozone.report.defs#reasonMisleadingBot',
+          'tools.ozone.report.defs#reasonMisleadingImpersonation',
+          'tools.ozone.report.defs#reasonMisleadingSpam',
+          'tools.ozone.report.defs#reasonMisleadingScam',
+          'tools.ozone.report.defs#reasonMisleadingElections',
+          'tools.ozone.report.defs#reasonMisleadingOther',
+          'tools.ozone.report.defs#reasonRuleSiteSecurity',
+          'tools.ozone.report.defs#reasonRuleProhibitedSales',
+          'tools.ozone.report.defs#reasonRuleBanEvasion',
+          'tools.ozone.report.defs#reasonRuleOther',
+          'tools.ozone.report.defs#reasonSelfHarmContent',
+          'tools.ozone.report.defs#reasonSelfHarmED',
+          'tools.ozone.report.defs#reasonSelfHarmStunts',
+          'tools.ozone.report.defs#reasonSelfHarmSubstances',
+          'tools.ozone.report.defs#reasonSelfHarmOther',
+        ],
+      },
+      reasonAppeal: {
+        type: 'token',
+        description: 'Appeal a previously taken moderation action',
+      },
+      reasonOther: {
+        type: 'token',
+        description: 'An issue not included in these options',
+      },
+      reasonViolenceAnimal: {
+        type: 'token',
+        description: 'Animal welfare violations',
+      },
+      reasonViolenceThreats: {
+        type: 'token',
+        description: 'Threats or incitement',
+      },
+      reasonViolenceGraphicContent: {
+        type: 'token',
+        description: 'Graphic violent content',
+      },
+      reasonViolenceGlorification: {
+        type: 'token',
+        description: 'Glorification of violence',
+      },
+      reasonViolenceExtremistContent: {
+        type: 'token',
+        description:
+          "Extremist content. These reports will be sent only be sent to the application's Moderation Authority.",
+      },
+      reasonViolenceTrafficking: {
+        type: 'token',
+        description: 'Human trafficking',
+      },
+      reasonViolenceOther: {
+        type: 'token',
+        description: 'Other violent content',
+      },
+      reasonSexualAbuseContent: {
+        type: 'token',
+        description: 'Adult sexual abuse content',
+      },
+      reasonSexualNCII: {
+        type: 'token',
+        description: 'Non-consensual intimate imagery',
+      },
+      reasonSexualDeepfake: {
+        type: 'token',
+        description: 'Deepfake adult content',
+      },
+      reasonSexualAnimal: {
+        type: 'token',
+        description: 'Animal sexual abuse',
+      },
+      reasonSexualUnlabeled: {
+        type: 'token',
+        description: 'Unlabelled adult content',
+      },
+      reasonSexualOther: {
+        type: 'token',
+        description: 'Other sexual violence content',
+      },
+      reasonChildSafetyCSAM: {
+        type: 'token',
+        description:
+          "Child sexual abuse material (CSAM). These reports will be sent only be sent to the application's Moderation Authority.",
+      },
+      reasonChildSafetyGroom: {
+        type: 'token',
+        description:
+          "Grooming or predatory behavior. These reports will be sent only be sent to the application's Moderation Authority.",
+      },
+      reasonChildSafetyPrivacy: {
+        type: 'token',
+        description: 'Privacy violation involving a minor',
+      },
+      reasonChildSafetyHarassment: {
+        type: 'token',
+        description: 'Harassment or bullying of minors',
+      },
+      reasonChildSafetyOther: {
+        type: 'token',
+        description:
+          "Other child safety. These reports will be sent only be sent to the application's Moderation Authority.",
+      },
+      reasonHarassmentTroll: {
+        type: 'token',
+        description: 'Trolling',
+      },
+      reasonHarassmentTargeted: {
+        type: 'token',
+        description: 'Targeted harassment',
+      },
+      reasonHarassmentHateSpeech: {
+        type: 'token',
+        description: 'Hate speech',
+      },
+      reasonHarassmentDoxxing: {
+        type: 'token',
+        description: 'Doxxing',
+      },
+      reasonHarassmentOther: {
+        type: 'token',
+        description: 'Other harassing or hateful content',
+      },
+      reasonMisleadingBot: {
+        type: 'token',
+        description: 'Fake account or bot',
+      },
+      reasonMisleadingImpersonation: {
+        type: 'token',
+        description: 'Impersonation',
+      },
+      reasonMisleadingSpam: {
+        type: 'token',
+        description: 'Spam',
+      },
+      reasonMisleadingScam: {
+        type: 'token',
+        description: 'Scam',
+      },
+      reasonMisleadingElections: {
+        type: 'token',
+        description: 'False information about elections',
+      },
+      reasonMisleadingOther: {
+        type: 'token',
+        description: 'Other misleading content',
+      },
+      reasonRuleSiteSecurity: {
+        type: 'token',
+        description: 'Hacking or system attacks',
+      },
+      reasonRuleProhibitedSales: {
+        type: 'token',
+        description: 'Promoting or selling prohibited items or services',
+      },
+      reasonRuleBanEvasion: {
+        type: 'token',
+        description: 'Banned user returning',
+      },
+      reasonRuleOther: {
+        type: 'token',
+        description: 'Other',
+      },
+      reasonSelfHarmContent: {
+        type: 'token',
+        description: 'Content promoting or depicting self-harm',
+      },
+      reasonSelfHarmED: {
+        type: 'token',
+        description: 'Eating disorders',
+      },
+      reasonSelfHarmStunts: {
+        type: 'token',
+        description: 'Dangerous challenges or activities',
+      },
+      reasonSelfHarmSubstances: {
+        type: 'token',
+        description: 'Dangerous substances or drug abuse',
+      },
+      reasonSelfHarmOther: {
+        type: 'token',
+        description: 'Other dangerous content',
+      },
+    },
+  },
+  ToolsOzoneSafelinkAddRule: {
+    lexicon: 1,
+    id: 'tools.ozone.safelink.addRule',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Add a new URL safety rule',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['url', 'pattern', 'action', 'reason'],
+            properties: {
+              url: {
+                type: 'string',
+                description: 'The URL or domain to apply the rule to',
+              },
+              pattern: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#patternType',
+              },
+              action: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#actionType',
+              },
+              reason: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#reasonType',
+              },
+              comment: {
+                type: 'string',
+                description: 'Optional comment about the decision',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+                description: 'Author DID. Only respected when using admin auth',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#event',
+          },
+        },
+        errors: [
+          {
+            name: 'InvalidUrl',
+            description: 'The provided URL is invalid',
+          },
+          {
+            name: 'RuleAlreadyExists',
+            description: 'A rule for this URL/domain already exists',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneSafelinkDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.safelink.defs',
+    defs: {
+      event: {
+        type: 'object',
+        description: 'An event for URL safety decisions',
+        required: [
+          'id',
+          'eventType',
+          'url',
+          'pattern',
+          'action',
+          'reason',
+          'createdBy',
+          'createdAt',
+        ],
+        properties: {
+          id: {
+            type: 'integer',
+            description: 'Auto-incrementing row ID',
+          },
+          eventType: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#eventType',
+          },
+          url: {
+            type: 'string',
+            description: 'The URL that this rule applies to',
+          },
+          pattern: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#patternType',
+          },
+          action: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#actionType',
+          },
+          reason: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#reasonType',
+          },
+          createdBy: {
+            type: 'string',
+            format: 'did',
+            description: 'DID of the user who created this rule',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          comment: {
+            type: 'string',
+            description: 'Optional comment about the decision',
+          },
+        },
+      },
+      eventType: {
+        type: 'string',
+        knownValues: ['addRule', 'updateRule', 'removeRule'],
+      },
+      patternType: {
+        type: 'string',
+        knownValues: ['domain', 'url'],
+      },
+      actionType: {
+        type: 'string',
+        knownValues: ['block', 'warn', 'whitelist'],
+      },
+      reasonType: {
+        type: 'string',
+        knownValues: ['csam', 'spam', 'phishing', 'none'],
+      },
+      urlRule: {
+        type: 'object',
+        description: 'Input for creating a URL safety rule',
+        required: [
+          'url',
+          'pattern',
+          'action',
+          'reason',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        properties: {
+          url: {
+            type: 'string',
+            description: 'The URL or domain to apply the rule to',
+          },
+          pattern: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#patternType',
+          },
+          action: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#actionType',
+          },
+          reason: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#reasonType',
+          },
+          comment: {
+            type: 'string',
+            description: 'Optional comment about the decision',
+          },
+          createdBy: {
+            type: 'string',
+            format: 'did',
+            description: 'DID of the user added the rule.',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'Timestamp when the rule was created',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'Timestamp when the rule was last updated',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSafelinkQueryEvents: {
+    lexicon: 1,
+    id: 'tools.ozone.safelink.queryEvents',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Query URL safety audit events',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {
+              cursor: {
+                type: 'string',
+                description: 'Cursor for pagination',
+              },
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 100,
+                default: 50,
+                description: 'Maximum number of results to return',
+              },
+              urls: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+                description: 'Filter by specific URLs or domains',
+              },
+              patternType: {
+                type: 'string',
+                description: 'Filter by pattern type',
+              },
+              sortDirection: {
+                type: 'string',
+                knownValues: ['asc', 'desc'],
+                default: 'desc',
+                description: 'Sort direction',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['events'],
+            properties: {
+              cursor: {
+                type: 'string',
+                description:
+                  'Next cursor for pagination. Only present if there are more results.',
+              },
+              events: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.safelink.defs#event',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSafelinkQueryRules: {
+    lexicon: 1,
+    id: 'tools.ozone.safelink.queryRules',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Query URL safety rules',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {
+              cursor: {
+                type: 'string',
+                description: 'Cursor for pagination',
+              },
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 100,
+                default: 50,
+                description: 'Maximum number of results to return',
+              },
+              urls: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+                description: 'Filter by specific URLs or domains',
+              },
+              patternType: {
+                type: 'string',
+                description: 'Filter by pattern type',
+              },
+              actions: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+                description: 'Filter by action types',
+              },
+              reason: {
+                type: 'string',
+                description: 'Filter by reason type',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+                description: 'Filter by rule creator',
+              },
+              sortDirection: {
+                type: 'string',
+                knownValues: ['asc', 'desc'],
+                default: 'desc',
+                description: 'Sort direction',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['rules'],
+            properties: {
+              cursor: {
+                type: 'string',
+                description:
+                  'Next cursor for pagination. Only present if there are more results.',
+              },
+              rules: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.safelink.defs#urlRule',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSafelinkRemoveRule: {
+    lexicon: 1,
+    id: 'tools.ozone.safelink.removeRule',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Remove an existing URL safety rule',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['url', 'pattern'],
+            properties: {
+              url: {
+                type: 'string',
+                description: 'The URL or domain to remove the rule for',
+              },
+              pattern: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#patternType',
+              },
+              comment: {
+                type: 'string',
+                description:
+                  'Optional comment about why the rule is being removed',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+                description:
+                  'Optional DID of the user. Only respected when using admin auth.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#event',
+          },
+        },
+        errors: [
+          {
+            name: 'RuleNotFound',
+            description: 'No active rule found for this URL/domain',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneSafelinkUpdateRule: {
+    lexicon: 1,
+    id: 'tools.ozone.safelink.updateRule',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Update an existing URL safety rule',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['url', 'pattern', 'action', 'reason'],
+            properties: {
+              url: {
+                type: 'string',
+                description: 'The URL or domain to update the rule for',
+              },
+              pattern: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#patternType',
+              },
+              action: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#actionType',
+              },
+              reason: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.safelink.defs#reasonType',
+              },
+              comment: {
+                type: 'string',
+                description: 'Optional comment about the update',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'did',
+                description:
+                  'Optional DID to credit as the creator. Only respected for admin_token authentication.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.safelink.defs#event',
+          },
+        },
+        errors: [
+          {
+            name: 'RuleNotFound',
+            description: 'No active rule found for this URL/domain',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneServerGetConfig: {
+    lexicon: 1,
+    id: 'tools.ozone.server.getConfig',
+    defs: {
+      main: {
+        type: 'query',
+        description: "Get details about ozone's server configuration.",
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {
+              appview: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.server.getConfig#serviceConfig',
+              },
+              pds: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.server.getConfig#serviceConfig',
+              },
+              blobDivert: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.server.getConfig#serviceConfig',
+              },
+              chat: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.server.getConfig#serviceConfig',
+              },
+              viewer: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.server.getConfig#viewerConfig',
+              },
+              verifierDid: {
+                type: 'string',
+                format: 'did',
+                description: 'The did of the verifier used for verification.',
+              },
+            },
+          },
+        },
+      },
+      serviceConfig: {
+        type: 'object',
+        properties: {
+          url: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+      viewerConfig: {
+        type: 'object',
+        properties: {
+          role: {
+            type: 'string',
+            knownValues: [
+              'tools.ozone.team.defs#roleAdmin',
+              'tools.ozone.team.defs#roleModerator',
+              'tools.ozone.team.defs#roleTriage',
+              'tools.ozone.team.defs#roleVerifier',
+            ],
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSetAddValues: {
+    lexicon: 1,
+    id: 'tools.ozone.set.addValues',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Add values to a specific set. Attempting to add values to a set that does not exist will result in an error.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['name', 'values'],
+            properties: {
+              name: {
+                type: 'string',
+                description: 'Name of the set to add values to',
+              },
+              values: {
+                type: 'array',
+                minLength: 1,
+                maxLength: 1000,
+                items: {
+                  type: 'string',
+                },
+                description: 'Array of string values to add to the set',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSetDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.set.defs',
+    defs: {
+      set: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: {
+            type: 'string',
+            minLength: 3,
+            maxLength: 128,
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 1024,
+            maxLength: 10240,
+          },
+        },
+      },
+      setView: {
+        type: 'object',
+        required: ['name', 'setSize', 'createdAt', 'updatedAt'],
+        properties: {
+          name: {
+            type: 'string',
+            minLength: 3,
+            maxLength: 128,
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 1024,
+            maxLength: 10240,
+          },
+          setSize: {
+            type: 'integer',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSetDeleteSet: {
+    lexicon: 1,
+    id: 'tools.ozone.set.deleteSet',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Delete an entire set. Attempting to delete a set that does not exist will result in an error.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['name'],
+            properties: {
+              name: {
+                type: 'string',
+                description: 'Name of the set to delete',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        errors: [
+          {
+            name: 'SetNotFound',
+            description: 'set with the given name does not exist',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneSetDeleteValues: {
+    lexicon: 1,
+    id: 'tools.ozone.set.deleteValues',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Delete values from a specific set. Attempting to delete values that are not in the set will not result in an error',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['name', 'values'],
+            properties: {
+              name: {
+                type: 'string',
+                description: 'Name of the set to delete values from',
+              },
+              values: {
+                type: 'array',
+                minLength: 1,
+                items: {
+                  type: 'string',
+                },
+                description: 'Array of string values to delete from the set',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'SetNotFound',
+            description: 'set with the given name does not exist',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneSetGetValues: {
+    lexicon: 1,
+    id: 'tools.ozone.set.getValues',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get a specific set and its values',
+        parameters: {
+          type: 'params',
+          required: ['name'],
+          properties: {
+            name: {
+              type: 'string',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 1000,
+              default: 100,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['set', 'values'],
+            properties: {
+              set: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.set.defs#setView',
+              },
+              values: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+              cursor: {
+                type: 'string',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'SetNotFound',
+            description: 'set with the given name does not exist',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneSetQuerySets: {
+    lexicon: 1,
+    id: 'tools.ozone.set.querySets',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Query available sets',
+        parameters: {
+          type: 'params',
+          properties: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+            namePrefix: {
+              type: 'string',
+            },
+            sortBy: {
+              type: 'string',
+              enum: ['name', 'createdAt', 'updatedAt'],
+              default: 'name',
+            },
+            sortDirection: {
+              type: 'string',
+              default: 'asc',
+              enum: ['asc', 'desc'],
+              description: 'Defaults to ascending order of name field.',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['sets'],
+            properties: {
+              sets: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.set.defs#setView',
+                },
+              },
+              cursor: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSetUpsertSet: {
+    lexicon: 1,
+    id: 'tools.ozone.set.upsertSet',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Create or update set metadata',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.set.defs#set',
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.set.defs#setView',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSettingDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.setting.defs',
+    defs: {
+      option: {
+        type: 'object',
+        required: [
+          'key',
+          'value',
+          'did',
+          'scope',
+          'createdBy',
+          'lastUpdatedBy',
+        ],
+        properties: {
+          key: {
+            type: 'string',
+            format: 'nsid',
+          },
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          value: {
+            type: 'unknown',
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 1024,
+            maxLength: 10240,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          managerRole: {
+            type: 'string',
+            knownValues: [
+              'tools.ozone.team.defs#roleModerator',
+              'tools.ozone.team.defs#roleTriage',
+              'tools.ozone.team.defs#roleAdmin',
+              'tools.ozone.team.defs#roleVerifier',
+            ],
+          },
+          scope: {
+            type: 'string',
+            knownValues: ['instance', 'personal'],
+          },
+          createdBy: {
+            type: 'string',
+            format: 'did',
+          },
+          lastUpdatedBy: {
+            type: 'string',
+            format: 'did',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSettingListOptions: {
+    lexicon: 1,
+    id: 'tools.ozone.setting.listOptions',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'List settings with optional filtering',
+        parameters: {
+          type: 'params',
+          properties: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+            scope: {
+              type: 'string',
+              knownValues: ['instance', 'personal'],
+              default: 'instance',
+            },
+            prefix: {
+              type: 'string',
+              description: 'Filter keys by prefix',
+            },
+            keys: {
+              type: 'array',
+              maxLength: 100,
+              items: {
+                type: 'string',
+                format: 'nsid',
+              },
+              description:
+                'Filter for only the specified keys. Ignored if prefix is provided',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['options'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              options: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.setting.defs#option',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSettingRemoveOptions: {
+    lexicon: 1,
+    id: 'tools.ozone.setting.removeOptions',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Delete settings by key',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['keys', 'scope'],
+            properties: {
+              keys: {
+                type: 'array',
+                minLength: 1,
+                maxLength: 200,
+                items: {
+                  type: 'string',
+                  format: 'nsid',
+                },
+              },
+              scope: {
+                type: 'string',
+                knownValues: ['instance', 'personal'],
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSettingUpsertOption: {
+    lexicon: 1,
+    id: 'tools.ozone.setting.upsertOption',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Create or update setting option',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['key', 'scope', 'value'],
+            properties: {
+              key: {
+                type: 'string',
+                format: 'nsid',
+              },
+              scope: {
+                type: 'string',
+                knownValues: ['instance', 'personal'],
+              },
+              value: {
+                type: 'unknown',
+              },
+              description: {
+                type: 'string',
+                maxLength: 2000,
+              },
+              managerRole: {
+                type: 'string',
+                knownValues: [
+                  'tools.ozone.team.defs#roleModerator',
+                  'tools.ozone.team.defs#roleTriage',
+                  'tools.ozone.team.defs#roleVerifier',
+                  'tools.ozone.team.defs#roleAdmin',
+                ],
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['option'],
+            properties: {
+              option: {
+                type: 'ref',
+                ref: 'lex:tools.ozone.setting.defs#option',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSignatureDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.signature.defs',
+    defs: {
+      sigDetail: {
+        type: 'object',
+        required: ['property', 'value'],
+        properties: {
+          property: {
+            type: 'string',
+          },
+          value: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSignatureFindCorrelation: {
+    lexicon: 1,
+    id: 'tools.ozone.signature.findCorrelation',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Find all correlated threat signatures between 2 or more accounts.',
+        parameters: {
+          type: 'params',
+          required: ['dids'],
+          properties: {
+            dids: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'did',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['details'],
+            properties: {
+              details: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.signature.defs#sigDetail',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSignatureFindRelatedAccounts: {
+    lexicon: 1,
+    id: 'tools.ozone.signature.findRelatedAccounts',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get accounts that share some matching threat signatures with the root account.',
+        parameters: {
+          type: 'params',
+          required: ['did'],
+          properties: {
+            did: {
+              type: 'string',
+              format: 'did',
+            },
+            cursor: {
+              type: 'string',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['accounts'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              accounts: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.signature.findRelatedAccounts#relatedAccount',
+                },
+              },
+            },
+          },
+        },
+      },
+      relatedAccount: {
+        type: 'object',
+        required: ['account'],
+        properties: {
+          account: {
+            type: 'ref',
+            ref: 'lex:com.atproto.admin.defs#accountView',
+          },
+          similarities: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:tools.ozone.signature.defs#sigDetail',
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneSignatureSearchAccounts: {
+    lexicon: 1,
+    id: 'tools.ozone.signature.searchAccounts',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Search for accounts that match one or more threat signature values.',
+        parameters: {
+          type: 'params',
+          required: ['values'],
+          properties: {
+            values: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+            cursor: {
+              type: 'string',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['accounts'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              accounts: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.atproto.admin.defs#accountView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneTeamAddMember: {
+    lexicon: 1,
+    id: 'tools.ozone.team.addMember',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Add a member to the ozone team. Requires admin role.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['did', 'role'],
+            properties: {
+              did: {
+                type: 'string',
+                format: 'did',
+              },
+              role: {
+                type: 'string',
+                knownValues: [
+                  'tools.ozone.team.defs#roleAdmin',
+                  'tools.ozone.team.defs#roleModerator',
+                  'tools.ozone.team.defs#roleVerifier',
+                  'tools.ozone.team.defs#roleTriage',
+                ],
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.team.defs#member',
+          },
+        },
+        errors: [
+          {
+            name: 'MemberAlreadyExists',
+            description: 'Member already exists in the team.',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneTeamDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.team.defs',
+    defs: {
+      member: {
+        type: 'object',
+        required: ['did', 'role'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          disabled: {
+            type: 'boolean',
+          },
+          profile: {
+            type: 'ref',
+            ref: 'lex:app.bsky.actor.defs#profileViewDetailed',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          lastUpdatedBy: {
+            type: 'string',
+          },
+          role: {
+            type: 'string',
+            knownValues: [
+              'tools.ozone.team.defs#roleAdmin',
+              'tools.ozone.team.defs#roleModerator',
+              'tools.ozone.team.defs#roleTriage',
+              'tools.ozone.team.defs#roleVerifier',
+            ],
+          },
+        },
+      },
+      roleAdmin: {
+        type: 'token',
+        description:
+          'Admin role. Highest level of access, can perform all actions.',
+      },
+      roleModerator: {
+        type: 'token',
+        description: 'Moderator role. Can perform most actions.',
+      },
+      roleTriage: {
+        type: 'token',
+        description:
+          'Triage role. Mostly intended for monitoring and escalating issues.',
+      },
+      roleVerifier: {
+        type: 'token',
+        description: 'Verifier role. Only allowed to issue verifications.',
+      },
+    },
+  },
+  ToolsOzoneTeamDeleteMember: {
+    lexicon: 1,
+    id: 'tools.ozone.team.deleteMember',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: 'Delete a member from ozone team. Requires admin role.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['did'],
+            properties: {
+              did: {
+                type: 'string',
+                format: 'did',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'MemberNotFound',
+            description: 'The member being deleted does not exist',
+          },
+          {
+            name: 'CannotDeleteSelf',
+            description: 'You can not delete yourself from the team',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneTeamListMembers: {
+    lexicon: 1,
+    id: 'tools.ozone.team.listMembers',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'List all members with access to the ozone service.',
+        parameters: {
+          type: 'params',
+          properties: {
+            q: {
+              type: 'string',
+            },
+            disabled: {
+              type: 'boolean',
+            },
+            roles: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['members'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              members: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.team.defs#member',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneTeamUpdateMember: {
+    lexicon: 1,
+    id: 'tools.ozone.team.updateMember',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Update a member in the ozone service. Requires admin role.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['did'],
+            properties: {
+              did: {
+                type: 'string',
+                format: 'did',
+              },
+              disabled: {
+                type: 'boolean',
+              },
+              role: {
+                type: 'string',
+                knownValues: [
+                  'tools.ozone.team.defs#roleAdmin',
+                  'tools.ozone.team.defs#roleModerator',
+                  'tools.ozone.team.defs#roleVerifier',
+                  'tools.ozone.team.defs#roleTriage',
+                ],
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:tools.ozone.team.defs#member',
+          },
+        },
+        errors: [
+          {
+            name: 'MemberNotFound',
+            description: 'The member being updated does not exist in the team',
+          },
+        ],
+      },
+    },
+  },
+  ToolsOzoneVerificationDefs: {
+    lexicon: 1,
+    id: 'tools.ozone.verification.defs',
+    defs: {
+      verificationView: {
+        type: 'object',
+        description: 'Verification data for the associated subject.',
+        required: [
+          'issuer',
+          'uri',
+          'subject',
+          'handle',
+          'displayName',
+          'createdAt',
+        ],
+        properties: {
+          issuer: {
+            type: 'string',
+            description: 'The user who issued this verification.',
+            format: 'did',
+          },
+          uri: {
+            type: 'string',
+            description: 'The AT-URI of the verification record.',
+            format: 'at-uri',
+          },
+          subject: {
+            type: 'string',
+            format: 'did',
+            description: 'The subject of the verification.',
+          },
+          handle: {
+            type: 'string',
+            description:
+              'Handle of the subject the verification applies to at the moment of verifying, which might not be the same at the time of viewing. The verification is only valid if the current handle matches the one at the time of verifying.',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            description:
+              'Display name of the subject the verification applies to at the moment of verifying, which might not be the same at the time of viewing. The verification is only valid if the current displayName matches the one at the time of verifying.',
+          },
+          createdAt: {
+            type: 'string',
+            description: 'Timestamp when the verification was created.',
+            format: 'datetime',
+          },
+          revokeReason: {
+            type: 'string',
+            description:
+              'Describes the reason for revocation, also indicating that the verification is no longer valid.',
+          },
+          revokedAt: {
+            type: 'string',
+            description: 'Timestamp when the verification was revoked.',
+            format: 'datetime',
+          },
+          revokedBy: {
+            type: 'string',
+            description: 'The user who revoked this verification.',
+            format: 'did',
+          },
+          subjectProfile: {
+            type: 'union',
+            refs: [],
+          },
+          issuerProfile: {
+            type: 'union',
+            refs: [],
+          },
+          subjectRepo: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#repoViewDetail',
+              'lex:tools.ozone.moderation.defs#repoViewNotFound',
+            ],
+          },
+          issuerRepo: {
+            type: 'union',
+            refs: [
+              'lex:tools.ozone.moderation.defs#repoViewDetail',
+              'lex:tools.ozone.moderation.defs#repoViewNotFound',
+            ],
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneVerificationGrantVerifications: {
+    lexicon: 1,
+    id: 'tools.ozone.verification.grantVerifications',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Grant verifications to multiple subjects. Allows batch processing of up to 100 verifications at once.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['verifications'],
+            properties: {
+              verifications: {
+                type: 'array',
+                description: 'Array of verification requests to process',
+                maxLength: 100,
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.verification.grantVerifications#verificationInput',
+                },
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['verifications', 'failedVerifications'],
+            properties: {
+              verifications: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.verification.defs#verificationView',
+                },
+              },
+              failedVerifications: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.verification.grantVerifications#grantError',
+                },
+              },
+            },
+          },
+        },
+      },
+      verificationInput: {
+        type: 'object',
+        required: ['subject', 'handle', 'displayName'],
+        properties: {
+          subject: {
+            type: 'string',
+            description: 'The did of the subject being verified',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            description:
+              'Handle of the subject the verification applies to at the moment of verifying.',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            description:
+              'Display name of the subject the verification applies to at the moment of verifying.',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'Timestamp for verification record. Defaults to current time when not specified.',
+          },
+        },
+      },
+      grantError: {
+        type: 'object',
+        description: 'Error object for failed verifications.',
+        required: ['error', 'subject'],
+        properties: {
+          error: {
+            type: 'string',
+            description: 'Error message describing the reason for failure.',
+          },
+          subject: {
+            type: 'string',
+            description: 'The did of the subject being verified',
+            format: 'did',
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneVerificationListVerifications: {
+    lexicon: 1,
+    id: 'tools.ozone.verification.listVerifications',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'List verifications',
+        parameters: {
+          type: 'params',
+          properties: {
+            cursor: {
+              type: 'string',
+              description: 'Pagination cursor',
+            },
+            limit: {
+              type: 'integer',
+              description: 'Maximum number of results to return',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            createdAfter: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Filter to verifications created after this timestamp',
+            },
+            createdBefore: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Filter to verifications created before this timestamp',
+            },
+            issuers: {
+              type: 'array',
+              maxLength: 100,
+              description: 'Filter to verifications from specific issuers',
+              items: {
+                type: 'string',
+                format: 'did',
+              },
+            },
+            subjects: {
+              type: 'array',
+              description: 'Filter to specific verified DIDs',
+              maxLength: 100,
+              items: {
+                type: 'string',
+                format: 'did',
+              },
+            },
+            sortDirection: {
+              type: 'string',
+              description: 'Sort direction for creation date',
+              enum: ['asc', 'desc'],
+              default: 'desc',
+            },
+            isRevoked: {
+              type: 'boolean',
+              description:
+                'Filter to verifications that are revoked or not. By default, includes both.',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['verifications'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              verifications: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.verification.defs#verificationView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ToolsOzoneVerificationRevokeVerifications: {
+    lexicon: 1,
+    id: 'tools.ozone.verification.revokeVerifications',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Revoke previously granted verifications in batches of up to 100.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['uris'],
+            properties: {
+              uris: {
+                type: 'array',
+                description: 'Array of verification record uris to revoke',
+                maxLength: 100,
+                items: {
+                  type: 'string',
+                  description:
+                    'The AT-URI of the verification record to revoke.',
+                  format: 'at-uri',
+                },
+              },
+              revokeReason: {
+                type: 'string',
+                description:
+                  'Reason for revoking the verification. This is optional and can be omitted if not needed.',
+                maxLength: 1000,
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['revokedVerifications', 'failedRevocations'],
+            properties: {
+              revokedVerifications: {
+                type: 'array',
+                description: 'List of verification uris successfully revoked',
+                items: {
+                  type: 'string',
+                  format: 'at-uri',
+                },
+              },
+              failedRevocations: {
+                type: 'array',
+                description:
+                  "List of verification uris that couldn't be revoked, including failure reasons",
+                items: {
+                  type: 'ref',
+                  ref: 'lex:tools.ozone.verification.revokeVerifications#revokeError',
+                },
+              },
+            },
+          },
+        },
+      },
+      revokeError: {
+        type: 'object',
+        description: 'Error object for failed revocations',
+        required: ['uri', 'error'],
+        properties: {
+          uri: {
+            type: 'string',
+            description:
+              'The AT-URI of the verification record that failed to revoke.',
+            format: 'at-uri',
+          },
+          error: {
+            type: 'string',
+            description:
+              'Description of the error that occurred during revocation.',
           },
         },
       },
@@ -20979,6 +26272,7 @@ export const ids = {
   ChatBskyConvoGetConvo: 'chat.bsky.convo.getConvo',
   ChatBskyConvoGetConvoAvailability: 'chat.bsky.convo.getConvoAvailability',
   ChatBskyConvoGetConvoForMembers: 'chat.bsky.convo.getConvoForMembers',
+  ChatBskyConvoGetConvoMembers: 'chat.bsky.convo.getConvoMembers',
   ChatBskyConvoGetLog: 'chat.bsky.convo.getLog',
   ChatBskyConvoGetMessages: 'chat.bsky.convo.getMessages',
   ChatBskyConvoLeaveConvo: 'chat.bsky.convo.leaveConvo',
@@ -21127,6 +26421,7 @@ export const ids = {
   ComParaCivicDefs: 'com.para.civic.defs',
   ComParaCivicDelegation: 'com.para.civic.delegation',
   ComParaCivicGetCabildeo: 'com.para.civic.getCabildeo',
+  ComParaCivicGetPolicyTally: 'com.para.civic.getPolicyTally',
   ComParaCivicListCabildeoPositions: 'com.para.civic.listCabildeoPositions',
   ComParaCivicListCabildeos: 'com.para.civic.listCabildeos',
   ComParaCivicPosition: 'com.para.civic.position',
@@ -21156,4 +26451,70 @@ export const ids = {
   ComParaSocialGetPostMeta: 'com.para.social.getPostMeta',
   ComParaSocialPostMeta: 'com.para.social.postMeta',
   ComParaStatus: 'com.para.status',
+  ToolsOzoneCommunicationCreateTemplate:
+    'tools.ozone.communication.createTemplate',
+  ToolsOzoneCommunicationDefs: 'tools.ozone.communication.defs',
+  ToolsOzoneCommunicationDeleteTemplate:
+    'tools.ozone.communication.deleteTemplate',
+  ToolsOzoneCommunicationListTemplates:
+    'tools.ozone.communication.listTemplates',
+  ToolsOzoneCommunicationUpdateTemplate:
+    'tools.ozone.communication.updateTemplate',
+  ToolsOzoneHostingGetAccountHistory: 'tools.ozone.hosting.getAccountHistory',
+  ToolsOzoneModerationCancelScheduledActions:
+    'tools.ozone.moderation.cancelScheduledActions',
+  ToolsOzoneModerationDefs: 'tools.ozone.moderation.defs',
+  ToolsOzoneModerationEmitEvent: 'tools.ozone.moderation.emitEvent',
+  ToolsOzoneModerationGetAccountTimeline:
+    'tools.ozone.moderation.getAccountTimeline',
+  ToolsOzoneModerationGetEvent: 'tools.ozone.moderation.getEvent',
+  ToolsOzoneModerationGetRecord: 'tools.ozone.moderation.getRecord',
+  ToolsOzoneModerationGetRecords: 'tools.ozone.moderation.getRecords',
+  ToolsOzoneModerationGetRepo: 'tools.ozone.moderation.getRepo',
+  ToolsOzoneModerationGetReporterStats:
+    'tools.ozone.moderation.getReporterStats',
+  ToolsOzoneModerationGetRepos: 'tools.ozone.moderation.getRepos',
+  ToolsOzoneModerationGetSubjects: 'tools.ozone.moderation.getSubjects',
+  ToolsOzoneModerationListScheduledActions:
+    'tools.ozone.moderation.listScheduledActions',
+  ToolsOzoneModerationQueryEvents: 'tools.ozone.moderation.queryEvents',
+  ToolsOzoneModerationQueryStatuses: 'tools.ozone.moderation.queryStatuses',
+  ToolsOzoneModerationScheduleAction: 'tools.ozone.moderation.scheduleAction',
+  ToolsOzoneModerationSearchRepos: 'tools.ozone.moderation.searchRepos',
+  ToolsOzoneReportDefs: 'tools.ozone.report.defs',
+  ToolsOzoneSafelinkAddRule: 'tools.ozone.safelink.addRule',
+  ToolsOzoneSafelinkDefs: 'tools.ozone.safelink.defs',
+  ToolsOzoneSafelinkQueryEvents: 'tools.ozone.safelink.queryEvents',
+  ToolsOzoneSafelinkQueryRules: 'tools.ozone.safelink.queryRules',
+  ToolsOzoneSafelinkRemoveRule: 'tools.ozone.safelink.removeRule',
+  ToolsOzoneSafelinkUpdateRule: 'tools.ozone.safelink.updateRule',
+  ToolsOzoneServerGetConfig: 'tools.ozone.server.getConfig',
+  ToolsOzoneSetAddValues: 'tools.ozone.set.addValues',
+  ToolsOzoneSetDefs: 'tools.ozone.set.defs',
+  ToolsOzoneSetDeleteSet: 'tools.ozone.set.deleteSet',
+  ToolsOzoneSetDeleteValues: 'tools.ozone.set.deleteValues',
+  ToolsOzoneSetGetValues: 'tools.ozone.set.getValues',
+  ToolsOzoneSetQuerySets: 'tools.ozone.set.querySets',
+  ToolsOzoneSetUpsertSet: 'tools.ozone.set.upsertSet',
+  ToolsOzoneSettingDefs: 'tools.ozone.setting.defs',
+  ToolsOzoneSettingListOptions: 'tools.ozone.setting.listOptions',
+  ToolsOzoneSettingRemoveOptions: 'tools.ozone.setting.removeOptions',
+  ToolsOzoneSettingUpsertOption: 'tools.ozone.setting.upsertOption',
+  ToolsOzoneSignatureDefs: 'tools.ozone.signature.defs',
+  ToolsOzoneSignatureFindCorrelation: 'tools.ozone.signature.findCorrelation',
+  ToolsOzoneSignatureFindRelatedAccounts:
+    'tools.ozone.signature.findRelatedAccounts',
+  ToolsOzoneSignatureSearchAccounts: 'tools.ozone.signature.searchAccounts',
+  ToolsOzoneTeamAddMember: 'tools.ozone.team.addMember',
+  ToolsOzoneTeamDefs: 'tools.ozone.team.defs',
+  ToolsOzoneTeamDeleteMember: 'tools.ozone.team.deleteMember',
+  ToolsOzoneTeamListMembers: 'tools.ozone.team.listMembers',
+  ToolsOzoneTeamUpdateMember: 'tools.ozone.team.updateMember',
+  ToolsOzoneVerificationDefs: 'tools.ozone.verification.defs',
+  ToolsOzoneVerificationGrantVerifications:
+    'tools.ozone.verification.grantVerifications',
+  ToolsOzoneVerificationListVerifications:
+    'tools.ozone.verification.listVerifications',
+  ToolsOzoneVerificationRevokeVerifications:
+    'tools.ozone.verification.revokeVerifications',
 } as const

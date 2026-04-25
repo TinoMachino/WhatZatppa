@@ -33,6 +33,7 @@ import * as ListBlock from './plugins/list-block'
 import * as ListItem from './plugins/list-item'
 import * as NotifDeclaration from './plugins/notif-declaration'
 import * as ParaCommunityBoard from './plugins/para-community-board'
+import * as ParaCommunityGovernance from './plugins/para-community-governance'
 import * as ParaCommunityMembership from './plugins/para-community-membership'
 import * as ParaPost from './plugins/para-post'
 import * as ParaPostMeta from './plugins/para-post-meta'
@@ -69,6 +70,7 @@ export class IndexingService {
     status: Status.PluginType
     paraPost: ParaPost.PluginType
     paraCommunityBoard: ParaCommunityBoard.PluginType
+    paraCommunityGovernance: ParaCommunityGovernance.PluginType
     paraCommunityMembership: ParaCommunityMembership.PluginType
     paraPostMeta: ParaPostMeta.PluginType
     paraStatus: ParaStatus.PluginType
@@ -106,6 +108,10 @@ export class IndexingService {
       status: Status.makePlugin(this.db, this.background),
       paraPost: ParaPost.makePlugin(this.db, this.background),
       paraCommunityBoard: ParaCommunityBoard.makePlugin(
+        this.db,
+        this.background,
+      ),
+      paraCommunityGovernance: ParaCommunityGovernance.makePlugin(
         this.db,
         this.background,
       ),

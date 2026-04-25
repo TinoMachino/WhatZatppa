@@ -18417,6 +18417,126 @@ export const schemaDict = {
           },
         },
       },
+      policySignalBucket: {
+        type: 'object',
+        required: ['signal', 'count'],
+        properties: {
+          signal: {
+            type: 'integer',
+            minimum: -3,
+            maximum: 3,
+          },
+          count: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      policyTally: {
+        type: 'object',
+        required: [
+          'subject',
+          'subjectType',
+          'community',
+          'voteCount',
+          'directVoteCount',
+          'delegatedVoteCount',
+          'signalSum',
+          'signalAverage',
+          'eligibleVoterCount',
+          'quorumTarget',
+          'quorumMet',
+          'official',
+          'certified',
+          'outcome',
+          'state',
+          'breakdown',
+          'computedAt',
+        ],
+        properties: {
+          subject: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          subjectType: {
+            type: 'string',
+            knownValues: ['policy'],
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          voteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          directVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegatedVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          signalSum: {
+            type: 'integer',
+          },
+          signalAverage: {
+            type: 'string',
+            maxLength: 32,
+          },
+          eligibleVoterCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          quorumTarget: {
+            type: 'integer',
+            minimum: 1,
+          },
+          quorumMet: {
+            type: 'boolean',
+          },
+          official: {
+            type: 'boolean',
+          },
+          certified: {
+            type: 'boolean',
+          },
+          outcome: {
+            type: 'string',
+            knownValues: [
+              'insufficient_quorum',
+              'contested',
+              'passed',
+              'strong_passed',
+              'failed',
+            ],
+          },
+          state: {
+            type: 'string',
+            knownValues: [
+              'draft',
+              'deliberation',
+              'voting',
+              'passed',
+              'failed',
+              'official',
+            ],
+          },
+          breakdown: {
+            type: 'array',
+            maxLength: 7,
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#policySignalBucket',
+            },
+          },
+          computedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
     },
   },
   ComParaCivicDelegation: {
@@ -18491,6 +18611,45 @@ export const schemaDict = {
             },
           },
         },
+      },
+    },
+  },
+  ComParaCivicGetPolicyTally: {
+    lexicon: 1,
+    id: 'com.para.civic.getPolicyTally',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get the weighted consensus tally for a policy post using civic vote signals from -3 to +3.',
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['tally'],
+            properties: {
+              tally: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.defs#policyTally',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+        ],
       },
     },
   },
@@ -20579,165 +20738,6 @@ export const schemaDict = {
       },
     },
   },
-  ComParaPost: {
-    lexicon: 1,
-    id: 'com.para.post',
-    defs: {
-      main: {
-        type: 'record',
-        description: 'Record containing a Para post.',
-        key: 'tid',
-        record: {
-          type: 'object',
-          required: ['text', 'createdAt'],
-          properties: {
-            text: {
-              type: 'string',
-              maxLength: 3000,
-              maxGraphemes: 300,
-              description:
-                'The primary post content. May be an empty string, if there are embeds.',
-            },
-            entities: {
-              type: 'array',
-              description: 'DEPRECATED: replaced by app.bsky.richtext.facet.',
-              items: {
-                type: 'ref',
-                ref: 'lex:com.para.post#entity',
-              },
-            },
-            facets: {
-              type: 'array',
-              description:
-                'Annotations of text (mentions, URLs, hashtags, etc)',
-              items: {
-                type: 'ref',
-                ref: 'lex:app.bsky.richtext.facet',
-              },
-            },
-            reply: {
-              type: 'ref',
-              ref: 'lex:com.para.post#replyRef',
-            },
-            embed: {
-              type: 'union',
-              refs: [
-                'lex:app.bsky.embed.images',
-                'lex:app.bsky.embed.video',
-                'lex:app.bsky.embed.external',
-                'lex:app.bsky.embed.record',
-                'lex:app.bsky.embed.recordWithMedia',
-              ],
-            },
-            langs: {
-              type: 'array',
-              description:
-                'Indicates human language of post primary text content.',
-              maxLength: 3,
-              items: {
-                type: 'string',
-                format: 'language',
-              },
-            },
-            labels: {
-              type: 'union',
-              description:
-                'Self-label values for this post. Effectively content warnings.',
-              refs: ['lex:com.atproto.label.defs#selfLabels'],
-            },
-            tags: {
-              type: 'array',
-              description:
-                'Additional hashtags, in addition to any included in post text and facets.',
-              maxLength: 8,
-              items: {
-                type: 'string',
-                maxLength: 640,
-                maxGraphemes: 64,
-              },
-            },
-            flairs: {
-              type: 'array',
-              description:
-                'Optional para-specific flairs associated with the post.',
-              maxLength: 10,
-              items: {
-                type: 'string',
-                maxLength: 128,
-              },
-            },
-            postType: {
-              type: 'string',
-              description:
-                'Optional para-specific post type (policy, matter, meme, etc).',
-              maxLength: 64,
-            },
-            title: {
-              type: 'string',
-              maxLength: 300,
-              maxGraphemes: 300,
-              description:
-                'Optional title for policy or proposal posts, summarizing the content.',
-            },
-            createdAt: {
-              type: 'string',
-              format: 'datetime',
-              description:
-                'Client-declared timestamp when this post was originally created.',
-            },
-          },
-        },
-      },
-      replyRef: {
-        type: 'object',
-        required: ['root', 'parent'],
-        properties: {
-          root: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
-          },
-          parent: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
-          },
-        },
-      },
-      entity: {
-        type: 'object',
-        description: 'Deprecated: use facets instead.',
-        required: ['index', 'type', 'value'],
-        properties: {
-          index: {
-            type: 'ref',
-            ref: 'lex:com.para.post#textSlice',
-          },
-          type: {
-            type: 'string',
-            description: "Expected values are 'mention' and 'link'.",
-          },
-          value: {
-            type: 'string',
-          },
-        },
-      },
-      textSlice: {
-        type: 'object',
-        description:
-          'Deprecated. Use app.bsky.richtext instead -- A text segment. Start is inclusive, end is exclusive. Indices are for utf16-encoded strings.',
-        required: ['start', 'end'],
-        properties: {
-          start: {
-            type: 'integer',
-            minimum: 0,
-          },
-          end: {
-            type: 'integer',
-            minimum: 0,
-          },
-        },
-      },
-    },
-  },
   ComParaSocialGetPostMeta: {
     lexicon: 1,
     id: 'com.para.social.getPostMeta',
@@ -20874,45 +20874,6 @@ export const schemaDict = {
             },
             voteScore: {
               type: 'integer',
-            },
-            createdAt: {
-              type: 'string',
-              format: 'datetime',
-            },
-          },
-        },
-      },
-    },
-  },
-  ComParaStatus: {
-    lexicon: 1,
-    id: 'com.para.status',
-    defs: {
-      main: {
-        type: 'record',
-        description: 'Current public status for a Para account.',
-        key: 'literal:self',
-        record: {
-          type: 'object',
-          required: ['status', 'createdAt'],
-          properties: {
-            status: {
-              type: 'string',
-              maxLength: 300,
-              maxGraphemes: 300,
-              description: "User's public status message.",
-            },
-            party: {
-              type: 'string',
-              maxLength: 64,
-              maxGraphemes: 64,
-              description: 'Optional political party affiliation.',
-            },
-            community: {
-              type: 'string',
-              maxLength: 64,
-              maxGraphemes: 64,
-              description: 'Optional primary community label.',
             },
             createdAt: {
               type: 'string',
@@ -26460,6 +26421,7 @@ export const ids = {
   ComParaCivicDefs: 'com.para.civic.defs',
   ComParaCivicDelegation: 'com.para.civic.delegation',
   ComParaCivicGetCabildeo: 'com.para.civic.getCabildeo',
+  ComParaCivicGetPolicyTally: 'com.para.civic.getPolicyTally',
   ComParaCivicListCabildeoPositions: 'com.para.civic.listCabildeoPositions',
   ComParaCivicListCabildeos: 'com.para.civic.listCabildeos',
   ComParaCivicPosition: 'com.para.civic.position',
@@ -26485,10 +26447,8 @@ export const ids = {
   ComParaHighlightDefs: 'com.para.highlight.defs',
   ComParaHighlightGetHighlight: 'com.para.highlight.getHighlight',
   ComParaHighlightListHighlights: 'com.para.highlight.listHighlights',
-  ComParaPost: 'com.para.post',
   ComParaSocialGetPostMeta: 'com.para.social.getPostMeta',
   ComParaSocialPostMeta: 'com.para.social.postMeta',
-  ComParaStatus: 'com.para.status',
   ToolsOzoneCommunicationCreateTemplate:
     'tools.ozone.communication.createTemplate',
   ToolsOzoneCommunicationDefs: 'tools.ozone.communication.defs',

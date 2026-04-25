@@ -8,6 +8,7 @@ import { DatabaseSchema, DatabaseSchemaType } from '../../db/database-schema'
 import { Notification } from '../../db/tables/notification'
 import { countAll, excluded } from '../../db/util'
 import { RecordProcessor } from '../processor'
+import { recomputeParaProfileStats } from './para-profile-stats'
 
 type Notif = Insertable<Notification>
 type IndexedLike = Selectable<DatabaseSchemaType['like']>
@@ -130,6 +131,13 @@ const updateAggregates = async (db: DatabaseSchema, like: IndexedLike) => {
       oc.column('uri').doUpdateSet({ likeCount: excluded(db, 'likeCount') }),
     )
   await likeCountQb.execute()
+  const subjectUri = new AtUri(like.subject)
+  if (subjectUri.collection === 'com.para.post') {
+    await Promise.all([
+      recomputeParaProfileStats(db, subjectUri.host),
+      recomputeParaProfileStats(db, like.creator),
+    ])
+  }
 }
 
 export type PluginType = ReturnType<typeof makePlugin>

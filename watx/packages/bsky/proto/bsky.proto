@@ -1472,6 +1472,39 @@ message GetParaPostMetaResponse {
   optional ParaPostMeta post = 1;
 }
 
+message GetParaPolicyTallyRequest {
+  string post_uri = 1;
+}
+
+message ParaPolicySignalBucket {
+  int32 signal = 1;
+  int32 count = 2;
+}
+
+message ParaPolicyTally {
+  string subject = 1;
+  string subject_type = 2;
+  string community = 3;
+  int32 vote_count = 4;
+  int32 direct_vote_count = 5;
+  int32 delegated_vote_count = 6;
+  int32 signal_sum = 7;
+  double signal_average = 8;
+  int32 eligible_voter_count = 9;
+  int32 quorum_target = 10;
+  bool quorum_met = 11;
+  bool official = 12;
+  bool certified = 13;
+  string outcome = 14;
+  string state = 15;
+  repeated ParaPolicySignalBucket breakdown = 16;
+  string computed_at = 17;
+}
+
+message GetParaPolicyTallyResponse {
+  optional ParaPolicyTally tally = 1;
+}
+
 // - Returns para profile stats and current para status for an actor
 //     - `com.para.actor.getProfileStats`
 message GetParaProfileStatsRequest {
@@ -2012,6 +2045,7 @@ service Service {
   rpc GetParaPosts(GetParaPostsRequest) returns (GetParaPostsResponse);
   rpc GetParaThread(GetParaThreadRequest) returns (GetParaThreadResponse);
   rpc GetParaPostMeta(GetParaPostMetaRequest) returns (GetParaPostMetaResponse);
+  rpc GetParaPolicyTally(GetParaPolicyTallyRequest) returns (GetParaPolicyTallyResponse);
   rpc GetParaProfileStats(GetParaProfileStatsRequest) returns (GetParaProfileStatsResponse);
   rpc GetParaCommunityGovernance(GetParaCommunityGovernanceRequest) returns (GetParaCommunityGovernanceResponse);
   rpc GetParaCommunityBoard(GetParaCommunityBoardRequest) returns (GetParaCommunityBoardResponse);

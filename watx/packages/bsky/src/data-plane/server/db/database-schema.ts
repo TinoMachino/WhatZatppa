@@ -30,6 +30,7 @@ import * as paraCommunityBoard from './tables/para-community-board'
 import * as paraCommunityMembership from './tables/para-community-membership'
 import * as paraPost from './tables/para-post'
 import * as paraPostMeta from './tables/para-post-meta'
+import * as paraPolicyVote from './tables/para-policy-vote'
 import * as paraProfileStats from './tables/para-profile-stats'
 import * as paraStatus from './tables/para-status'
 import * as post from './tables/post'
@@ -99,6 +100,7 @@ export type DatabaseSchemaType = duplicateRecord.PartialDB &
   paraCommunityMembership.PartialDB &
   paraPost.PartialDB &
   paraPostMeta.PartialDB &
+  paraPolicyVote.PartialDB &
   paraStatus.PartialDB &
   paraProfileStats.PartialDB &
   highlight.PartialDB &

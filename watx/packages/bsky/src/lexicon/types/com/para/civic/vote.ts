@@ -16,11 +16,15 @@ const id = 'com.para.civic.vote'
 
 export interface Main {
   $type: 'com.para.civic.vote'
+  /** The proposal, policy, matter, or cabildeo record being voted on. */
   subject?: string
+  /** Optional semantic type for clients and indexers. */
   subjectType?: 'cabildeo' | 'policy' | 'matter' | 'governance' | (string & {})
   cabildeo?: string
   selectedOption?: number
+  /** Weighted consensus signal for policy-style votes: -3 strong opposition, 0 neutral/abstain, +3 strong support. */
   signal?: number
+  /** Optional voter rationale for the signal. */
   reason?: string
   isDirect: boolean
   delegatedFrom?: string[]

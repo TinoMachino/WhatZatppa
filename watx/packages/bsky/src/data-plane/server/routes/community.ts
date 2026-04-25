@@ -4,11 +4,20 @@ import * as ComParaCommunityGovernance from '../../../lexicon/types/com/para/com
 import {
   GetParaCommunityBoardResponse,
   GetParaCommunityBoardsResponse,
+  GetParaCommunityGovernanceResponse,
+  ParaCommunityDeputyRole,
+  ParaCommunityGovernanceHistoryEntry,
+  ParaCommunityGovernanceMetadata,
+  ParaCommunityMember,
+  ParaCommunityModerator,
+  ParaCommunityOfficial,
+  ParaCommunitySummary,
   ParaCommunityBoardView,
   ParaCommunityGovernanceSummary,
 } from '../../../proto/bsky_pb'
 import { Service } from '../../../proto/bsky_connect'
 import { Database } from '../db'
+import { countAll } from '../db/util'
 
 type BoardRow = {
   uri: string
@@ -79,6 +88,83 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
           viewerMemberships.get(board.uri),
         ),
       ),
+    })
+  },
+
+  async getParaCommunityGovernance(req) {
+    const community = normalizeCommunitySlug(req.community)
+    const [record, counters] = await Promise.all([
+      getPublishedGovernanceRecord(db, req.community, community),
+      getCommunityCounters(db, community),
+    ])
+
+    const computedAt = new Date().toISOString()
+
+    return new GetParaCommunityGovernanceResponse({
+      community,
+      summary: new ParaCommunitySummary(counters),
+      moderators:
+        record?.moderators.map(
+          (moderator) =>
+            new ParaCommunityModerator({
+              member: toGovernanceMember(moderator),
+              role: moderator.role,
+              badge: moderator.badge,
+            }),
+        ) ?? [],
+      officials:
+        record?.officials.map(
+          (official) =>
+            new ParaCommunityOfficial({
+              member: toGovernanceMember(official),
+              office: official.office,
+              mandate: official.mandate,
+            }),
+        ) ?? [],
+      deputies:
+        record?.deputies.map(
+          (deputy) =>
+            new ParaCommunityDeputyRole({
+              tier: deputy.tier,
+              role: deputy.role,
+              activeHolder: deputy.activeHolder
+                ? toGovernanceMember(deputy.activeHolder)
+                : undefined,
+              votesBackingRole: deputy.votes,
+              applicants: deputy.applicants.map(
+                (applicant) =>
+                  applicant.displayName || applicant.handle || applicant.did || '',
+              ),
+            }),
+        ) ?? [],
+      computedAt: record?.updatedAt || record?.createdAt || computedAt,
+      metadata: record?.metadata
+        ? new ParaCommunityGovernanceMetadata({
+            termLengthDays: record.metadata.termLengthDays ?? 0,
+            reviewCadence: record.metadata.reviewCadence ?? '',
+            escalationPath: record.metadata.escalationPath ?? '',
+            publicContact: record.metadata.publicContact ?? '',
+            lastPublishedAt:
+              record.metadata.lastPublishedAt ||
+              record.updatedAt ||
+              record.createdAt,
+            state: record.metadata.state ?? '',
+            matterFlairIds: record.metadata.matterFlairIds ?? [],
+            policyFlairIds: record.metadata.policyFlairIds ?? [],
+          })
+        : undefined,
+      editHistory:
+        record?.editHistory?.map(
+          (entry) =>
+            new ParaCommunityGovernanceHistoryEntry({
+              id: entry.id,
+              action: entry.action,
+              actorDid: entry.actorDid ?? '',
+              actorHandle: entry.actorHandle ?? '',
+              createdAt: entry.createdAt,
+              summary: entry.summary,
+            }),
+        ) ?? [],
     })
   },
 })
@@ -208,6 +294,91 @@ const getGovernanceSummary = async (
   })
 }
 
+const getCommunityCounters = async (
+  db: Database,
+  community: string,
+): Promise<{
+  members: number
+  visiblePosters: number
+  policyPosts: number
+  matterPosts: number
+  badgeHolders: number
+}> => {
+  const [members, posters, posts, badges] = await Promise.all([
+    db.db
+      .selectFrom('para_status')
+      .where(
+        sql`regexp_replace(lower(coalesce("community", '')), '[^a-z0-9]+', '-', 'g')`,
+        '=',
+        community,
+      )
+      .select(countAll.as('count'))
+      .executeTakeFirst(),
+    db.db
+      .selectFrom('para_post_meta')
+      .where(
+        sql`regexp_replace(lower(coalesce("community", '')), '[^a-z0-9]+', '-', 'g')`,
+        '=',
+        community,
+      )
+      .select(sql<number>`count(distinct "creator")`.as('count'))
+      .executeTakeFirst(),
+    db.db
+      .selectFrom('para_post_meta')
+      .where(
+        sql`regexp_replace(lower(coalesce("community", '')), '[^a-z0-9]+', '-', 'g')`,
+        '=',
+        community,
+      )
+      .select(
+        sql<number>`coalesce(sum(case when "postType" = 'policy' then 1 else 0 end), 0)`.as(
+          'policyPosts',
+        ),
+      )
+      .select(
+        sql<number>`coalesce(sum(case when "postType" = 'matter' then 1 else 0 end), 0)`.as(
+          'matterPosts',
+        ),
+      )
+      .executeTakeFirst(),
+    db.db
+      .selectFrom('para_status')
+      .where(
+        sql`regexp_replace(lower(coalesce("party", '')), '[^a-z0-9]+', '', 'g')`,
+        '!=',
+        '',
+      )
+      .where(
+        sql`regexp_replace(lower(coalesce("community", '')), '[^a-z0-9]+', '-', 'g')`,
+        '=',
+        community,
+      )
+      .select(countAll.as('count'))
+      .executeTakeFirst(),
+  ])
+
+  return {
+    members: Number(members?.count ?? 0),
+    visiblePosters: Number(posters?.count ?? 0),
+    policyPosts: Number(posts?.policyPosts ?? 0),
+    matterPosts: Number(posts?.matterPosts ?? 0),
+    badgeHolders: Number(badges?.count ?? 0),
+  }
+}
+
+const toGovernanceMember = (person: {
+  did?: string
+  handle?: string
+  displayName?: string
+  avatar?: string
+}) =>
+  new ParaCommunityMember({
+    did: person.did ?? '',
+    handle: person.handle ?? undefined,
+    displayName: person.displayName ?? undefined,
+    avatar: person.avatar ?? undefined,
+  })
+
 const COMMUNITY_TRANSLATION_SOURCE =
   'ÁÀÄÂÃáàäâãÉÈËÊéèëêÍÌÏÎíìïîÓÒÖÔÕóòöôõÚÙÜÛúùüûÑñÇç'
 const COMMUNITY_TRANSLATION_TARGET =
@@ -250,7 +421,17 @@ const parseGovernanceRecord = (json: string): GovernanceRecord | null => {
   try {
     const parsed = JSON.parse(json)
     const validated = ComParaCommunityGovernance.validateRecord(parsed)
-    return validated.success ? (validated.value as GovernanceRecord) : null
+    if (validated.success) return validated.value as GovernanceRecord
+    if (
+      typeof parsed?.community === 'string' &&
+      typeof parsed?.slug === 'string' &&
+      Array.isArray(parsed?.moderators) &&
+      Array.isArray(parsed?.officials) &&
+      Array.isArray(parsed?.deputies)
+    ) {
+      return parsed as GovernanceRecord
+    }
+    return null
   } catch {
     return null
   }
@@ -264,6 +445,16 @@ const normalizeCommunityKey = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '')
+
+const normalizeCommunitySlug = (value: string) =>
+  value
+    .trim()
+    .replace(/^p\//i, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 
 const normalizeLimit = (limit: number) => {
   if (!limit || Number.isNaN(limit)) return 50
