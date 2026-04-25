@@ -11,7 +11,11 @@ import {
 } from '@atproto/syntax'
 import { DataPlaneClient } from '../data-plane/client'
 import { app, chat, com } from '../lexicons/index.js'
-import { ActivitySubscription, VerificationMeta } from '../proto/bsky_pb'
+import {
+  ActivitySubscription,
+  ParaCabildeoLive,
+  VerificationMeta,
+} from '../proto/bsky_pb'
 import {
   ChatDeclarationRecord,
   GermDeclarationRecord,
@@ -52,6 +56,7 @@ export type Actor = {
   trustedVerifier?: boolean
   verifications: VerificationHydrationState[]
   status?: RecordInfo<StatusRecord>
+  cabildeoLive?: ParaCabildeoLive
   germ?: RecordInfo<GermDeclarationRecord>
   allowActivitySubscriptionsFrom: AllowActivitySubscriptions
   /**
@@ -306,6 +311,7 @@ export class ActorHydrator {
         trustedVerifier: actor.trustedVerifier,
         verifications,
         status: status,
+        cabildeoLive: actor.cabildeoLive,
         germ: germ,
         allowActivitySubscriptionsFrom: allowActivitySubscriptionsFrom(
           actor.allowActivitySubscriptionsFrom,

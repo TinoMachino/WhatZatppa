@@ -18,7 +18,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     const normalizedCommunity = normalizeCommunity(req.community)
     const phase = req.phase?.trim()
     const now = new Date()
-    const nowIso = now.toISOString()
 
     const activeLiveSql = sql<boolean>`(
       "cabildeo_cabildeo"."phase" in (${sql.join(
@@ -29,7 +28,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
         select 1
         from cabildeo_live_session as live_session
         where live_session.cabildeo = "cabildeo_cabildeo"."uri"
-          and live_session.endedAt is null
+          and live_session."endedAt" is null
           and ${activeHostPresenceExistsSql('live_session', now)}
       )
     )`
@@ -83,7 +82,6 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
 
   async getParaCabildeo(req) {
     const now = new Date()
-    const nowIso = now.toISOString()
     const row = await db.db
       .selectFrom('cabildeo_cabildeo')
       .where('uri', '=', req.cabildeoUri)
@@ -95,12 +93,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     }
 
     return {
-      cabildeo: await mapCabildeoRow(
-        db,
-        row,
-        req.viewerDid || undefined,
-        now,
-      ),
+      cabildeo: await mapCabildeoRow(db, row, req.viewerDid || undefined, now),
     }
   },
 
@@ -357,7 +350,9 @@ const mapCabildeoRow = async (
     row.phase === 'resolved'
       ? {
           winningOption:
-            typeof row.winningOption === 'number' ? row.winningOption : undefined,
+            typeof row.winningOption === 'number'
+              ? row.winningOption
+              : undefined,
           totalParticipants: row.voteCount,
           effectiveTotalPower: row.voteCount,
           tie: row.isTie === 1,
@@ -474,8 +469,14 @@ type CivicOption = {
 const asOptions = (value: unknown): CivicOption[] => {
   if (!Array.isArray(value)) return []
   return value
-    .filter((item): item is { label?: unknown; description?: unknown; isConsensus?: unknown } =>
-      typeof item === 'object' && item !== null,
+    .filter(
+      (
+        item,
+      ): item is {
+        label?: unknown
+        description?: unknown
+        isConsensus?: unknown
+      } => typeof item === 'object' && item !== null,
     )
     .map((item) => ({
       label: typeof item.label === 'string' ? item.label : '',

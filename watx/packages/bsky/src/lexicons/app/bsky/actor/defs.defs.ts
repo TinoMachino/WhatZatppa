@@ -10,6 +10,7 @@ import * as NotificationDefs from '../notification/defs.defs.js'
 import * as FeedThreadgate from '../feed/threadgate.defs.js'
 import * as FeedPostgate from '../feed/postgate.defs.js'
 import * as EmbedExternal from '../embed/external.defs.js'
+import * as ComParaCivicDefs from '../../../com/para/civic/defs.defs.js'
 
 const $nsid = 'app.bsky.actor.defs'
 
@@ -28,6 +29,7 @@ type ProfileViewBasic = {
   createdAt?: l.DatetimeString
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: ComParaCivicDefs.CabildeoLive
 
   /**
    * Debug information for internal development
@@ -58,6 +60,11 @@ const profileViewBasic = l.typedObject<ProfileViewBasic>(
       l.ref<VerificationState>((() => verificationState) as any),
     ),
     status: l.optional(l.ref<StatusView>((() => statusView) as any)),
+    cabildeoLive: l.optional(
+      l.ref<ComParaCivicDefs.CabildeoLive>(
+        (() => ComParaCivicDefs.cabildeoLive) as any,
+      ),
+    ),
     debug: l.optional(l.lexMap()),
   }),
 )
@@ -79,6 +86,7 @@ type ProfileView = {
   labels?: LabelDefs.Label[]
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: ComParaCivicDefs.CabildeoLive
 
   /**
    * Debug information for internal development
@@ -111,6 +119,11 @@ const profileView = l.typedObject<ProfileView>(
       l.ref<VerificationState>((() => verificationState) as any),
     ),
     status: l.optional(l.ref<StatusView>((() => statusView) as any)),
+    cabildeoLive: l.optional(
+      l.ref<ComParaCivicDefs.CabildeoLive>(
+        (() => ComParaCivicDefs.cabildeoLive) as any,
+      ),
+    ),
     debug: l.optional(l.lexMap()),
   }),
 )
@@ -139,6 +152,7 @@ type ProfileViewDetailed = {
   pinnedPost?: RepoStrongRef.Main
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: ComParaCivicDefs.CabildeoLive
 
   /**
    * Debug information for internal development
@@ -184,6 +198,11 @@ const profileViewDetailed = l.typedObject<ProfileViewDetailed>(
       l.ref<VerificationState>((() => verificationState) as any),
     ),
     status: l.optional(l.ref<StatusView>((() => statusView) as any)),
+    cabildeoLive: l.optional(
+      l.ref<ComParaCivicDefs.CabildeoLive>(
+        (() => ComParaCivicDefs.cabildeoLive) as any,
+      ),
+    ),
     debug: l.optional(l.lexMap()),
   }),
 )
