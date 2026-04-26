@@ -660,19 +660,6 @@ let PostMenuItems = ({
             <Menu.Divider />
             <Menu.Group>
               <Menu.Item
-                testID="postDropdownMuteThreadBtn"
-                label={isThreadMuted ? l`Unmute thread` : l`Mute thread`}
-                onPress={onToggleThreadMute}>
-                <Menu.ItemText>
-                  {isThreadMuted ? l`Unmute thread` : l`Mute thread`}
-                </Menu.ItemText>
-                <Menu.ItemIcon
-                  icon={isThreadMuted ? Unmute : Mute}
-                  position="right"
-                />
-              </Menu.Item>
-
-              <Menu.Item
                 testID="postDropdownFollowPostBtn"
                 disabled={postSubscriptionMutation.isPending}
                 label={isPostSubscribed ? l`Unfollow post` : l`Follow post`}
@@ -682,6 +669,19 @@ let PostMenuItems = ({
                 </Menu.ItemText>
                 <Menu.ItemIcon
                   icon={isPostSubscribed ? BellRinging : BellPlus}
+                  position="right"
+                />
+              </Menu.Item>
+
+              <Menu.Item
+                testID="postDropdownMuteThreadBtn"
+                label={isThreadMuted ? l`Unmute thread` : l`Mute thread`}
+                onPress={onToggleThreadMute}>
+                <Menu.ItemText>
+                  {isThreadMuted ? l`Unmute thread` : l`Mute thread`}
+                </Menu.ItemText>
+                <Menu.ItemIcon
+                  icon={isThreadMuted ? Unmute : Mute}
                   position="right"
                 />
               </Menu.Item>
