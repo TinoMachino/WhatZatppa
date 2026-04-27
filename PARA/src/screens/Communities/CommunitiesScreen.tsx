@@ -90,7 +90,7 @@ export function CommunitiesScreen() {
     isError: isStateMatchesError,
   } = useCommunityBoardsQuery({
     limit: 6,
-    state: selectedStateItem || undefined,
+    quadrant: selectedStateItem || undefined,
     sort: 'activity',
   })
 

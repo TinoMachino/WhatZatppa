@@ -12042,6 +12042,16 @@ export class ParaCommunityBoardView extends Message<ParaCommunityBoardView> {
    */
   createdAt = "";
 
+  /**
+   * @generated from field: string status = 17;
+   */
+  status = "";
+
+  /**
+   * @generated from field: bsky.ParaCommunityGovernanceSummary governance_summary = 18;
+   */
+  governanceSummary?: ParaCommunityGovernanceSummary;
+
   constructor(data?: PartialMessage<ParaCommunityBoardView>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12066,6 +12076,8 @@ export class ParaCommunityBoardView extends Message<ParaCommunityBoardView> {
     { no: 14, name: "viewer_membership_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "viewer_roles", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 16, name: "created_at", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "governance_summary", kind: "message", T: ParaCommunityGovernanceSummary },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ParaCommunityBoardView {
@@ -12227,6 +12239,11 @@ export class GetParaCommunityBoardsRequest extends Message<GetParaCommunityBoard
    */
   cursor = "";
 
+  /**
+   * @generated from field: optional string quadrant = 9;
+   */
+  quadrant?: string;
+
   constructor(data?: PartialMessage<GetParaCommunityBoardsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12243,6 +12260,7 @@ export class GetParaCommunityBoardsRequest extends Message<GetParaCommunityBoard
     { no: 6, name: "flair_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "sort", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "cursor", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "quadrant", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParaCommunityBoardsRequest {
@@ -12339,6 +12357,16 @@ export class GetParaCommunityMembersRequest extends Message<GetParaCommunityMemb
    */
   cursor = "";
 
+  /**
+   * @generated from field: string viewer_did = 7;
+   */
+  viewerDid = "";
+
+  /**
+   * @generated from field: bool viewer_is_admin = 8;
+   */
+  viewerIsAdmin = false;
+
   constructor(data?: PartialMessage<GetParaCommunityMembersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12353,6 +12381,8 @@ export class GetParaCommunityMembersRequest extends Message<GetParaCommunityMemb
     { no: 4, name: "sort", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 6, name: "cursor", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "viewer_did", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "viewer_is_admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParaCommunityMembersRequest {
@@ -13557,6 +13587,16 @@ export class GetParaDelegationCandidatesRequest extends Message<GetParaDelegatio
    */
   cursor = "";
 
+  /**
+   * @generated from field: string viewer_did = 5;
+   */
+  viewerDid = "";
+
+  /**
+   * @generated from field: bool viewer_is_admin = 6;
+   */
+  viewerIsAdmin = false;
+
   constructor(data?: PartialMessage<GetParaDelegationCandidatesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13569,6 +13609,8 @@ export class GetParaDelegationCandidatesRequest extends Message<GetParaDelegatio
     { no: 2, name: "community_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "cursor", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "viewer_did", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "viewer_is_admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParaDelegationCandidatesRequest {
@@ -15824,4 +15866,3 @@ export class ClearThreadMutesResponse extends Message<ClearThreadMutesResponse> 
     return proto3.util.equals(ClearThreadMutesResponse, a, b);
   }
 }
-

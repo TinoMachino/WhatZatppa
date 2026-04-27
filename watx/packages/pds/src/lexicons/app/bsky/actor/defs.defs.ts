@@ -4,6 +4,7 @@
 
 import { l } from '@atproto/lex'
 import * as LabelDefs from '../../../com/atproto/label/defs.defs.js'
+import * as CivicDefs from '../../../com/para/civic/defs.defs.js'
 import * as GraphDefs from '../graph/defs.defs.js'
 import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.js'
 import * as NotificationDefs from '../notification/defs.defs.js'
@@ -28,6 +29,7 @@ type ProfileViewBasic = {
   createdAt?: l.DatetimeString
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: CivicDefs.CabildeoLive
 
   /**
    * Debug information for internal development
@@ -58,6 +60,9 @@ const profileViewBasic = l.typedObject<ProfileViewBasic>(
       l.ref<VerificationState>((() => verificationState) as any),
     ),
     status: l.optional(l.ref<StatusView>((() => statusView) as any)),
+    cabildeoLive: l.optional(
+      l.ref<CivicDefs.CabildeoLive>((() => CivicDefs.cabildeoLive) as any),
+    ),
     debug: l.optional(l.lexMap()),
   }),
 )
@@ -79,6 +84,7 @@ type ProfileView = {
   labels?: LabelDefs.Label[]
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: CivicDefs.CabildeoLive
 
   /**
    * Debug information for internal development
@@ -111,6 +117,9 @@ const profileView = l.typedObject<ProfileView>(
       l.ref<VerificationState>((() => verificationState) as any),
     ),
     status: l.optional(l.ref<StatusView>((() => statusView) as any)),
+    cabildeoLive: l.optional(
+      l.ref<CivicDefs.CabildeoLive>((() => CivicDefs.cabildeoLive) as any),
+    ),
     debug: l.optional(l.lexMap()),
   }),
 )
@@ -139,6 +148,7 @@ type ProfileViewDetailed = {
   pinnedPost?: RepoStrongRef.Main
   verification?: VerificationState
   status?: StatusView
+  cabildeoLive?: CivicDefs.CabildeoLive
 
   /**
    * Debug information for internal development
@@ -184,6 +194,9 @@ const profileViewDetailed = l.typedObject<ProfileViewDetailed>(
       l.ref<VerificationState>((() => verificationState) as any),
     ),
     status: l.optional(l.ref<StatusView>((() => statusView) as any)),
+    cabildeoLive: l.optional(
+      l.ref<CivicDefs.CabildeoLive>((() => CivicDefs.cabildeoLive) as any),
+    ),
     debug: l.optional(l.lexMap()),
   }),
 )

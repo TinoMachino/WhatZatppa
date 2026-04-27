@@ -65,6 +65,10 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:app.bsky.actor.defs#statusView',
           },
+          cabildeoLive: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#cabildeoLive',
+          },
           debug: {
             type: 'unknown',
             description: 'Debug information for internal development',
@@ -130,6 +134,10 @@ export const schemaDict = {
           status: {
             type: 'ref',
             ref: 'lex:app.bsky.actor.defs#statusView',
+          },
+          cabildeoLive: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#cabildeoLive',
           },
           debug: {
             type: 'unknown',
@@ -221,6 +229,10 @@ export const schemaDict = {
           status: {
             type: 'ref',
             ref: 'lex:app.bsky.actor.defs#statusView',
+          },
+          cabildeoLive: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#cabildeoLive',
           },
           debug: {
             type: 'unknown',
@@ -17702,6 +17714,3322 @@ export const schemaDict = {
       },
     },
   },
+  ComParaActorDefs: {
+    lexicon: 1,
+    id: 'com.para.actor.defs',
+    defs: {
+      profileStats: {
+        type: 'object',
+        description: 'Aggregated Para profile statistics.',
+        required: [
+          'influence',
+          'votesReceivedAllTime',
+          'votesCastAllTime',
+          'contributions',
+          'activeIn',
+          'computedAt',
+        ],
+        properties: {
+          influence: {
+            type: 'integer',
+            description:
+              'All-time influence score (Para equivalent of cumulative karma).',
+          },
+          votesReceivedAllTime: {
+            type: 'integer',
+            description:
+              "Total support received by this actor's Para posts across all time.",
+          },
+          votesCastAllTime: {
+            type: 'integer',
+            description:
+              'Total votes/interactions cast by this actor across all time.',
+          },
+          contributions: {
+            type: 'ref',
+            ref: 'lex:com.para.actor.defs#contributions',
+          },
+          activeIn: {
+            type: 'array',
+            description: 'Top communities where this actor contributes.',
+            items: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+          },
+          computedAt: {
+            type: 'string',
+            format: 'datetime',
+            description: 'Timestamp of the last stats computation.',
+          },
+        },
+      },
+      contributions: {
+        type: 'object',
+        description: 'All-time contribution counters.',
+        required: ['policies', 'matters', 'comments'],
+        properties: {
+          policies: {
+            type: 'integer',
+          },
+          matters: {
+            type: 'integer',
+          },
+          comments: {
+            type: 'integer',
+          },
+        },
+      },
+      statusView: {
+        type: 'object',
+        description: 'Resolved Para account status view.',
+        required: ['status', 'createdAt'],
+        properties: {
+          status: {
+            type: 'string',
+            maxLength: 300,
+            maxGraphemes: 300,
+          },
+          party: {
+            type: 'string',
+            maxLength: 64,
+            maxGraphemes: 64,
+          },
+          community: {
+            type: 'string',
+            maxLength: 64,
+            maxGraphemes: 64,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+    },
+  },
+  ComParaActorGetProfileStats: {
+    lexicon: 1,
+    id: 'com.para.actor.getProfileStats',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get Para profile stats and current Para status for an actor.',
+        parameters: {
+          type: 'params',
+          required: ['actor'],
+          properties: {
+            actor: {
+              type: 'string',
+              format: 'at-identifier',
+              description: 'Handle or DID of the actor.',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['actor', 'stats'],
+            properties: {
+              actor: {
+                type: 'string',
+                format: 'did',
+              },
+              stats: {
+                type: 'ref',
+                ref: 'lex:com.para.actor.defs#profileStats',
+              },
+              status: {
+                type: 'ref',
+                ref: 'lex:com.para.actor.defs#statusView',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+          {
+            name: 'BlockedActor',
+          },
+          {
+            name: 'BlockedByActor',
+          },
+        ],
+      },
+    },
+  },
+  ComParaCivicCabildeo: {
+    lexicon: 1,
+    id: 'com.para.civic.cabildeo',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'A structured civic deliberation proposal.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['title', 'description', 'community', 'options', 'phase'],
+          properties: {
+            title: {
+              type: 'string',
+              maxLength: 300,
+            },
+            description: {
+              type: 'string',
+              maxLength: 30000,
+            },
+            community: {
+              type: 'string',
+              maxLength: 100,
+            },
+            communities: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 100,
+              },
+              maxLength: 10,
+            },
+            flairs: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 100,
+              },
+              maxLength: 10,
+            },
+            region: {
+              type: 'string',
+              maxLength: 100,
+            },
+            geoRestricted: {
+              type: 'boolean',
+            },
+            options: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.cabildeo#cabildeoOption',
+              },
+              maxLength: 10,
+            },
+            minQuorum: {
+              type: 'integer',
+              minimum: 1,
+            },
+            phase: {
+              type: 'string',
+              knownValues: [
+                'draft',
+                'open',
+                'deliberating',
+                'voting',
+                'resolved',
+              ],
+            },
+            phaseDeadline: {
+              type: 'string',
+              format: 'datetime',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+      cabildeoOption: {
+        type: 'object',
+        required: ['label'],
+        properties: {
+          label: {
+            type: 'string',
+            maxLength: 100,
+          },
+          description: {
+            type: 'string',
+            maxLength: 500,
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicDefs: {
+    lexicon: 1,
+    id: 'com.para.civic.defs',
+    defs: {
+      cabildeoOption: {
+        type: 'object',
+        required: ['label'],
+        properties: {
+          label: {
+            type: 'string',
+            maxLength: 100,
+          },
+          description: {
+            type: 'string',
+            maxLength: 500,
+          },
+          isConsensus: {
+            type: 'boolean',
+          },
+        },
+      },
+      optionSummary: {
+        type: 'object',
+        required: ['optionIndex', 'label', 'votes', 'positions'],
+        properties: {
+          optionIndex: {
+            type: 'integer',
+            minimum: 0,
+          },
+          label: {
+            type: 'string',
+            maxLength: 100,
+          },
+          votes: {
+            type: 'integer',
+            minimum: 0,
+          },
+          positions: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      positionCounts: {
+        type: 'object',
+        required: ['total', 'for', 'against', 'amendment', 'byOption'],
+        properties: {
+          total: {
+            type: 'integer',
+            minimum: 0,
+          },
+          for: {
+            type: 'integer',
+            minimum: 0,
+          },
+          against: {
+            type: 'integer',
+            minimum: 0,
+          },
+          amendment: {
+            type: 'integer',
+            minimum: 0,
+          },
+          byOption: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#optionSummary',
+            },
+          },
+        },
+      },
+      voteTotals: {
+        type: 'object',
+        required: ['total', 'direct', 'delegated'],
+        properties: {
+          total: {
+            type: 'integer',
+            minimum: 0,
+          },
+          direct: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegated: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      outcomeSummary: {
+        type: 'object',
+        required: [
+          'totalParticipants',
+          'effectiveTotalPower',
+          'tie',
+          'breakdown',
+        ],
+        properties: {
+          winningOption: {
+            type: 'integer',
+            minimum: 0,
+          },
+          totalParticipants: {
+            type: 'integer',
+            minimum: 0,
+          },
+          effectiveTotalPower: {
+            type: 'integer',
+            minimum: 0,
+          },
+          tie: {
+            type: 'boolean',
+          },
+          breakdown: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#optionSummary',
+            },
+          },
+        },
+      },
+      viewerContext: {
+        type: 'object',
+        properties: {
+          currentVoteOption: {
+            type: 'integer',
+            minimum: 0,
+          },
+          currentVoteIsDirect: {
+            type: 'boolean',
+          },
+          activeDelegation: {
+            type: 'string',
+            format: 'did',
+          },
+          delegateHasVoted: {
+            type: 'boolean',
+          },
+          delegatedVoteOption: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegatedVotedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          gracePeriodEndsAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          delegateVoteDismissed: {
+            type: 'boolean',
+          },
+        },
+      },
+      liveSessionView: {
+        type: 'object',
+        required: [
+          'isLive',
+          'hostDid',
+          'activeParticipantCount',
+          'startedAt',
+          'participantPreviewDids',
+        ],
+        properties: {
+          isLive: {
+            type: 'boolean',
+          },
+          hostDid: {
+            type: 'string',
+            format: 'did',
+          },
+          activeParticipantCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          startedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          participantPreviewDids: {
+            type: 'array',
+            maxLength: 5,
+            items: {
+              type: 'string',
+              format: 'did',
+            },
+          },
+        },
+      },
+      cabildeoLive: {
+        type: 'object',
+        required: ['cabildeoUri', 'community', 'phase', 'expiresAt'],
+        properties: {
+          cabildeoUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          phase: {
+            type: 'string',
+            knownValues: [
+              'draft',
+              'open',
+              'deliberating',
+              'voting',
+              'resolved',
+            ],
+          },
+          expiresAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      cabildeoView: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'creator',
+          'indexedAt',
+          'title',
+          'description',
+          'community',
+          'options',
+          'phase',
+          'createdAt',
+          'optionSummary',
+          'positionCounts',
+          'voteTotals',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'cid-link',
+          },
+          creator: {
+            type: 'string',
+            format: 'did',
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          title: {
+            type: 'string',
+            maxLength: 300,
+          },
+          description: {
+            type: 'string',
+            maxLength: 30000,
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          communities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxLength: 100,
+            },
+            maxLength: 10,
+          },
+          flairs: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxLength: 100,
+            },
+            maxLength: 10,
+          },
+          region: {
+            type: 'string',
+            maxLength: 100,
+          },
+          geoRestricted: {
+            type: 'boolean',
+          },
+          options: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#cabildeoOption',
+            },
+            maxLength: 10,
+          },
+          minQuorum: {
+            type: 'integer',
+            minimum: 1,
+          },
+          phase: {
+            type: 'string',
+            knownValues: [
+              'draft',
+              'open',
+              'deliberating',
+              'voting',
+              'resolved',
+            ],
+          },
+          phaseDeadline: {
+            type: 'string',
+            format: 'datetime',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          optionSummary: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#optionSummary',
+            },
+          },
+          positionCounts: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#positionCounts',
+          },
+          voteTotals: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#voteTotals',
+          },
+          outcomeSummary: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#outcomeSummary',
+          },
+          viewerContext: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#viewerContext',
+          },
+          liveSession: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.defs#liveSessionView',
+          },
+        },
+      },
+      positionView: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'creator',
+          'indexedAt',
+          'cabildeo',
+          'stance',
+          'text',
+          'createdAt',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'cid-link',
+          },
+          creator: {
+            type: 'string',
+            format: 'did',
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          cabildeo: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          stance: {
+            type: 'string',
+            knownValues: ['for', 'against', 'amendment'],
+          },
+          optionIndex: {
+            type: 'integer',
+            minimum: 0,
+          },
+          text: {
+            type: 'string',
+            maxLength: 3000,
+          },
+          compassQuadrant: {
+            type: 'string',
+            maxLength: 100,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      policySignalBucket: {
+        type: 'object',
+        required: ['signal', 'count'],
+        properties: {
+          signal: {
+            type: 'integer',
+            minimum: -3,
+            maximum: 3,
+          },
+          count: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      policyTally: {
+        type: 'object',
+        required: [
+          'subject',
+          'subjectType',
+          'community',
+          'voteCount',
+          'directVoteCount',
+          'delegatedVoteCount',
+          'signalSum',
+          'signalAverage',
+          'eligibleVoterCount',
+          'quorumTarget',
+          'quorumMet',
+          'official',
+          'certified',
+          'outcome',
+          'state',
+          'breakdown',
+          'computedAt',
+        ],
+        properties: {
+          subject: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          subjectType: {
+            type: 'string',
+            knownValues: ['policy'],
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          voteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          directVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegatedVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          signalSum: {
+            type: 'integer',
+          },
+          signalAverage: {
+            type: 'string',
+            maxLength: 32,
+          },
+          eligibleVoterCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          quorumTarget: {
+            type: 'integer',
+            minimum: 1,
+          },
+          quorumMet: {
+            type: 'boolean',
+          },
+          official: {
+            type: 'boolean',
+          },
+          certified: {
+            type: 'boolean',
+          },
+          outcome: {
+            type: 'string',
+            knownValues: [
+              'insufficient_quorum',
+              'contested',
+              'passed',
+              'strong_passed',
+              'failed',
+            ],
+          },
+          state: {
+            type: 'string',
+            knownValues: [
+              'draft',
+              'deliberation',
+              'voting',
+              'passed',
+              'failed',
+              'official',
+            ],
+          },
+          breakdown: {
+            type: 'array',
+            maxLength: 7,
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#policySignalBucket',
+            },
+          },
+          computedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicDelegation: {
+    lexicon: 1,
+    id: 'com.para.civic.delegation',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'Standing delegation of civic voting power.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['delegateTo', 'createdAt'],
+          properties: {
+            cabildeo: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            delegateTo: {
+              type: 'string',
+              format: 'did',
+            },
+            scopeFlairs: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 100,
+              },
+              maxLength: 10,
+            },
+            reason: {
+              type: 'string',
+              maxLength: 1000,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicGetCabildeo: {
+    lexicon: 1,
+    id: 'com.para.civic.getCabildeo',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get a single indexed Cabildeo by URI, including aggregate and viewer context fields.',
+        parameters: {
+          type: 'params',
+          required: ['cabildeo'],
+          properties: {
+            cabildeo: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['cabildeo'],
+            properties: {
+              cabildeo: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.defs#cabildeoView',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicGetPolicyTally: {
+    lexicon: 1,
+    id: 'com.para.civic.getPolicyTally',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get the weighted consensus tally for a policy post using civic vote signals from -3 to +3.',
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['tally'],
+            properties: {
+              tally: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.defs#policyTally',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+        ],
+      },
+    },
+  },
+  ComParaCivicListCabildeoPositions: {
+    lexicon: 1,
+    id: 'com.para.civic.listCabildeoPositions',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'List indexed positions for a Cabildeo with optional stance filter.',
+        parameters: {
+          type: 'params',
+          required: ['cabildeo'],
+          properties: {
+            cabildeo: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            stance: {
+              type: 'string',
+              knownValues: ['for', 'against', 'amendment'],
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['positions'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              positions: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.civic.defs#positionView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicListCabildeos: {
+    lexicon: 1,
+    id: 'com.para.civic.listCabildeos',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'List indexed Cabildeos with aggregate summaries and optional viewer context.',
+        parameters: {
+          type: 'params',
+          properties: {
+            community: {
+              type: 'string',
+              maxLength: 100,
+              description: 'Optional community filter.',
+            },
+            phase: {
+              type: 'string',
+              knownValues: [
+                'draft',
+                'open',
+                'deliberating',
+                'voting',
+                'resolved',
+              ],
+              description: 'Optional phase filter.',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 30,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['cabildeos'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              cabildeos: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.civic.defs#cabildeoView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicPosition: {
+    lexicon: 1,
+    id: 'com.para.civic.position',
+    defs: {
+      main: {
+        type: 'record',
+        description: "User's structured debate stance on a Cabildeo.",
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['cabildeo', 'stance', 'text', 'createdAt'],
+          properties: {
+            cabildeo: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            stance: {
+              type: 'string',
+              knownValues: ['for', 'against', 'amendment'],
+            },
+            optionIndex: {
+              type: 'integer',
+              minimum: 0,
+            },
+            text: {
+              type: 'string',
+              maxLength: 3000,
+            },
+            compassQuadrant: {
+              type: 'string',
+              maxLength: 100,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCivicPutLivePresence: {
+    lexicon: 1,
+    id: 'com.para.civic.putLivePresence',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          "Create, refresh, or clear the caller's live cabildeo presence. Requires auth.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['cabildeo', 'sessionId'],
+            properties: {
+              cabildeo: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              sessionId: {
+                type: 'string',
+                maxLength: 128,
+                maxGraphemes: 128,
+              },
+              present: {
+                type: 'boolean',
+                default: true,
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['cabildeo', 'present'],
+            properties: {
+              cabildeo: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              present: {
+                type: 'boolean',
+              },
+              expiresAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+            description: 'The target cabildeo does not exist.',
+          },
+          {
+            name: 'InvalidPhase',
+            description:
+              'The target cabildeo is not currently eligible for live participation.',
+          },
+          {
+            name: 'LiveStatusRequired',
+            description:
+              'A host must already have an active live status with an external destination.',
+          },
+        ],
+      },
+    },
+  },
+  ComParaCivicVote: {
+    lexicon: 1,
+    id: 'com.para.civic.vote',
+    defs: {
+      main: {
+        type: 'record',
+        description:
+          'A signed civic vote. Cabildeo option votes use selectedOption; policy consensus votes use signal from -3 to +3.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['isDirect', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'The proposal, policy, matter, or cabildeo record being voted on.',
+            },
+            subjectType: {
+              type: 'string',
+              knownValues: ['cabildeo', 'policy', 'matter', 'governance'],
+              description: 'Optional semantic type for clients and indexers.',
+            },
+            cabildeo: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            selectedOption: {
+              type: 'integer',
+              minimum: 0,
+            },
+            signal: {
+              type: 'integer',
+              minimum: -3,
+              maximum: 3,
+              description:
+                'Weighted consensus signal for policy-style votes: -3 strong opposition, 0 neutral/abstain, +3 strong support.',
+            },
+            reason: {
+              type: 'string',
+              maxLength: 1000,
+              description: 'Optional voter rationale for the signal.',
+            },
+            isDirect: {
+              type: 'boolean',
+            },
+            delegatedFrom: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'did',
+              },
+              maxLength: 10000,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityAcceptDraftInvite: {
+    lexicon: 1,
+    id: 'com.para.community.acceptDraftInvite',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          "Accepts an invitation to a draft community, adding the caller to the community's founder starter pack and tracking the quorum. The PDS proxies the listitem creation for the starter pack.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['communityUri'],
+            properties: {
+              communityUri: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['status', 'memberCount'],
+            properties: {
+              status: {
+                type: 'string',
+              },
+              memberCount: {
+                type: 'integer',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityBoard: {
+    lexicon: 1,
+    id: 'com.para.community.board',
+    defs: {
+      main: {
+        type: 'record',
+        description:
+          'A repository record acting as the anchor for a PARA community, linking the spatial map quadrant to the underlying ATProto group chats.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: [
+            'name',
+            'quadrant',
+            'delegatesChatId',
+            'subdelegatesChatId',
+            'createdAt',
+            'status',
+          ],
+          properties: {
+            name: {
+              type: 'string',
+              minLength: 1,
+              maxGraphemes: 128,
+              maxLength: 1280,
+            },
+            description: {
+              type: 'string',
+              maxLength: 3000,
+            },
+            quadrant: {
+              type: 'string',
+              description:
+                'Spatial mapping token indicating the nonant or 25th block.',
+              maxLength: 64,
+            },
+            delegatesChatId: {
+              type: 'string',
+              description:
+                'Reference to the 270-member bounded bsky group chat.',
+            },
+            subdelegatesChatId: {
+              type: 'string',
+              description:
+                'Reference to the 30-member bounded public-view bsky group chat.',
+            },
+            status: {
+              type: 'string',
+              description: 'The lifecycle status of the community.',
+              knownValues: ['draft', 'active'],
+            },
+            founderStarterPackUri: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'Reference to the starter pack used to track the founding member quorum.',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityCreateBoard: {
+    lexicon: 1,
+    id: 'com.para.community.createBoard',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Creates a PARA community board. Automatically instantiates the underlying general (270) and subdelegate (30) chats in the bsky chat server. Generates a founder starter pack draft.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['name', 'quadrant'],
+            properties: {
+              name: {
+                type: 'string',
+                minLength: 1,
+                maxGraphemes: 128,
+                maxLength: 1280,
+              },
+              quadrant: {
+                type: 'string',
+                maxLength: 64,
+              },
+              description: {
+                type: 'string',
+                maxLength: 3000,
+              },
+              founderStarterPackName: {
+                type: 'string',
+                maxLength: 3000,
+                description:
+                  'User-provided name for the internal starter pack tracking founding members. If absent, a default name will be generated.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['uri', 'cid', 'delegatesChatId', 'subdelegatesChatId'],
+            properties: {
+              uri: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              cid: {
+                type: 'string',
+                format: 'cid',
+              },
+              delegatesChatId: {
+                type: 'string',
+              },
+              subdelegatesChatId: {
+                type: 'string',
+              },
+              founderStarterPackUri: {
+                type: 'string',
+                format: 'at-uri',
+                description:
+                  'Reference to the newly created founder starter pack. Present if status is draft.',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityDefs: {
+    lexicon: 1,
+    id: 'com.para.community.defs',
+    defs: {
+      summary: {
+        type: 'object',
+        required: [
+          'members',
+          'visiblePosters',
+          'policyPosts',
+          'matterPosts',
+          'badgeHolders',
+        ],
+        properties: {
+          members: {
+            type: 'integer',
+          },
+          visiblePosters: {
+            type: 'integer',
+          },
+          policyPosts: {
+            type: 'integer',
+          },
+          matterPosts: {
+            type: 'integer',
+          },
+          badgeHolders: {
+            type: 'integer',
+          },
+        },
+      },
+      person: {
+        type: 'object',
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          avatar: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+      moderatorView: {
+        type: 'object',
+        required: ['role', 'badge', 'capabilities'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          avatar: {
+            type: 'string',
+            format: 'uri',
+          },
+          role: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 64,
+          },
+          badge: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 64,
+          },
+          capabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+        },
+      },
+      officialView: {
+        type: 'object',
+        required: ['office', 'mandate'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          avatar: {
+            type: 'string',
+            format: 'uri',
+          },
+          office: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 64,
+          },
+          mandate: {
+            type: 'string',
+            maxGraphemes: 200,
+            maxLength: 1000,
+          },
+        },
+      },
+      applicant: {
+        type: 'object',
+        required: ['appliedAt', 'status'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          avatar: {
+            type: 'string',
+            format: 'uri',
+          },
+          appliedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          status: {
+            type: 'string',
+            knownValues: ['applied', 'approved', 'rejected'],
+          },
+          note: {
+            type: 'string',
+            maxGraphemes: 200,
+            maxLength: 1000,
+          },
+        },
+      },
+      deputyRoleView: {
+        type: 'object',
+        required: [
+          'key',
+          'tier',
+          'role',
+          'description',
+          'capabilities',
+          'votes',
+          'applicants',
+        ],
+        properties: {
+          key: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 128,
+          },
+          tier: {
+            type: 'string',
+            maxGraphemes: 32,
+            maxLength: 32,
+          },
+          role: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 64,
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 300,
+            maxLength: 2000,
+          },
+          capabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+          activeHolder: {
+            type: 'ref',
+            ref: 'lex:com.para.community.defs#person',
+          },
+          activeSince: {
+            type: 'string',
+            format: 'datetime',
+          },
+          votes: {
+            type: 'integer',
+          },
+          applicants: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.community.defs#applicant',
+            },
+          },
+        },
+      },
+      metadata: {
+        type: 'object',
+        properties: {
+          termLengthDays: {
+            type: 'integer',
+          },
+          reviewCadence: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          escalationPath: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          publicContact: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          lastPublishedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          state: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 128,
+          },
+          matterFlairIds: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 128,
+            },
+          },
+          policyFlairIds: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 128,
+            },
+          },
+        },
+      },
+      historyEntry: {
+        type: 'object',
+        required: ['id', 'action', 'createdAt', 'summary'],
+        properties: {
+          id: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 128,
+          },
+          action: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 128,
+          },
+          actorDid: {
+            type: 'string',
+            format: 'did',
+          },
+          actorHandle: {
+            type: 'string',
+            format: 'handle',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          summary: {
+            type: 'string',
+            maxGraphemes: 300,
+            maxLength: 2000,
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityGetBoard: {
+    lexicon: 1,
+    id: 'com.para.community.getBoard',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Returns a hydrated PARA community board with viewer membership and governance summary.',
+        parameters: {
+          type: 'params',
+          properties: {
+            communityId: {
+              type: 'string',
+              maxLength: 256,
+            },
+            uri: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.getBoard#output',
+          },
+        },
+      },
+      governanceSummary: {
+        type: 'object',
+        required: ['moderatorCount', 'officialCount', 'deputyRoleCount'],
+        properties: {
+          moderatorCount: {
+            type: 'integer',
+          },
+          officialCount: {
+            type: 'integer',
+          },
+          deputyRoleCount: {
+            type: 'integer',
+          },
+          lastPublishedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      boardView: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'creatorDid',
+          'communityId',
+          'slug',
+          'name',
+          'quadrant',
+          'delegatesChatId',
+          'subdelegatesChatId',
+          'memberCount',
+          'viewerMembershipState',
+          'createdAt',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          creatorDid: {
+            type: 'string',
+            format: 'did',
+          },
+          creatorHandle: {
+            type: 'string',
+            format: 'handle',
+          },
+          creatorDisplayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          communityId: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          slug: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          name: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 300,
+            maxLength: 3000,
+          },
+          quadrant: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 128,
+          },
+          delegatesChatId: {
+            type: 'string',
+          },
+          subdelegatesChatId: {
+            type: 'string',
+          },
+          memberCount: {
+            type: 'integer',
+          },
+          viewerMembershipState: {
+            type: 'string',
+            knownValues: [
+              'none',
+              'pending',
+              'active',
+              'left',
+              'removed',
+              'blocked',
+            ],
+          },
+          viewerRoles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+          status: {
+            type: 'string',
+            knownValues: ['draft', 'active'],
+          },
+          founderStarterPackUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          governanceSummary: {
+            type: 'ref',
+            ref: 'lex:com.para.community.getBoard#governanceSummary',
+          },
+        },
+      },
+      output: {
+        type: 'object',
+        required: ['board', 'viewerCapabilities'],
+        properties: {
+          board: {
+            type: 'ref',
+            ref: 'lex:com.para.community.getBoard#boardView',
+          },
+          viewerCapabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityGetGovernance: {
+    lexicon: 1,
+    id: 'com.para.community.getGovernance',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get governance roster and role hierarchy for a Para community.',
+        parameters: {
+          type: 'params',
+          required: ['community'],
+          properties: {
+            community: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+              description:
+                'Community identifier or label (for example: mx-federal or p/mx-federal).',
+            },
+            communityId: {
+              type: 'string',
+              maxLength: 128,
+              maxGraphemes: 128,
+              description: 'Optional stable identifier for the community.',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 200,
+              default: 50,
+              description:
+                'Maximum number of candidate members considered for role assignment.',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: [
+              'source',
+              'community',
+              'slug',
+              'createdAt',
+              'updatedAt',
+              'moderators',
+              'officials',
+              'deputies',
+              'editHistory',
+              'counters',
+              'summary',
+              'computedAt',
+            ],
+            properties: {
+              source: {
+                type: 'string',
+                knownValues: ['network', 'repo', 'mock'],
+              },
+              community: {
+                type: 'string',
+              },
+              communityId: {
+                type: 'string',
+              },
+              slug: {
+                type: 'string',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+              updatedAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+              moderators: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.community.defs#moderatorView',
+                },
+              },
+              officials: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.community.defs#officialView',
+                },
+              },
+              deputies: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.community.defs#deputyRoleView',
+                },
+              },
+              metadata: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#metadata',
+              },
+              editHistory: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.community.defs#historyEntry',
+                },
+              },
+              counters: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#summary',
+              },
+              summary: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#summary',
+              },
+              computedAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityGovernance: {
+    lexicon: 1,
+    id: 'com.para.community.governance',
+    defs: {
+      main: {
+        type: 'record',
+        description:
+          'A published governance record for a PARA community. This is the canonical contract for moderators, officials, deputy roles, and governance metadata exposed to clients.',
+        key: 'any',
+        record: {
+          type: 'object',
+          required: [
+            'community',
+            'slug',
+            'createdAt',
+            'updatedAt',
+            'moderators',
+            'officials',
+            'deputies',
+          ],
+          properties: {
+            community: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 256,
+            },
+            communityId: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 256,
+            },
+            slug: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 128,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            moderators: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#moderatorView',
+              },
+            },
+            officials: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#officialView',
+              },
+            },
+            deputies: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#deputyRoleView',
+              },
+            },
+            metadata: {
+              type: 'ref',
+              ref: 'lex:com.para.community.defs#metadata',
+            },
+            editHistory: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:com.para.community.defs#historyEntry',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityListBoards: {
+    lexicon: 1,
+    id: 'com.para.community.listBoards',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Lists PARA community boards available to the viewer, along with creation capability.',
+        parameters: {
+          type: 'params',
+          properties: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            quadrant: {
+              type: 'string',
+              description:
+                'Optional territory quadrant to filter communities by',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.listBoards#output',
+          },
+        },
+      },
+      boardView: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'creatorDid',
+          'communityId',
+          'slug',
+          'name',
+          'quadrant',
+          'delegatesChatId',
+          'subdelegatesChatId',
+          'memberCount',
+          'viewerMembershipState',
+          'createdAt',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          creatorDid: {
+            type: 'string',
+            format: 'did',
+          },
+          creatorHandle: {
+            type: 'string',
+            format: 'handle',
+          },
+          creatorDisplayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          communityId: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          slug: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          name: {
+            type: 'string',
+            maxGraphemes: 128,
+            maxLength: 256,
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 300,
+            maxLength: 3000,
+          },
+          quadrant: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 128,
+          },
+          delegatesChatId: {
+            type: 'string',
+          },
+          subdelegatesChatId: {
+            type: 'string',
+          },
+          memberCount: {
+            type: 'integer',
+          },
+          viewerMembershipState: {
+            type: 'string',
+            knownValues: [
+              'none',
+              'pending',
+              'active',
+              'left',
+              'removed',
+              'blocked',
+            ],
+          },
+          viewerRoles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+          status: {
+            type: 'string',
+            knownValues: ['draft', 'active'],
+          },
+          founderStarterPackUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+      output: {
+        type: 'object',
+        required: ['boards', 'canCreateCommunity'],
+        properties: {
+          boards: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.community.listBoards#boardView',
+            },
+          },
+          canCreateCommunity: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+  },
+  ComParaCommunityMembership: {
+    lexicon: 1,
+    id: 'com.para.community.membership',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'Membership state of an actor in a Para community.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['community', 'membershipState', 'joinedAt'],
+          properties: {
+            community: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'Reference to the community board record.',
+            },
+            membershipState: {
+              type: 'string',
+              knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+            },
+            roles: {
+              type: 'array',
+              maxLength: 16,
+              items: {
+                type: 'string',
+                maxLength: 64,
+                maxGraphemes: 64,
+              },
+            },
+            source: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+            joinedAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            leftAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaDiscourseGetSentiment: {
+    lexicon: 1,
+    id: 'com.para.discourse.getSentiment',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get the sentiment breakdown for a community.',
+        parameters: {
+          type: 'params',
+          properties: {
+            community: {
+              type: 'string',
+            },
+            timeframe: {
+              type: 'string',
+              enum: ['1h', '24h', '7d', '30d'],
+            },
+          },
+          required: ['timeframe'],
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['sentiment'],
+            properties: {
+              sentiment: {
+                type: 'ref',
+                ref: 'lex:com.para.discourse.getSentiment#sentimentDistribution',
+              },
+            },
+          },
+        },
+      },
+      sentimentDistribution: {
+        type: 'object',
+        required: ['anger', 'fear', 'trust', 'uncertainty', 'neutral'],
+        properties: {
+          anger: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          fear: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          trust: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          uncertainty: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          neutral: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+        },
+      },
+    },
+  },
+  ComParaDiscourseGetSnapshot: {
+    lexicon: 1,
+    id: 'com.para.discourse.getSnapshot',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get aggregate discourse metrics for a community.',
+        parameters: {
+          type: 'params',
+          properties: {
+            community: {
+              type: 'string',
+            },
+            timeframe: {
+              type: 'string',
+              enum: ['1h', '24h', '7d', '30d'],
+            },
+          },
+          required: ['timeframe'],
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['snapshots'],
+            properties: {
+              snapshots: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.discourse.getSnapshot#snapshot',
+                },
+              },
+            },
+          },
+        },
+      },
+      snapshot: {
+        type: 'object',
+        required: ['community', 'bucket', 'postCount', 'uniqueAuthors'],
+        properties: {
+          community: {
+            type: 'string',
+          },
+          bucket: {
+            type: 'string',
+            format: 'datetime',
+          },
+          postCount: {
+            type: 'integer',
+          },
+          uniqueAuthors: {
+            type: 'integer',
+          },
+          avgConstructiveness: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          semanticVolatility: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          lexicalDiversity: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          polarizationDelta: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          echoChamberIndex: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+          topKeywords: {
+            type: 'string',
+          },
+          sentimentDistribution: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  ComParaDiscourseGetTopics: {
+    lexicon: 1,
+    id: 'com.para.discourse.getTopics',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get emergent topic clusters for a community.',
+        parameters: {
+          type: 'params',
+          properties: {
+            community: {
+              type: 'string',
+            },
+            timeframe: {
+              type: 'string',
+              enum: ['1h', '24h', '7d', '30d'],
+            },
+          },
+          required: ['timeframe'],
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['topics'],
+            properties: {
+              topics: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.discourse.getTopics#topic',
+                },
+              },
+            },
+          },
+        },
+      },
+      topic: {
+        type: 'object',
+        required: ['clusterLabel', 'postCount', 'authorCount'],
+        properties: {
+          clusterLabel: {
+            type: 'string',
+          },
+          keywords: {
+            type: 'string',
+          },
+          postCount: {
+            type: 'integer',
+          },
+          authorCount: {
+            type: 'integer',
+          },
+          avgSentiment: {
+            type: 'integer',
+            description: 'Scaled 0-100',
+          },
+        },
+      },
+    },
+  },
+  ComParaFeedGetAuthorFeed: {
+    lexicon: 1,
+    id: 'com.para.feed.getAuthorFeed',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get a paginated feed of Para posts authored by the given actor.',
+        parameters: {
+          type: 'params',
+          required: ['actor'],
+          properties: {
+            actor: {
+              type: 'string',
+              format: 'at-identifier',
+              description: 'Handle or DID of the actor.',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['feed'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              feed: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.feed.getAuthorFeed#postView',
+                },
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'BlockedActor',
+          },
+          {
+            name: 'BlockedByActor',
+          },
+        ],
+      },
+      postView: {
+        type: 'object',
+        required: ['uri', 'cid', 'author', 'text', 'createdAt'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          author: {
+            type: 'string',
+            format: 'did',
+          },
+          text: {
+            type: 'string',
+            maxLength: 3000,
+            maxGraphemes: 300,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          replyRoot: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          replyParent: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          langs: {
+            type: 'array',
+            maxLength: 3,
+            items: {
+              type: 'string',
+              format: 'language',
+            },
+          },
+          tags: {
+            type: 'array',
+            maxLength: 8,
+            items: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+          },
+          flairs: {
+            type: 'array',
+            maxLength: 8,
+            items: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+          },
+          postType: {
+            type: 'string',
+            maxLength: 64,
+            maxGraphemes: 64,
+          },
+        },
+      },
+    },
+  },
+  ComParaFeedGetPostThread: {
+    lexicon: 1,
+    id: 'com.para.feed.getPostThread',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get a Para post thread around a post URI.',
+        parameters: {
+          type: 'params',
+          required: ['uri'],
+          properties: {
+            uri: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'Reference (AT-URI) to the post record.',
+            },
+            depth: {
+              type: 'integer',
+              description: 'How many levels of reply depth to include.',
+              default: 6,
+              minimum: 0,
+              maximum: 1000,
+            },
+            parentHeight: {
+              type: 'integer',
+              description: 'How many levels of parent posts to include.',
+              default: 80,
+              minimum: 0,
+              maximum: 1000,
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'parents', 'replies'],
+            properties: {
+              post: {
+                type: 'ref',
+                ref: 'lex:com.para.feed.getAuthorFeed#postView',
+              },
+              parents: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.feed.getAuthorFeed#postView',
+                },
+              },
+              replies: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.feed.getAuthorFeed#postView',
+                },
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+        ],
+      },
+    },
+  },
+  ComParaFeedGetPosts: {
+    lexicon: 1,
+    id: 'com.para.feed.getPosts',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get Para post views for a specified list of post AT-URIs.',
+        parameters: {
+          type: 'params',
+          required: ['uris'],
+          properties: {
+            uris: {
+              type: 'array',
+              description: 'List of Para post AT-URIs to return.',
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              maxLength: 25,
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['posts'],
+            properties: {
+              posts: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.feed.getAuthorFeed#postView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaFeedGetTimeline: {
+    lexicon: 1,
+    id: 'com.para.feed.getTimeline',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          "Get a paginated timeline of Para posts authored by accounts the viewer follows, plus the viewer's own posts.",
+        parameters: {
+          type: 'params',
+          properties: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['feed'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              feed: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.feed.getAuthorFeed#postView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaHighlightAnnotation: {
+    lexicon: 1,
+    id: 'com.para.highlight.annotation',
+    defs: {
+      main: {
+        type: 'record',
+        description:
+          'A public or private highlight annotation over a post or record.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: [
+            'subjectUri',
+            'text',
+            'start',
+            'end',
+            'color',
+            'visibility',
+            'createdAt',
+          ],
+          properties: {
+            subjectUri: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            subjectCid: {
+              type: 'string',
+              description:
+                'Optional CID of the highlighted record at creation time.',
+            },
+            text: {
+              type: 'string',
+              maxLength: 2000,
+            },
+            start: {
+              type: 'integer',
+              minimum: 0,
+            },
+            end: {
+              type: 'integer',
+              minimum: 0,
+            },
+            color: {
+              type: 'string',
+              maxLength: 32,
+            },
+            tag: {
+              type: 'string',
+              maxLength: 128,
+            },
+            community: {
+              type: 'string',
+              maxLength: 100,
+            },
+            state: {
+              type: 'string',
+              maxLength: 100,
+            },
+            party: {
+              type: 'string',
+              maxLength: 100,
+            },
+            visibility: {
+              type: 'string',
+              knownValues: ['public', 'private'],
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaHighlightDefs: {
+    lexicon: 1,
+    id: 'com.para.highlight.defs',
+    defs: {
+      highlightView: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'creator',
+          'indexedAt',
+          'subjectUri',
+          'text',
+          'start',
+          'end',
+          'color',
+          'visibility',
+          'createdAt',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'cid-link',
+          },
+          creator: {
+            type: 'string',
+            format: 'did',
+          },
+          indexedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          subjectUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          subjectCid: {
+            type: 'string',
+          },
+          text: {
+            type: 'string',
+            maxLength: 2000,
+          },
+          start: {
+            type: 'integer',
+            minimum: 0,
+          },
+          end: {
+            type: 'integer',
+            minimum: 0,
+          },
+          color: {
+            type: 'string',
+            maxLength: 32,
+          },
+          tag: {
+            type: 'string',
+            maxLength: 128,
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          state: {
+            type: 'string',
+            maxLength: 100,
+          },
+          party: {
+            type: 'string',
+            maxLength: 100,
+          },
+          visibility: {
+            type: 'string',
+            knownValues: ['public', 'private'],
+          },
+          createdAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      },
+    },
+  },
+  ComParaHighlightGetHighlight: {
+    lexicon: 1,
+    id: 'com.para.highlight.getHighlight',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get a single indexed highlight annotation by URI.',
+        parameters: {
+          type: 'params',
+          required: ['highlight'],
+          properties: {
+            highlight: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {
+              highlight: {
+                type: 'ref',
+                ref: 'lex:com.para.highlight.defs#highlightView',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaHighlightListHighlights: {
+    lexicon: 1,
+    id: 'com.para.highlight.listHighlights',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'List indexed public highlight annotations with optional filters.',
+        parameters: {
+          type: 'params',
+          properties: {
+            community: {
+              type: 'string',
+              maxLength: 100,
+            },
+            state: {
+              type: 'string',
+              maxLength: 100,
+            },
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            creator: {
+              type: 'string',
+              format: 'did',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 30,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['highlights'],
+            properties: {
+              cursor: {
+                type: 'string',
+              },
+              highlights: {
+                type: 'array',
+                items: {
+                  type: 'ref',
+                  ref: 'lex:com.para.highlight.defs#highlightView',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaPost: {
+    lexicon: 1,
+    id: 'com.para.post',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'Record containing a Para post.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['text', 'createdAt'],
+          properties: {
+            text: {
+              type: 'string',
+              maxLength: 3000,
+              maxGraphemes: 300,
+              description:
+                'The primary post content. May be an empty string, if there are embeds.',
+            },
+            entities: {
+              type: 'array',
+              description: 'DEPRECATED: replaced by app.bsky.richtext.facet.',
+              items: {
+                type: 'ref',
+                ref: 'lex:com.para.post#entity',
+              },
+            },
+            facets: {
+              type: 'array',
+              description:
+                'Annotations of text (mentions, URLs, hashtags, etc)',
+              items: {
+                type: 'ref',
+                ref: 'lex:app.bsky.richtext.facet',
+              },
+            },
+            reply: {
+              type: 'ref',
+              ref: 'lex:com.para.post#replyRef',
+            },
+            embed: {
+              type: 'union',
+              refs: [
+                'lex:app.bsky.embed.images',
+                'lex:app.bsky.embed.video',
+                'lex:app.bsky.embed.external',
+                'lex:app.bsky.embed.record',
+                'lex:app.bsky.embed.recordWithMedia',
+              ],
+            },
+            langs: {
+              type: 'array',
+              description:
+                'Indicates human language of post primary text content.',
+              maxLength: 3,
+              items: {
+                type: 'string',
+                format: 'language',
+              },
+            },
+            labels: {
+              type: 'union',
+              description:
+                'Self-label values for this post. Effectively content warnings.',
+              refs: ['lex:com.atproto.label.defs#selfLabels'],
+            },
+            tags: {
+              type: 'array',
+              description:
+                'Additional hashtags, in addition to any included in post text and facets.',
+              maxLength: 8,
+              items: {
+                type: 'string',
+                maxLength: 640,
+                maxGraphemes: 64,
+              },
+            },
+            flairs: {
+              type: 'array',
+              description:
+                'Optional para-specific flairs associated with the post.',
+              maxLength: 10,
+              items: {
+                type: 'string',
+                maxLength: 128,
+              },
+            },
+            postType: {
+              type: 'string',
+              description:
+                'Optional para-specific post type (policy, matter, meme, etc).',
+              maxLength: 64,
+            },
+            title: {
+              type: 'string',
+              maxLength: 300,
+              maxGraphemes: 300,
+              description:
+                'Optional title for policy or proposal posts, summarizing the content.',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+              description:
+                'Client-declared timestamp when this post was originally created.',
+            },
+          },
+        },
+      },
+      replyRef: {
+        type: 'object',
+        required: ['root', 'parent'],
+        properties: {
+          root: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+          parent: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+        },
+      },
+      entity: {
+        type: 'object',
+        description: 'Deprecated: use facets instead.',
+        required: ['index', 'type', 'value'],
+        properties: {
+          index: {
+            type: 'ref',
+            ref: 'lex:com.para.post#textSlice',
+          },
+          type: {
+            type: 'string',
+            description: "Expected values are 'mention' and 'link'.",
+          },
+          value: {
+            type: 'string',
+          },
+        },
+      },
+      textSlice: {
+        type: 'object',
+        description:
+          'Deprecated. Use app.bsky.richtext instead -- A text segment. Start is inclusive, end is exclusive. Indices are for utf16-encoded strings.',
+        required: ['start', 'end'],
+        properties: {
+          start: {
+            type: 'integer',
+            minimum: 0,
+          },
+          end: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+    },
+  },
+  ComParaSocialGetPostMeta: {
+    lexicon: 1,
+    id: 'com.para.social.getPostMeta',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Get Para social metadata for a post.',
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['uri', 'interactionMode', 'voteScore'],
+            properties: {
+              uri: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              postType: {
+                type: 'string',
+                enum: ['policy', 'matter', 'meme'],
+              },
+              official: {
+                type: 'boolean',
+              },
+              party: {
+                type: 'string',
+              },
+              community: {
+                type: 'string',
+              },
+              category: {
+                type: 'string',
+              },
+              tags: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+              flairs: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+              voteScore: {
+                type: 'integer',
+              },
+              interactionMode: {
+                type: 'string',
+                enum: ['policy_ballot', 'reddit_votes'],
+              },
+              createdAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+        ],
+      },
+    },
+  },
+  ComParaSocialPostMeta: {
+    lexicon: 1,
+    id: 'com.para.social.postMeta',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'Metadata associated with a Para post.',
+        key: 'tid',
+        record: {
+          type: 'object',
+          required: ['post', 'postType', 'voteScore', 'createdAt'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            postType: {
+              type: 'string',
+              enum: ['policy', 'matter', 'meme'],
+            },
+            official: {
+              type: 'boolean',
+              default: false,
+            },
+            party: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+            community: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+            category: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+            },
+            tags: {
+              type: 'array',
+              maxLength: 16,
+              items: {
+                type: 'string',
+                maxLength: 64,
+                maxGraphemes: 64,
+              },
+            },
+            flairs: {
+              type: 'array',
+              maxLength: 16,
+              items: {
+                type: 'string',
+                maxLength: 64,
+                maxGraphemes: 64,
+              },
+            },
+            voteScore: {
+              type: 'integer',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaStatus: {
+    lexicon: 1,
+    id: 'com.para.status',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'Current public status for a Para account.',
+        key: 'literal:self',
+        record: {
+          type: 'object',
+          required: ['status', 'createdAt'],
+          properties: {
+            status: {
+              type: 'string',
+              maxLength: 300,
+              maxGraphemes: 300,
+              description: "User's public status message.",
+            },
+            party: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+              description: 'Optional political party affiliation.',
+            },
+            community: {
+              type: 'string',
+              maxLength: 64,
+              maxGraphemes: 64,
+              description: 'Optional primary community label.',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
   ToolsOzoneCommunicationCreateTemplate: {
     lexicon: 1,
     id: 'tools.ozone.communication.createTemplate',
@@ -23232,6 +26560,42 @@ export const ids = {
     'com.atproto.temp.requestPhoneVerification',
   ComAtprotoTempRevokeAccountCredentials:
     'com.atproto.temp.revokeAccountCredentials',
+  ComParaActorDefs: 'com.para.actor.defs',
+  ComParaActorGetProfileStats: 'com.para.actor.getProfileStats',
+  ComParaCivicCabildeo: 'com.para.civic.cabildeo',
+  ComParaCivicDefs: 'com.para.civic.defs',
+  ComParaCivicDelegation: 'com.para.civic.delegation',
+  ComParaCivicGetCabildeo: 'com.para.civic.getCabildeo',
+  ComParaCivicGetPolicyTally: 'com.para.civic.getPolicyTally',
+  ComParaCivicListCabildeoPositions: 'com.para.civic.listCabildeoPositions',
+  ComParaCivicListCabildeos: 'com.para.civic.listCabildeos',
+  ComParaCivicPosition: 'com.para.civic.position',
+  ComParaCivicPutLivePresence: 'com.para.civic.putLivePresence',
+  ComParaCivicVote: 'com.para.civic.vote',
+  ComParaCommunityAcceptDraftInvite: 'com.para.community.acceptDraftInvite',
+  ComParaCommunityBoard: 'com.para.community.board',
+  ComParaCommunityCreateBoard: 'com.para.community.createBoard',
+  ComParaCommunityDefs: 'com.para.community.defs',
+  ComParaCommunityGetBoard: 'com.para.community.getBoard',
+  ComParaCommunityGetGovernance: 'com.para.community.getGovernance',
+  ComParaCommunityGovernance: 'com.para.community.governance',
+  ComParaCommunityListBoards: 'com.para.community.listBoards',
+  ComParaCommunityMembership: 'com.para.community.membership',
+  ComParaDiscourseGetSentiment: 'com.para.discourse.getSentiment',
+  ComParaDiscourseGetSnapshot: 'com.para.discourse.getSnapshot',
+  ComParaDiscourseGetTopics: 'com.para.discourse.getTopics',
+  ComParaFeedGetAuthorFeed: 'com.para.feed.getAuthorFeed',
+  ComParaFeedGetPostThread: 'com.para.feed.getPostThread',
+  ComParaFeedGetPosts: 'com.para.feed.getPosts',
+  ComParaFeedGetTimeline: 'com.para.feed.getTimeline',
+  ComParaHighlightAnnotation: 'com.para.highlight.annotation',
+  ComParaHighlightDefs: 'com.para.highlight.defs',
+  ComParaHighlightGetHighlight: 'com.para.highlight.getHighlight',
+  ComParaHighlightListHighlights: 'com.para.highlight.listHighlights',
+  ComParaPost: 'com.para.post',
+  ComParaSocialGetPostMeta: 'com.para.social.getPostMeta',
+  ComParaSocialPostMeta: 'com.para.social.postMeta',
+  ComParaStatus: 'com.para.status',
   ToolsOzoneCommunicationCreateTemplate:
     'tools.ozone.communication.createTemplate',
   ToolsOzoneCommunicationDefs: 'tools.ozone.communication.defs',

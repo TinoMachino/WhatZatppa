@@ -1,4 +1,4 @@
-import { LexParseOptions, jsonToLex } from '@atproto/lex-json'
+import { JsonToLexOptions, jsonToLex } from '@atproto/lex-json'
 import {
   InferMethodOutputEncoding,
   InferOutput,
@@ -111,15 +111,32 @@ export type XrpcResponseOptions = {
    * the response even if the server returns invalid Lex data.
    *
    * @default true
-   * @see {@link LexParseOptions.strict}
+   * @see {@link JsonToLexOptions.strict}
    */
   strictResponseProcessing?: boolean
 }
 
 /**
- * Small container for XRPC response data.
+ * Small container for XRPC response.
  *
  * @implements {ResultSuccess<XrpcResponse<M>>} for convenience in result handling contexts.
+ *
+ * @example
+ *
+ * ```typescript
+ * import { app } from '#/lexicons'
+ * import { XrpcResponse } from '@atproto/lex-client'
+ *
+ * const fetchResponse = await fetch('https://example.com/xrpc/app.bsky.feed.getTimeline')
+ *
+ * const response = await XrpcResponse.fromFetchResponse(
+ *   app.bsky.feed.getTimeline.main,
+ *   fetchResponse,
+ * )
+ *
+ * // Fully typed (validated) response body, according to the method's output schema
+ * const { cursor, feed } = response.body
+ * ```
  */
 export class XrpcResponse<M extends Procedure | Query>
   implements ResultSuccess<XrpcResponse<M>>
@@ -284,7 +301,7 @@ type ReadPayloadOptions = {
    *
    * @default false
    */
-  parse?: false | LexParseOptions
+  parse?: false | JsonToLexOptions
 }
 
 /**

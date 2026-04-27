@@ -314,6 +314,8 @@ import * as ComParaCommunityDefs from './types/com/para/community/defs.js'
 import * as ComParaCommunityGetBoard from './types/com/para/community/getBoard.js'
 import * as ComParaCommunityGetGovernance from './types/com/para/community/getGovernance.js'
 import * as ComParaCommunityGovernance from './types/com/para/community/governance.js'
+import * as ComParaCommunityJoin from './types/com/para/community/join.js'
+import * as ComParaCommunityLeave from './types/com/para/community/leave.js'
 import * as ComParaCommunityListBoards from './types/com/para/community/listBoards.js'
 import * as ComParaCommunityListMembers from './types/com/para/community/listMembers.js'
 import * as ComParaCommunityMembership from './types/com/para/community/membership.js'
@@ -694,6 +696,8 @@ export * as ComParaCommunityDefs from './types/com/para/community/defs.js'
 export * as ComParaCommunityGetBoard from './types/com/para/community/getBoard.js'
 export * as ComParaCommunityGetGovernance from './types/com/para/community/getGovernance.js'
 export * as ComParaCommunityGovernance from './types/com/para/community/governance.js'
+export * as ComParaCommunityJoin from './types/com/para/community/join.js'
+export * as ComParaCommunityLeave from './types/com/para/community/leave.js'
 export * as ComParaCommunityListBoards from './types/com/para/community/listBoards.js'
 export * as ComParaCommunityListMembers from './types/com/para/community/listMembers.js'
 export * as ComParaCommunityMembership from './types/com/para/community/membership.js'
@@ -6071,6 +6075,20 @@ export class ComParaCommunityNS {
       undefined,
       opts,
     )
+  }
+
+  join(
+    data?: ComParaCommunityJoin.InputSchema,
+    opts?: ComParaCommunityJoin.CallOptions,
+  ): Promise<ComParaCommunityJoin.Response> {
+    return this._client.call('com.para.community.join', opts?.qp, data, opts)
+  }
+
+  leave(
+    data?: ComParaCommunityLeave.InputSchema,
+    opts?: ComParaCommunityLeave.CallOptions,
+  ): Promise<ComParaCommunityLeave.Response> {
+    return this._client.call('com.para.community.leave', opts?.qp, data, opts)
   }
 
   listBoards(

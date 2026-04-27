@@ -247,6 +247,7 @@ import * as ComAtprotoTempFetchLabels from './types/com/atproto/temp/fetchLabels
 import * as ComAtprotoTempRequestPhoneVerification from './types/com/atproto/temp/requestPhoneVerification.js'
 import * as ComAtprotoTempRevokeAccountCredentials from './types/com/atproto/temp/revokeAccountCredentials.js'
 import * as ComParaActorGetProfileStats from './types/com/para/actor/getProfileStats.js'
+import * as ComParaCivicCastVote from './types/com/para/civic/castVote.js'
 import * as ComParaCivicGetCabildeo from './types/com/para/civic/getCabildeo.js'
 import * as ComParaCivicGetPolicyTally from './types/com/para/civic/getPolicyTally.js'
 import * as ComParaCivicListCabildeoPositions from './types/com/para/civic/listCabildeoPositions.js'
@@ -257,6 +258,8 @@ import * as ComParaCommunityAcceptDraftInvite from './types/com/para/community/a
 import * as ComParaCommunityCreateBoard from './types/com/para/community/createBoard.js'
 import * as ComParaCommunityGetBoard from './types/com/para/community/getBoard.js'
 import * as ComParaCommunityGetGovernance from './types/com/para/community/getGovernance.js'
+import * as ComParaCommunityJoin from './types/com/para/community/join.js'
+import * as ComParaCommunityLeave from './types/com/para/community/leave.js'
 import * as ComParaCommunityListBoards from './types/com/para/community/listBoards.js'
 import * as ComParaCommunityListMembers from './types/com/para/community/listMembers.js'
 import * as ComParaDiscourseGetSentiment from './types/com/para/discourse/getSentiment.js'
@@ -2451,13 +2454,11 @@ export class ChatBskyModerationNS {
 export class ComNS {
   _server: Server
   atproto: ComAtprotoNS
-  germnetwork: ComGermnetworkNS
   para: ComParaNS
 
   constructor(server: Server) {
     this._server = server
     this.atproto = new ComAtprotoNS(server)
-    this.germnetwork = new ComGermnetworkNS(server)
     this.para = new ComParaNS(server)
   }
 }
@@ -3590,14 +3591,6 @@ export class ComAtprotoTempNS {
   }
 }
 
-export class ComGermnetworkNS {
-  _server: Server
-
-  constructor(server: Server) {
-    this._server = server
-  }
-}
-
 export class ComParaNS {
   _server: Server
   actor: ComParaActorNS
@@ -3645,6 +3638,18 @@ export class ComParaCivicNS {
 
   constructor(server: Server) {
     this._server = server
+  }
+
+  castVote<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCivicCastVote.QueryParams,
+      ComParaCivicCastVote.HandlerInput,
+      ComParaCivicCastVote.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.civic.castVote' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
   }
 
   getCabildeo<A extends Auth = void>(
@@ -3772,6 +3777,30 @@ export class ComParaCommunityNS {
     >,
   ) {
     const nsid = 'com.para.community.getGovernance' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  join<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityJoin.QueryParams,
+      ComParaCommunityJoin.HandlerInput,
+      ComParaCommunityJoin.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.join' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  leave<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityLeave.QueryParams,
+      ComParaCommunityLeave.HandlerInput,
+      ComParaCommunityLeave.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.leave' // @ts-ignore
     return this._server.xrpc.method(nsid, cfg)
   }
 

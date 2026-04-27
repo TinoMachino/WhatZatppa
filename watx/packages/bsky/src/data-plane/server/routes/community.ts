@@ -1,4 +1,4 @@
-import { ServiceImpl } from '@connectrpc/connect'
+import { Code, ConnectError, ServiceImpl } from '@connectrpc/connect'
 import { sql } from 'kysely'
 import * as ComParaCommunityGovernance from '../../../lexicon/types/com/para/community/governance'
 import {
@@ -34,6 +34,13 @@ type BoardRow = {
   createdAt: string
   creatorHandle: string | null
   creatorDisplayName: string | null
+  state: string | null
+  matterFlairIds: string[] | null
+  policyFlairIds: string[] | null
+  moderatorCount: number | null
+  officialCount: number | null
+  deputyRoleCount: number | null
+  lastPublishedAt: string | null
 }
 
 type MembershipRow = {
@@ -79,6 +86,7 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
       participationKind: req.participationKind,
       flairId: req.flairId,
       sort: req.sort,
+      quadrant: req.quadrant,
     })
     if (result.boards.length === 0) {
       return new GetParaCommunityBoardsResponse({ boards: [] })
@@ -109,6 +117,11 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     if (!board) {
       return new GetParaCommunityMembersResponse({ members: [] })
     }
+    await assertActiveCommunityViewer(db, {
+      communityUri: board.uri,
+      viewerDid: req.viewerDid,
+      viewerIsAdmin: req.viewerIsAdmin,
+    })
 
     const result = await selectMembers(db, board.uri, {
       membershipState: req.membershipState,
@@ -212,7 +225,15 @@ const selectBoard = async (
   if (uri) {
     builder = builder.where('board.uri', '=', uri)
   } else if (communityId) {
-    builder = builder.where('board.slug', '=', communityId)
+    const normalizedCommunity = normalizeCommunitySlug(communityId)
+    builder = builder.where(
+      sql<boolean>`(
+        "board"."uri" = ${communityId}
+        or "board"."slug" = ${communityId}
+        or "board"."slug" = ${normalizedCommunity}
+        or regexp_replace(lower(coalesce("board"."name", '')), '[^a-z0-9]+', '-', 'g') = ${normalizedCommunity}
+      )`,
+    )
   } else {
     return undefined
   }
@@ -230,15 +251,29 @@ const selectBoards = async (
     participationKind?: string
     flairId?: string
     sort?: string
+    quadrant?: string
   },
 ): Promise<{ boards: BoardRow[]; cursor: string }> => {
   const pageOffset = decodeOffsetCursor(opts.cursor)
-  const needsGovernanceFilter =
-    Boolean(opts.state?.trim()) ||
-    Boolean(opts.flairId?.trim() && opts.participationKind?.trim())
-  const fetchLimit = needsGovernanceFilter ? 500 : opts.limit + 1
-
   let builder = boardBaseQuery(db)
+
+  if (opts.quadrant) {
+    builder = builder.where('board.quadrant', '=', opts.quadrant)
+  }
+
+  const state = opts.state?.trim()
+  if (state) {
+    builder = builder.where('gov.state', '=', state)
+  }
+
+  const flairId = opts.flairId?.trim()
+  if (flairId) {
+    if (opts.participationKind === 'matter') {
+      builder = builder.where(sql`gov."matterFlairIds" ? ${flairId}`)
+    } else if (opts.participationKind === 'policy') {
+      builder = builder.where(sql`gov."policyFlairIds" ? ${flairId}`)
+    }
+  }
 
   const query = opts.query?.trim()
   if (query) {
@@ -270,49 +305,13 @@ const selectBoards = async (
 
   const rows = (await ordered
     .orderBy('board.cid', 'desc')
-    .offset(needsGovernanceFilter ? 0 : pageOffset)
-    .limit(fetchLimit)
+    .offset(pageOffset)
+    .limit(opts.limit + 1)
     .execute()) as BoardRow[]
 
-  let filtered = rows
-  if (needsGovernanceFilter) {
-    const enriched = await Promise.all(
-      rows.map(async (board) => ({
-        board,
-        governance: await getPublishedGovernanceRecord(db, board.name, board.slug),
-      })),
-    )
-    const state = normalizeCommunityKey(opts.state ?? '')
-    const flairId = opts.flairId?.trim()
-    const participationKind = opts.participationKind?.trim()
-
-    filtered = enriched
-      .filter(({ governance }) => {
-        if (state) {
-          const governanceState = normalizeCommunityKey(
-            governance?.metadata?.state ?? '',
-          )
-          if (governanceState !== state) return false
-        }
-        if (flairId && participationKind) {
-          const flairs =
-            participationKind === 'policy'
-              ? governance?.metadata?.policyFlairIds
-              : governance?.metadata?.matterFlairIds
-          if (!flairs?.includes(flairId)) return false
-        }
-        return true
-      })
-      .map((item) => item.board)
-  }
-
-  const page = needsGovernanceFilter
-    ? filtered.slice(pageOffset, pageOffset + opts.limit)
-    : filtered.slice(0, opts.limit)
+  const page = rows.slice(0, opts.limit)
+  const hasMore = rows.length > opts.limit
   const nextOffset = pageOffset + page.length
-  const hasMore = needsGovernanceFilter
-    ? nextOffset < filtered.length
-    : rows.length > opts.limit
 
   return {
     boards: page,
@@ -324,6 +323,11 @@ const boardBaseQuery = (db: Database) =>
   db.db
     .selectFrom('para_community_board as board')
     .leftJoin('actor as actor', 'actor.did', 'board.creator')
+    .leftJoin(
+      'para_community_governance as gov',
+      'gov.communityUri',
+      'board.uri',
+    )
     .select([
       'board.uri',
       'board.cid',
@@ -335,6 +339,13 @@ const boardBaseQuery = (db: Database) =>
       'board.delegatesChatId',
       'board.subdelegatesChatId',
       'board.createdAt',
+      'gov.state',
+      'gov.matterFlairIds',
+      'gov.policyFlairIds',
+      'gov.moderatorCount',
+      'gov.officialCount',
+      'gov.deputyRoleCount',
+      'gov.lastPublishedAt',
     ])
     .select('actor.handle as creatorHandle')
     .select(sql<string | null>`null`.as('creatorDisplayName'))
@@ -379,6 +390,37 @@ const getViewerMemberships = async (
   return new Map(rows.map((row) => [row.communityUri, row]))
 }
 
+const assertActiveCommunityViewer = async (
+  db: Database,
+  opts: {
+    communityUri: string
+    viewerDid: string
+    viewerIsAdmin: boolean
+  },
+) => {
+  if (opts.viewerIsAdmin) return
+  if (!opts.viewerDid) {
+    throw new ConnectError(
+      'Active community membership is required',
+      Code.PermissionDenied,
+    )
+  }
+  const membership = await db.db
+    .selectFrom('para_community_membership')
+    .where('creator', '=', opts.viewerDid)
+    .where('communityUri', '=', opts.communityUri)
+    .where('membershipState', '=', 'active')
+    .select(['uri'])
+    .executeTakeFirst()
+
+  if (!membership) {
+    throw new ConnectError(
+      'Active community membership is required',
+      Code.PermissionDenied,
+    )
+  }
+}
+
 const toBoardView = (
   board: BoardRow,
   memberCount: number,
@@ -400,6 +442,13 @@ const toBoardView = (
     memberCount,
     viewerMembershipState: viewerMembership?.membershipState ?? 'none',
     viewerRoles: viewerMembership?.roles ?? [],
+    status: board.state ?? undefined,
+    governanceSummary: {
+      moderatorCount: board.moderatorCount ?? 0,
+      officialCount: board.officialCount ?? 0,
+      deputyRoleCount: board.deputyRoleCount ?? 0,
+      lastPublishedAt: board.lastPublishedAt ?? undefined,
+    },
     createdAt: board.createdAt,
   })
 

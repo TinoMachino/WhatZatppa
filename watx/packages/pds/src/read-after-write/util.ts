@@ -1,6 +1,6 @@
 import express from 'express'
 import { HeadersMap } from '@atproto/xrpc'
-import { LexValue, l, lexParse } from '@atproto/lex'
+import { LexValue, l, lexParseJsonBytes } from '@atproto/lex'
 import {
   HandlerPipeThrough,
   HandlerPipeThroughBuffer,
@@ -74,7 +74,7 @@ export const pipethroughReadAfterWrite = async <
 
       const { buffer } = (bufferRes = await asPipeThroughBuffer(streamRes))
 
-      const lex = lexParse(buffer.toString('utf8'), { strict: false })
+      const lex = lexParseJsonBytes(buffer, { strict: false })
 
       const result = method.output.schema.safeValidate(lex, { strict: false })
 

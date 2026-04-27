@@ -339,10 +339,7 @@ let FeedItemInner = ({
           />
           <View style={{marginTop: 8, alignItems: 'center'}}>
             {isPolicyPostRecord(record as any) && (
-              <VotingButton
-                initialVote={0}
-                onVoteChange={vote => console.log('Feed vote:', vote)}
-              />
+              <VotingButton initialVote={0} />
             )}
           </View>
           {isThreadParent && (

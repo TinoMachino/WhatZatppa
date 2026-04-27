@@ -23,6 +23,8 @@ export type QueryParams = {
   sort?: 'recent' | 'activity' | 'size' | (string & {})
   limit?: number
   cursor?: string
+  /** Optional territory quadrant to filter communities by */
+  quadrant?: string
 }
 export type InputSchema = undefined
 export type OutputSchema = Output
@@ -68,6 +70,12 @@ export interface BoardView {
   viewerRoles?: string[]
   status?: 'draft' | 'active' | (string & {})
   founderStarterPackUri?: string
+  governanceSummary?: {
+    moderatorCount: number
+    officialCount: number
+    deputyRoleCount: number
+    lastPublishedAt?: string
+  }
   createdAt: string
 }
 

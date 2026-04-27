@@ -6,6 +6,8 @@ import getBoard from './getBoard'
 import getGovernance from './getGovernance'
 import listBoards from './listBoards'
 import acceptDraftInvite from './acceptDraftInvite'
+import join from './join'
+import leave from './leave'
 
 export default function (server: Server, ctx: AppContext) {
   createBoard(server, ctx)
@@ -13,4 +15,6 @@ export default function (server: Server, ctx: AppContext) {
   getGovernance(server, ctx)
   listBoards(server, ctx)
   acceptDraftInvite(server, ctx)
+  join(server, ctx)
+  leave(server, ctx)
 }

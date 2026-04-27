@@ -60,22 +60,15 @@ export async function castCabildeoVote(
 ) {
   if (!agent.session) throw new Error('Not logged in')
 
-  // In a real PDS/AppView the effective power and delegation counts
-  // are calculated network-side. The client just submits their intent.
-  const fullRecord: CabildeoVoteRecord = {
-    ...record,
-    subject: record.subject ?? record.cabildeo,
-    subjectType: record.subjectType ?? 'cabildeo',
-    createdAt: new Date().toISOString(),
-    delegatedFrom: [], // Set by AppView context later
-    effectivePower: 1.0, // Base power, AppView calculates √N
-  }
-
-  return await agent.com.atproto.repo.createRecord({
-    repo: agent.session.did,
-    collection: 'com.para.civic.vote',
-    record: fullRecord as unknown as Record<string, unknown>,
-  })
+  return await agent.call(
+    'com.para.civic.castVote',
+    undefined,
+    {
+      cabildeo: record.cabildeo,
+      selectedOption: record.selectedOption,
+    },
+    {encoding: 'application/json'},
+  )
 }
 
 export async function delegateCabildeoVote(
@@ -263,31 +256,17 @@ export async function fetchCabildeo(
   agent: BskyAgent,
   cabildeoUri: string,
 ): Promise<CabildeoReadView | null> {
-  const params = new URLSearchParams()
-  params.set('cabildeo', cabildeoUri)
-  const res = await agent.fetchHandler(
-    `/xrpc/com.para.civic.getCabildeo?${params.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-      },
-    },
-  )
-
-  if (!res.ok) {
-    const error = await safeJson(res)
-    if (
-      (res.status === 400 && error?.error === 'NotFound') ||
-      res.status === 404
-    ) {
+  try {
+    const res = await agent.call('com.para.civic.getCabildeo', {
+      cabildeo: cabildeoUri,
+    })
+    return (res.data as GetCabildeoResponse).cabildeo ?? null
+  } catch (err: any) {
+    if (err?.error === 'NotFound') {
       return null
     }
-    throw new Error(error?.message || 'Unable to fetch cabildeo.')
+    throw new Error(err?.message || 'Unable to fetch cabildeo.')
   }
-
-  const json = (await res.json()) as GetCabildeoResponse
-  return json.cabildeo ?? null
 }
 
 export async function fetchCabildeoPositionsPage(
@@ -372,30 +351,10 @@ export async function fetchDelegationCandidates(
 async function requestCivic<T>(
   agent: BskyAgent,
   endpoint: string,
-  params: Record<string, string | undefined>,
+  params: Record<string, string | number | undefined>,
 ): Promise<T> {
-  const search = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value && value.length > 0) {
-      search.set(key, value)
-    }
-  }
-  const query = search.toString()
-  const url = query.length ? `/xrpc/${endpoint}?${query}` : `/xrpc/${endpoint}`
-
-  const res = await agent.fetchHandler(url, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-    },
-  })
-
-  if (!res.ok) {
-    const error = await safeJson(res)
-    throw new Error(error?.message || `Request failed: ${endpoint}`)
-  }
-
-  return (await res.json()) as T
+  const res = await agent.call(endpoint as any, params)
+  return res.data as T
 }
 
 async function safeJson(res: Response): Promise<Record<string, any> | null> {

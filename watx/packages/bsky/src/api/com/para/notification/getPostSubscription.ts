@@ -5,7 +5,7 @@ import { AppContext } from '../../../../context'
 import { Server } from '../../../../lexicon'
 
 export default function (server: Server, ctx: AppContext) {
-  server.com.para.notification.getPostSubscription({
+  server.xrpc.method('com.para.notification.getPostSubscription', {
     auth: ctx.authVerifier.standard,
     handler: async ({ params, auth }) => {
       const actorDid = auth.credentials.iss

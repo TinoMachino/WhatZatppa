@@ -125,12 +125,30 @@ function setAppIcon(icon: DynamicAppIcon.IconName) {
   }
 }
 
-function getAppIconName(icon: string | false): DynamicAppIcon.IconName {
+function getAppIconName(
+  icon: DynamicAppIcon.IconName | 'DEFAULT' | false,
+): DynamicAppIcon.IconName {
   if (!icon || icon === 'DEFAULT') {
     return 'default_light'
   } else {
     return icon
   }
+}
+
+function isAppIconName(icon: string): icon is DynamicAppIcon.IconName {
+  return [
+    'default_light',
+    'default_dark',
+    'core_aurora',
+    'core_bonfire',
+    'core_sunrise',
+    'core_sunset',
+    'core_midnight',
+    'core_flat_blue',
+    'core_flat_white',
+    'core_flat_black',
+    'core_classic',
+  ].includes(icon)
 }
 
 function Group({
@@ -151,7 +169,7 @@ function Group({
       values={[value]}
       maxSelections={1}
       onChange={vals => {
-        if (vals[0]) onChange(vals[0])
+        if (vals[0] && isAppIconName(vals[0])) onChange(vals[0])
       }}>
       <View style={[a.flex_1, a.rounded_md, a.overflow_hidden]}>
         {children}

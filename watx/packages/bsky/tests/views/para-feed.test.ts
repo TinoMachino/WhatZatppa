@@ -231,6 +231,13 @@ describe('para feed views', () => {
     bob = sc.dids.bob
     carol = sc.dids.carol
     dan = sc.dids.dan
+    const mxFederal = await createCommunityBoardRecord(sc, alice, {
+      name: 'MX Federal',
+      quadrant: 'federal',
+    })
+    for (const did of [alice, bob, carol, dan]) {
+      await createCommunityMembershipRecord(sc, did, mxFederal.uri, 'active')
+    }
     await network.processAll()
   })
 
@@ -753,6 +760,160 @@ describe('para feed views', () => {
     )
   })
 
+  it('indexes only eligible cabildeo votes and keeps the latest vote per member', async () => {
+    const board = await createCommunityBoardRecord(sc, alice, {
+      name: 'Vote Guardrails',
+      quadrant: 'west',
+    })
+    await createCommunityMembershipRecord(sc, bob, board.uri, 'active')
+    await createCommunityMembershipRecord(sc, carol, board.uri, 'active')
+    await network.processAll()
+
+    const cabildeo = await createCabildeoRecord(sc, alice, {
+      title: 'Vote guardrails',
+      description: 'Only active members can cast one effective vote.',
+      community: 'vote-guardrails',
+      phase: 'voting',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await createCabildeoVoteRecord(sc, bob, {
+      cabildeo: cabildeo.uri,
+      selectedOption: 0,
+      isDirect: true,
+    })
+    await createCabildeoVoteRecord(sc, bob, {
+      cabildeo: cabildeo.uri,
+      selectedOption: 1,
+      isDirect: true,
+    })
+    await createCabildeoVoteRecord(sc, carol, {
+      cabildeo: cabildeo.uri,
+      selectedOption: 4,
+      isDirect: true,
+    })
+    await createCabildeoVoteRecord(sc, dan, {
+      cabildeo: cabildeo.uri,
+      selectedOption: 0,
+      isDirect: true,
+    })
+    await network.processAll()
+
+    const detail = await callPara<ParaGetCabildeoOutput>(
+      network,
+      'com.para.civic.getCabildeo',
+      { cabildeo: cabildeo.uri },
+      bob,
+    )
+    expect(detail.cabildeo.voteTotals.total).toBe(1)
+    expect(detail.cabildeo.voteTotals.direct).toBe(1)
+    expect(detail.cabildeo.optionSummary[0]?.votes).toBe(0)
+    expect(detail.cabildeo.optionSummary[1]?.votes).toBe(1)
+    expect(detail.cabildeo.outcomeSummary?.winningOption).toBe(1)
+
+    const draft = await createCabildeoRecord(sc, alice, {
+      title: 'Draft vote guardrail',
+      description: 'Draft cabildeos cannot receive effective votes.',
+      community: 'vote-guardrails',
+      phase: 'draft',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await createCabildeoVoteRecord(sc, bob, {
+      cabildeo: draft.uri,
+      selectedOption: 0,
+      isDirect: true,
+    })
+    await network.processAll()
+
+    const draftDetail = await callPara<ParaGetCabildeoOutput>(
+      network,
+      'com.para.civic.getCabildeo',
+      { cabildeo: draft.uri },
+      bob,
+    )
+    expect(draftDetail.cabildeo.voteTotals.total).toBe(0)
+    expect(draftDetail.cabildeo.optionSummary[0]?.votes).toBe(0)
+  })
+
+  it('requires active community membership before listing civic members or delegates', async () => {
+    const board = await createCommunityBoardRecord(sc, alice, {
+      name: 'Privacy Board',
+      quadrant: 'northwest',
+    })
+    await createCommunityMembershipRecord(sc, alice, board.uri, 'active')
+    await network.processAll()
+
+    const noAuthMembers = await callParaRaw(
+      network,
+      'com.para.community.listMembers',
+      { community: 'privacy-board' },
+    )
+    expect(noAuthMembers.status).toBe(401)
+    expect((noAuthMembers.body as { error?: string }).error).toBe('AuthMissing')
+
+    const nonMemberMembers = await callParaRaw(
+      network,
+      'com.para.community.listMembers',
+      { community: 'privacy-board' },
+      bob,
+    )
+    expect(nonMemberMembers.status).toBe(400)
+    expect((nonMemberMembers.body as { error?: string }).error).toBe(
+      'CommunityMembershipRequired',
+    )
+
+    const memberMembers = await callPara<{
+      members: Array<{ did: string; membershipState: string }>
+    }>(
+      network,
+      'com.para.community.listMembers',
+      { community: 'privacy-board' },
+      alice,
+    )
+    expect(memberMembers.members).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ did: alice, membershipState: 'active' }),
+      ]),
+    )
+
+    const cabildeo = await createCabildeoRecord(sc, alice, {
+      title: 'Private delegates',
+      description: 'Delegate candidates are visible to active members only.',
+      community: 'privacy-board',
+      phase: 'voting',
+      options: [{ label: 'A' }, { label: 'B' }],
+    })
+    await network.processAll()
+
+    const noAuthDelegates = await callParaRaw(
+      network,
+      'com.para.civic.listDelegationCandidates',
+      { cabildeo: cabildeo.uri },
+    )
+    expect(noAuthDelegates.status).toBe(401)
+    expect((noAuthDelegates.body as { error?: string }).error).toBe(
+      'AuthMissing',
+    )
+
+    const nonMemberDelegates = await callParaRaw(
+      network,
+      'com.para.civic.listDelegationCandidates',
+      { cabildeo: cabildeo.uri },
+      bob,
+    )
+    expect(nonMemberDelegates.status).toBe(400)
+    expect((nonMemberDelegates.body as { error?: string }).error).toBe(
+      'CommunityMembershipRequired',
+    )
+
+    const memberDelegates = await callPara<{ candidates: unknown[] }>(
+      network,
+      'com.para.civic.listDelegationCandidates',
+      { cabildeo: cabildeo.uri },
+      alice,
+    )
+    expect(memberDelegates.candidates).toEqual(expect.any(Array))
+  })
+
   it('supports cabildeo cursor pagination with stable URIs', async () => {
     const first = await createCabildeoRecord(sc, bob, {
       title: 'Cabildeo 1',
@@ -1253,6 +1414,63 @@ const createParaStatus = async (
     uri: data.uri,
     cid: data.cid,
   }
+}
+
+const createCommunityBoardRecord = async (
+  sc: SeedClient,
+  by: string,
+  opts: {
+    name: string
+    quadrant: string
+  },
+): Promise<ParaStrongRef> => {
+  const { data } = await sc.agent.com.atproto.repo.createRecord(
+    {
+      repo: by,
+      collection: 'com.para.community.board',
+      record: {
+        $type: 'com.para.community.board',
+        name: opts.name,
+        quadrant: opts.quadrant,
+        delegatesChatId: `${opts.quadrant}-delegates`,
+        subdelegatesChatId: `${opts.quadrant}-subdelegates`,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      },
+    },
+    {
+      encoding: 'application/json',
+      headers: sc.getHeaders(by),
+    },
+  )
+
+  return { uri: data.uri, cid: data.cid }
+}
+
+const createCommunityMembershipRecord = async (
+  sc: SeedClient,
+  by: string,
+  community: string,
+  membershipState: 'pending' | 'active' | 'left' | 'removed' | 'blocked',
+): Promise<ParaStrongRef> => {
+  const { data } = await sc.agent.com.atproto.repo.createRecord(
+    {
+      repo: by,
+      collection: 'com.para.community.membership',
+      record: {
+        $type: 'com.para.community.membership',
+        community,
+        membershipState,
+        joinedAt: new Date().toISOString(),
+      },
+    },
+    {
+      encoding: 'application/json',
+      headers: sc.getHeaders(by),
+    },
+  )
+
+  return { uri: data.uri, cid: data.cid }
 }
 
 const createCommunityGovernanceRecord = async (

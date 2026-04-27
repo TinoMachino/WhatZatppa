@@ -16,7 +16,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "codegen": "lex build --override --indexFile --lexicons ../../lexicons",
+    "codegen": "lex gen-server --yes ./src/lexicon ../../lexicons/com/atproto/*/* ../../lexicons/app/bsky/*/* ../../lexicons/chat/bsky/*/* ../../lexicons/tools/ozone/*/* ../../lexicons/com/para/* ../../lexicons/com/para/*/*",
     "prebuild": "pnpm run codegen",
     "build": "tsc --build tsconfig.build.json",
     "start": "node --enable-source-maps dist/bin.js",
@@ -64,8 +64,8 @@
     "keyword-extractor": "^0.0.25",
     "kysely": "^0.22.0",
     "leo-profanity": "^1.8.0",
-    "murmurhash": "^2.0.1",
     "multiformats": "^9.9.0",
+    "murmurhash": "^2.0.1",
     "natural": "^8.0.1",
     "p-queue": "^6.6.2",
     "pg": "^8.10.0",
@@ -80,6 +80,7 @@
     "zod": "3.23.8"
   },
   "devDependencies": {
+    "@atproto/lex-cli": "workspace:^",
     "@atproto/pds": "workspace:^",
     "@bufbuild/buf": "^1.28.1",
     "@bufbuild/protoc-gen-es": "^1.5.0",

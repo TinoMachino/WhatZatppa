@@ -1669,6 +1669,8 @@ message ParaCommunityBoardView {
   string viewer_membership_state = 14;
   repeated string viewer_roles = 15;
   string created_at = 16;
+  string status = 17;
+  ParaCommunityGovernanceSummary governance_summary = 18;
 }
 
 message ParaCommunityGovernanceSummary {
@@ -1692,6 +1694,7 @@ message GetParaCommunityBoardsRequest {
   string flair_id = 6;
   string sort = 7;
   string cursor = 8;
+  optional string quadrant = 9;
 }
 
 message GetParaCommunityBoardsResponse {
@@ -1706,6 +1709,8 @@ message GetParaCommunityMembersRequest {
   string sort = 4;
   int32 limit = 5;
   string cursor = 6;
+  string viewer_did = 7;
+  bool viewer_is_admin = 8;
 }
 
 message ParaCommunityMemberView {
@@ -1872,6 +1877,8 @@ message GetParaDelegationCandidatesRequest {
   string community_id = 2;
   int32 limit = 3;
   string cursor = 4;
+  string viewer_did = 5;
+  bool viewer_is_admin = 6;
 }
 
 message ParaDelegationCandidateView {

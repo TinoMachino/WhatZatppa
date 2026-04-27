@@ -16,6 +16,7 @@ import {
   getFoundingMemberCount,
   getLocalGovernance,
   getLocalMembership,
+  getViewerCapabilities,
   toGetBoardView,
   toGovernanceSummary,
 } from './util'
@@ -56,7 +57,12 @@ export default function (server: Server, ctx: AppContext) {
             viewerRoles: membership?.roles ?? ['owner', 'moderator'],
             memberCount: foundingMemberCount,
           }),
-          viewerCapabilities: ['create_community', 'manage_governance'],
+          viewerCapabilities: getViewerCapabilities(
+            membership ?? {
+              membershipState: 'active',
+              roles: ['owner', 'moderator'],
+            },
+          ),
           governanceSummary: toGovernanceSummary(governance),
         }
       })

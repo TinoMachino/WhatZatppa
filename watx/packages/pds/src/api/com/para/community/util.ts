@@ -23,6 +23,16 @@ export const DEFAULT_MODERATOR_CAPABILITIES = [
   'set_official_representatives',
 ]
 
+export const COMMUNITY_MEMBER_CAPABILITIES = ['leave_community']
+export const COMMUNITY_NON_MEMBER_CAPABILITIES = ['join_community']
+export const COMMUNITY_MODERATOR_CAPABILITIES = [
+  'manage_governance',
+  'review_members',
+  'remove_members',
+  'edit_community',
+]
+export const GLOBAL_COMMUNITY_CAPABILITIES = ['create_community']
+
 export type LocalBoard = {
   uri: string
   cid: string
@@ -197,6 +207,49 @@ export const getLocalMembership = async ({
   if (!membership) return null
   const validated = ComParaCommunityMembership.validateRecord(membership.value)
   return validated.success ? validated.value : null
+}
+
+export const getMembershipUriForBoard = ({
+  viewerDid,
+  boardUri,
+}: {
+  viewerDid: string
+  boardUri: string
+}) => {
+  const board = new AtUri(boardUri)
+  return AtUri.make(viewerDid, MEMBERSHIP_COLLECTION, board.rkey)
+}
+
+export const getViewerCapabilities = (
+  membership?: Pick<
+    ComParaCommunityMembership.Record,
+    'membershipState' | 'roles'
+  > | null,
+) => {
+  const capabilities = new Set<string>(GLOBAL_COMMUNITY_CAPABILITIES)
+  const state = membership?.membershipState ?? 'none'
+  const roles = membership?.roles ?? []
+
+  if (state === 'active') {
+    COMMUNITY_MEMBER_CAPABILITIES.forEach((capability) =>
+      capabilities.add(capability),
+    )
+  } else if (state === 'none' || state === 'left') {
+    COMMUNITY_NON_MEMBER_CAPABILITIES.forEach((capability) =>
+      capabilities.add(capability),
+    )
+  }
+
+  if (
+    state === 'active' &&
+    (roles.includes('owner') || roles.includes('moderator'))
+  ) {
+    COMMUNITY_MODERATOR_CAPABILITIES.forEach((capability) =>
+      capabilities.add(capability),
+    )
+  }
+
+  return Array.from(capabilities)
 }
 
 export const getLocalGovernance = async ({

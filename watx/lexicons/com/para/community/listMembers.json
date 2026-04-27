@@ -5,6 +5,9 @@
     "main": {
       "type": "query",
       "description": "Lists real members of a PARA community board.",
+      "auth": {
+        "type": "access"
+      },
       "parameters": {
         "type": "params",
         "required": ["communityId"],

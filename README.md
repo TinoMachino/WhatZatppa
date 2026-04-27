@@ -33,8 +33,9 @@ Incluido en el MVP:
 - Governance visible principalmente como estado de lectura y resumen.
 - Modelo actual de figura pública/validación manual donde ya esté soportado.
 
-Limitado en el MVP:
+Estará fuera del MVP:
 
+- Funcionalidad completa de mensajería y privacidad.
 - Administración completa de comunidades.
 - Invitaciones, membresía granular y permisos avanzados.
 - Flujos institucionales completos.
@@ -93,11 +94,12 @@ La implementación de cliente debe preferir estados explícitos: disabled, read-
 - Verificación INE y pruebas de elegibilidad con zero-knowledge.
 - Gobernanza avanzada con roles institucionales, auditoría formal y flujos administrativos completos.
 - Ciclo completo de Cabildeo: propuesta, deliberación, votación, resolución y publicación oficial.
-- Streaming nativo, grabaciones, notificaciones live avanzadas y moderación live en tiempo real.
-- Analítica/discurso avanzado, resúmenes, sentimiento y recomendaciones como producto confiable.
+- Anonimato y herramientas que garanticen la privacidad del usuario de manera trust-less.
+- Analítica del discurso avanzada, resúmenes, sentimiento y recomendaciones como un producto.
 - Escalamiento multi-comunidad/regional.
 - Métricas públicas, dashboards y reportes de impacto.
 - Experiencias de cliente más guiadas para usuarios, moderadores, comunidades e instituciones.
+- Expandirnos a otros países fometando la democracia directa pluralista.
 
 ## Base técnica
 

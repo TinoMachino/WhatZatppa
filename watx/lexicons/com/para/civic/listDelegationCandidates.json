@@ -5,6 +5,9 @@
     "main": {
       "type": "query",
       "description": "Lists real delegation candidates for a cabildeo/community.",
+      "auth": {
+        "type": "access"
+      },
       "parameters": {
         "type": "params",
         "required": ["cabildeo"],

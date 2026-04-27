@@ -28,6 +28,7 @@ import * as notification from './tables/notification'
 import * as notificationPushToken from './tables/notification-push-token'
 import * as paraCommunityBoard from './tables/para-community-board'
 import * as paraCommunityMembership from './tables/para-community-membership'
+import * as paraCommunityGovernance from './tables/para-community-governance'
 import * as paraPost from './tables/para-post'
 import * as paraPostMeta from './tables/para-post-meta'
 import * as paraPolicyVote from './tables/para-policy-vote'
@@ -100,6 +101,7 @@ export type DatabaseSchemaType = duplicateRecord.PartialDB &
   draft.PartialDB &
   paraCommunityBoard.PartialDB &
   paraCommunityMembership.PartialDB &
+  paraCommunityGovernance.PartialDB &
   paraPost.PartialDB &
   paraPostMeta.PartialDB &
   paraPolicyVote.PartialDB &

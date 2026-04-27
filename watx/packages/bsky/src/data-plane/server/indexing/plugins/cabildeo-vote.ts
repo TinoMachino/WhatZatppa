@@ -37,14 +37,6 @@ const insertFn = async (
   timestamp: string,
 ): Promise<IndexedVote | null> => {
   if (obj.subjectType === 'policy' && obj.subject && typeof obj.signal === 'number') {
-    await db
-      .deleteFrom('para_policy_vote')
-      .where('subject', '=', obj.subject)
-      .where('subjectType', '=', obj.subjectType)
-      .where('creator', '=', uri.host)
-      .where('uri', '!=', uri.toString())
-      .execute()
-
     const inserted = await db
       .insertInto('para_policy_vote')
       .values({
@@ -62,7 +54,20 @@ const insertFn = async (
         createdAt: normalizeDatetimeAlways(obj.createdAt),
         indexedAt: timestamp,
       })
-      .onConflict((oc) => oc.doNothing())
+      .onConflict((oc) =>
+        oc.columns(['creator', 'subjectType', 'subject']).doUpdateSet({
+          uri: uri.toString(),
+          cid: cid.toString(),
+          signal: obj.signal,
+          isDirect: obj.isDirect ? (1 as const) : (0 as const),
+          delegatedFrom: obj.delegatedFrom?.length
+            ? sql<string[]>`${JSON.stringify(obj.delegatedFrom)}`
+            : null,
+          reason: obj.reason ?? null,
+          createdAt: normalizeDatetimeAlways(obj.createdAt),
+          indexedAt: timestamp,
+        }),
+      )
       .returningAll()
       .executeTakeFirst()
 
@@ -70,6 +75,19 @@ const insertFn = async (
   }
 
   if (!obj.cabildeo) {
+    return null
+  }
+  if (typeof obj.selectedOption !== 'number' || !Number.isInteger(obj.selectedOption)) {
+    return null
+  }
+
+  const eligibility = await getCabildeoVoteEligibility(db, {
+    actorDid: uri.host,
+    cabildeoUri: obj.cabildeo,
+    selectedOption: obj.selectedOption,
+    indexedAt: timestamp,
+  })
+  if (!eligibility) {
     return null
   }
 
@@ -90,7 +108,17 @@ const insertFn = async (
   const inserted = await db
     .insertInto('cabildeo_vote')
     .values(record)
-    .onConflict((oc) => oc.doNothing())
+    .onConflict((oc) =>
+      oc.columns(['creator', 'cabildeo']).doUpdateSet({
+        uri: record.uri,
+        cid: record.cid,
+        selectedOption: record.selectedOption,
+        isDirect: record.isDirect,
+        delegatedFrom: record.delegatedFrom,
+        createdAt: record.createdAt,
+        indexedAt: record.indexedAt,
+      }),
+    )
     .returningAll()
     .executeTakeFirst()
 
@@ -104,6 +132,75 @@ const insertFn = async (
 const findDuplicate = async (): Promise<AtUri | null> => {
   return null
 }
+
+const getCabildeoVoteEligibility = async (
+  db: DatabaseSchema,
+  opts: {
+    actorDid: string
+    cabildeoUri: string
+    selectedOption: number
+    indexedAt: string
+  },
+) => {
+  const cabildeo = await db
+    .selectFrom('cabildeo_cabildeo')
+    .where('uri', '=', opts.cabildeoUri)
+    .select(['uri', 'community', 'options', 'phase', 'phaseDeadline'])
+    .executeTakeFirst()
+
+  if (!cabildeo || cabildeo.phase !== 'voting') {
+    return null
+  }
+  if (
+    cabildeo.phaseDeadline &&
+    new Date(cabildeo.phaseDeadline) <= new Date(opts.indexedAt)
+  ) {
+    return null
+  }
+
+  const options = Array.isArray(cabildeo.options) ? cabildeo.options : []
+  if (opts.selectedOption < 0 || opts.selectedOption >= options.length) {
+    return null
+  }
+
+  const community = normalizeCommunitySlug(cabildeo.community)
+  const board = await db
+    .selectFrom('para_community_board')
+    .where((qb) =>
+      qb.or([
+        qb('uri', '=', cabildeo.community),
+        qb('slug', '=', community),
+        qb(
+          sql`regexp_replace(lower(coalesce("name", '')), '[^a-z0-9]+', '-', 'g')`,
+          '=',
+          community,
+        ),
+      ]),
+    )
+    .select(['uri'])
+    .executeTakeFirst()
+
+  if (!board) {
+    return null
+  }
+
+  const membership = await db
+    .selectFrom('para_community_membership')
+    .where('creator', '=', opts.actorDid)
+    .where('communityUri', '=', board.uri)
+    .where('membershipState', '=', 'active')
+    .select(['uri'])
+    .executeTakeFirst()
+
+  return membership ? { cabildeo } : null
+}
+
+const normalizeCommunitySlug = (value: string) =>
+  value
+    .replace(/^p\//, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 
 const notifsForInsert = () => {
   return []

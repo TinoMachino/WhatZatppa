@@ -1,6 +1,7 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {
+  castCabildeoVote,
   delegateCabildeoVote,
   fetchCabildeo,
   fetchCabildeoPositions,
@@ -129,6 +130,37 @@ export function useDelegateCabildeoVoteMutation() {
         queryKey: [RQKEY_ROOT, 'delegation-candidates', variables.cabildeoUri],
       })
       void queryClient.invalidateQueries({queryKey: cabildeosQueryKey})
+    },
+  })
+}
+
+export function useVoteMutation() {
+  const agent = useAgent()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      cabildeoUri,
+      selectedOption,
+      isDirect,
+    }: {
+      cabildeoUri: string
+      selectedOption: number
+      isDirect: boolean
+    }) => {
+      await castCabildeoVote(agent, {
+        cabildeo: cabildeoUri,
+        subject: cabildeoUri,
+        subjectType: 'cabildeo',
+        selectedOption,
+        isDirect,
+      })
+    },
+    onSuccess: (_, {cabildeoUri}) => {
+      // Invalidate the detail query so the UI fetches the updated optionSummary from backend
+      void queryClient.invalidateQueries({
+        queryKey: cabildeoDetailQueryKey(cabildeoUri),
+      })
     },
   })
 }

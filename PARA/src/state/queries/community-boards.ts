@@ -95,6 +95,7 @@ export type CommunityBoardsQueryOptions = {
   limit?: number
   query?: string
   state?: string
+  quadrant?: string
   participationKind?: 'matter' | 'policy'
   flairId?: string
   sort?: 'recent' | 'activity' | 'size'
@@ -116,6 +117,7 @@ export const communityBoardsQueryKey = (opts: CommunityBoardsQueryOptions) => [
   opts.limit ?? 12,
   opts.query ?? '',
   opts.state ?? '',
+  opts.quadrant ?? '',
   opts.participationKind ?? '',
   opts.flairId ?? '',
   opts.sort ?? '',
@@ -216,30 +218,18 @@ async function fetchCommunityBoards({
   agent: ReturnType<typeof useAgent>
   opts: CommunityBoardsQueryOptions
 }): Promise<CommunityBoardsResponse> {
-  const params = new URLSearchParams()
-  params.set('limit', String(opts.limit ?? 12))
-  setParam(params, 'query', opts.query)
-  setParam(params, 'state', opts.state)
-  setParam(params, 'participationKind', opts.participationKind)
-  setParam(params, 'flairId', opts.flairId)
-  setParam(params, 'sort', opts.sort)
-  setParam(params, 'cursor', opts.cursor)
+  const res = await agent.call('com.para.community.listBoards', {
+    limit: opts.limit ?? 12,
+    query: opts.query,
+    state: opts.state,
+    quadrant: opts.quadrant,
+    participationKind: opts.participationKind,
+    flairId: opts.flairId,
+    sort: opts.sort,
+    cursor: opts.cursor,
+  })
 
-  const res = await agent.fetchHandler(
-    `/xrpc/com.para.community.listBoards?${params.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-      },
-    },
-  )
-
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
-
-  return normalizeCommunityBoardsResponse(await res.json())
+  return normalizeCommunityBoardsResponse(res.data)
 }
 
 async function fetchCommunityMembers({
@@ -249,29 +239,16 @@ async function fetchCommunityMembers({
   agent: ReturnType<typeof useAgent>
   opts: CommunityMembersQueryOptions
 }): Promise<CommunityMembersResponse> {
-  const params = new URLSearchParams()
-  params.set('communityId', opts.communityId ?? '')
-  params.set('limit', String(opts.limit ?? 50))
-  setParam(params, 'membershipState', opts.membershipState)
-  setParam(params, 'role', opts.role)
-  setParam(params, 'sort', opts.sort)
-  setParam(params, 'cursor', opts.cursor)
+  const res = await agent.call('com.para.community.listMembers', {
+    communityId: opts.communityId ?? '',
+    limit: opts.limit ?? 50,
+    membershipState: opts.membershipState,
+    role: opts.role,
+    sort: opts.sort,
+    cursor: opts.cursor,
+  })
 
-  const res = await agent.fetchHandler(
-    `/xrpc/com.para.community.listMembers?${params.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-      },
-    },
-  )
-
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
-
-  return normalizeCommunityMembersResponse(await res.json())
+  return normalizeCommunityMembersResponse(res.data)
 }
 
 async function fetchCommunityBoard({
@@ -283,25 +260,12 @@ async function fetchCommunityBoard({
   communityId?: string
   uri?: string
 }): Promise<CommunityBoardResponse> {
-  const params = new URLSearchParams()
-  if (communityId) params.set('communityId', communityId)
-  if (uri) params.set('uri', uri)
+  const res = await agent.call('com.para.community.getBoard', {
+    communityId,
+    uri,
+  })
 
-  const res = await agent.fetchHandler(
-    `/xrpc/com.para.community.getBoard?${params.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-      },
-    },
-  )
-
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
-
-  return normalizeCommunityBoardResponse(await res.json())
+  return normalizeCommunityBoardResponse(res.data)
 }
 
 async function createCommunity({
@@ -311,21 +275,9 @@ async function createCommunity({
   agent: ReturnType<typeof useAgent>
   input: CreateCommunityInput
 }): Promise<CreateCommunityResponse> {
-  const res = await agent.fetchHandler(`/xrpc/com.para.community.createBoard`, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/json',
-      'x-idempotency-key': buildIdempotencyKey(),
-    },
-    body: JSON.stringify(input),
-  })
+  const res = await agent.call('com.para.community.createBoard', undefined, input)
 
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
-
-  const json = asRecord(await res.json())
+  const json = asRecord(res.data)
   return {
     uri: readString(json?.uri) ?? '',
     cid: readString(json?.cid) ?? '',
@@ -513,23 +465,13 @@ async function acceptDraftInvite({
   agent: ReturnType<typeof useAgent>
   input: AcceptDraftInviteInput
 }): Promise<AcceptDraftInviteResponse> {
-  const res = await agent.fetchHandler(
-    `/xrpc/com.para.community.acceptDraftInvite`,
-    {
-      method: 'POST',
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    },
+  const res = await agent.call(
+    'com.para.community.acceptDraftInvite',
+    undefined,
+    input,
   )
 
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
-
-  const json = asRecord(await res.json())
+  const json = asRecord(res.data)
   return {
     status: (readString(json?.status) as 'draft' | 'active') ?? 'draft',
     memberCount:

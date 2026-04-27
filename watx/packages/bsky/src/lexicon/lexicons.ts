@@ -17714,75 +17714,6 @@ export const schemaDict = {
       },
     },
   },
-  ComGermnetworkDeclaration: {
-    lexicon: 1,
-    id: 'com.germnetwork.declaration',
-    defs: {
-      main: {
-        type: 'record',
-        description: 'A declaration of a Germ Network account',
-        key: 'literal:self',
-        record: {
-          type: 'object',
-          required: ['version', 'currentKey'],
-          properties: {
-            version: {
-              type: 'string',
-              description:
-                'Semver version number, without pre-release or build information, for the format of opaque content',
-              minLength: 5,
-              maxLength: 14,
-            },
-            currentKey: {
-              type: 'bytes',
-              description:
-                'Opaque value, an ed25519 public key prefixed with a byte enum',
-            },
-            messageMe: {
-              type: 'ref',
-              description: 'Controls who can message this account',
-              ref: 'lex:com.germnetwork.declaration#messageMe',
-            },
-            keyPackage: {
-              type: 'bytes',
-              description:
-                'Opaque value, contains MLS KeyPackage(s), and other signature data, and is signed by the currentKey',
-            },
-            continuityProofs: {
-              type: 'array',
-              description: 'Array of opaque values to allow for key rolling',
-              items: {
-                type: 'bytes',
-              },
-              maxLength: 1000,
-            },
-          },
-        },
-      },
-      messageMe: {
-        type: 'object',
-        required: ['showButtonTo', 'messageMeUrl'],
-        properties: {
-          messageMeUrl: {
-            type: 'string',
-            description:
-              'A URL to present to an account that does not have its own com.germnetwork.declaration record, must have an empty fragment component, where the app should fill in the fragment component with the DIDs of the two accounts who wish to message each other',
-            format: 'uri',
-            minLength: 1,
-            maxLength: 2047,
-          },
-          showButtonTo: {
-            type: 'string',
-            knownValues: ['none', 'usersIFollow', 'everyone'],
-            description:
-              "The policy of who can message the account, this value is included in the keyPackage, but is duplicated here to allow applications to decide if they should show a 'Message on Germ' button to the viewer.",
-            minLength: 1,
-            maxLength: 100,
-          },
-        },
-      },
-    },
-  },
   ComParaActorDefs: {
     lexicon: 1,
     id: 'com.para.actor.defs',
@@ -18028,6 +17959,74 @@ export const schemaDict = {
       },
     },
   },
+  ComParaCivicCastVote: {
+    lexicon: 1,
+    id: 'com.para.civic.castVote',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: "Cast or replace the viewer's direct vote for a cabildeo.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['cabildeo', 'selectedOption'],
+            properties: {
+              cabildeo: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              selectedOption: {
+                type: 'integer',
+                minimum: 0,
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['uri', 'cid', 'commit'],
+            properties: {
+              uri: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              cid: {
+                type: 'string',
+                format: 'cid',
+              },
+              commit: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.castVote#commit',
+              },
+            },
+          },
+        },
+        errors: [
+          { name: 'NotFound' },
+          { name: 'InvalidPhase' },
+          { name: 'DeadlineExpired' },
+          { name: 'InvalidOption' },
+          { name: 'CommunityMembershipRequired' },
+        ],
+      },
+      commit: {
+        type: 'object',
+        required: ['cid', 'rev'],
+        properties: {
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          rev: {
+            type: 'string',
+          },
+        },
+      } as any,
+    },
+  },
   ComParaCivicDefs: {
     lexicon: 1,
     id: 'com.para.civic.defs',
@@ -18048,7 +18047,7 @@ export const schemaDict = {
             type: 'boolean',
           },
         },
-      },
+      } as any,
       optionSummary: {
         type: 'object',
         required: ['optionIndex', 'label', 'votes', 'positions'],
@@ -18070,7 +18069,7 @@ export const schemaDict = {
             minimum: 0,
           },
         },
-      },
+      } as any,
       positionCounts: {
         type: 'object',
         required: ['total', 'for', 'against', 'amendment', 'byOption'],
@@ -18099,7 +18098,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       voteTotals: {
         type: 'object',
         required: ['total', 'direct', 'delegated'],
@@ -18117,7 +18116,7 @@ export const schemaDict = {
             minimum: 0,
           },
         },
-      },
+      } as any,
       outcomeSummary: {
         type: 'object',
         required: [
@@ -18150,7 +18149,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       viewerContext: {
         type: 'object',
         properties: {
@@ -18184,7 +18183,7 @@ export const schemaDict = {
             type: 'boolean',
           },
         },
-      },
+      } as any,
       liveSessionView: {
         type: 'object',
         required: [
@@ -18219,7 +18218,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       cabildeoLive: {
         type: 'object',
         required: ['cabildeoUri', 'community', 'phase', 'expiresAt'],
@@ -18247,7 +18246,7 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
       cabildeoView: {
         type: 'object',
         required: [
@@ -18374,7 +18373,7 @@ export const schemaDict = {
             ref: 'lex:com.para.civic.defs#liveSessionView',
           },
         },
-      },
+      } as any,
       positionView: {
         type: 'object',
         required: [
@@ -18428,7 +18427,7 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
       policySignalBucket: {
         type: 'object',
         required: ['signal', 'count'],
@@ -18443,7 +18442,7 @@ export const schemaDict = {
             minimum: 0,
           },
         },
-      },
+      } as any,
       policyTally: {
         type: 'object',
         required: [
@@ -18548,7 +18547,7 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicDelegation: {
@@ -18589,7 +18588,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicGetCabildeo: {
@@ -18623,7 +18622,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicGetPolicyTally: {
@@ -18715,7 +18714,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicListCabildeos: {
@@ -18775,7 +18774,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicListDelegationCandidates: {
@@ -18786,6 +18785,7 @@ export const schemaDict = {
         type: 'query',
         description:
           'Lists real delegation candidates for a cabildeo/community.',
+        auth: { type: 'access' },
         parameters: {
           type: 'params',
           required: ['cabildeo'],
@@ -18816,7 +18816,7 @@ export const schemaDict = {
             ref: 'lex:com.para.civic.listDelegationCandidates#output',
           },
         },
-      },
+      } as any,
       candidateView: {
         type: 'object',
         required: ['did', 'roles', 'activeDelegationCount', 'hasVoted'],
@@ -18867,7 +18867,7 @@ export const schemaDict = {
             minimum: 0,
           },
         },
-      },
+      } as any,
       output: {
         type: 'object',
         required: ['candidates'],
@@ -18883,7 +18883,7 @@ export const schemaDict = {
             type: 'string',
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicPosition: {
@@ -18924,7 +18924,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicPutLivePresence: {
@@ -19057,7 +19057,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityAcceptDraftInvite: {
@@ -19096,7 +19096,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityBoard: {
@@ -19162,7 +19162,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityCreateBoard: {
@@ -19231,7 +19231,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityDefs: {
@@ -19264,7 +19264,7 @@ export const schemaDict = {
             type: 'integer',
           },
         },
-      },
+      } as any,
       person: {
         type: 'object',
         properties: {
@@ -19286,7 +19286,7 @@ export const schemaDict = {
             format: 'uri',
           },
         },
-      },
+      } as any,
       moderatorView: {
         type: 'object',
         required: ['role', 'badge', 'capabilities'],
@@ -19327,7 +19327,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       officialView: {
         type: 'object',
         required: ['office', 'mandate'],
@@ -19360,7 +19360,7 @@ export const schemaDict = {
             maxLength: 1000,
           },
         },
-      },
+      } as any,
       applicant: {
         type: 'object',
         required: ['appliedAt', 'status'],
@@ -19396,7 +19396,7 @@ export const schemaDict = {
             maxLength: 1000,
           },
         },
-      },
+      } as any,
       deputyRoleView: {
         type: 'object',
         required: [
@@ -19456,7 +19456,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       metadata: {
         type: 'object',
         properties: {
@@ -19504,7 +19504,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       historyEntry: {
         type: 'object',
         required: ['id', 'action', 'createdAt', 'summary'],
@@ -19537,7 +19537,7 @@ export const schemaDict = {
             maxLength: 2000,
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityGetBoard: {
@@ -19568,7 +19568,7 @@ export const schemaDict = {
             ref: 'lex:com.para.community.getBoard#output',
           },
         },
-      },
+      } as any,
       governanceSummary: {
         type: 'object',
         required: ['moderatorCount', 'officialCount', 'deputyRoleCount'],
@@ -19587,7 +19587,7 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
       boardView: {
         type: 'object',
         required: [
@@ -19696,7 +19696,7 @@ export const schemaDict = {
             ref: 'lex:com.para.community.getBoard#governanceSummary',
           },
         },
-      },
+      } as any,
       output: {
         type: 'object',
         required: ['board', 'viewerCapabilities'],
@@ -19714,7 +19714,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityGetGovernance: {
@@ -19839,7 +19839,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityGovernance: {
@@ -19920,7 +19920,151 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
+    },
+  },
+  ComParaCommunityJoin: {
+    lexicon: 1,
+    id: 'com.para.community.join',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          "Joins a PARA community board by creating or reactivating the caller's membership record.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['communityUri'],
+            properties: {
+              communityUri: {
+                type: 'string',
+                format: 'at-uri',
+                description:
+                  'URI of the com.para.community.board record to join.',
+              },
+              source: {
+                type: 'string',
+                maxLength: 64,
+                maxGraphemes: 64,
+                description: 'Optional source label for how the viewer joined.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.join#output',
+          },
+        },
+      } as any,
+      output: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'communityUri',
+          'membershipState',
+          'viewerCapabilities',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          communityUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          membershipState: {
+            type: 'string',
+            knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+          },
+          viewerCapabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+        },
+      } as any,
+    },
+  },
+  ComParaCommunityLeave: {
+    lexicon: 1,
+    id: 'com.para.community.leave',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          "Leaves a PARA community board by marking the caller's membership record as left.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['communityUri'],
+            properties: {
+              communityUri: {
+                type: 'string',
+                format: 'at-uri',
+                description:
+                  'URI of the com.para.community.board record to leave.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.leave#output',
+          },
+        },
+      } as any,
+      output: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'communityUri',
+          'membershipState',
+          'viewerCapabilities',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          communityUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          membershipState: {
+            type: 'string',
+            knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+          },
+          viewerCapabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+        },
+      } as any,
     },
   },
   ComParaCommunityListBoards: {
@@ -19967,6 +20111,10 @@ export const schemaDict = {
             cursor: {
               type: 'string',
             },
+            quadrant: {
+              type: 'string',
+              description: 'Optional territory quadrant to filter communities by',
+            },
           },
         },
         output: {
@@ -19976,7 +20124,7 @@ export const schemaDict = {
             ref: 'lex:com.para.community.listBoards#output',
           },
         },
-      },
+      } as any,
       boardView: {
         type: 'object',
         required: [
@@ -20076,12 +20224,22 @@ export const schemaDict = {
             type: 'string',
             format: 'at-uri',
           },
+          governanceSummary: {
+            type: 'object',
+            required: ['moderatorCount', 'officialCount', 'deputyRoleCount'],
+            properties: {
+              moderatorCount: { type: 'integer' },
+              officialCount: { type: 'integer' },
+              deputyRoleCount: { type: 'integer' },
+              lastPublishedAt: { type: 'string', format: 'datetime' },
+            },
+          },
           createdAt: {
             type: 'string',
             format: 'datetime',
           },
         },
-      },
+      } as any,
       output: {
         type: 'object',
         required: ['boards', 'canCreateCommunity'],
@@ -20110,6 +20268,7 @@ export const schemaDict = {
       main: {
         type: 'query',
         description: 'Lists real members of a PARA community board.',
+        auth: { type: 'access' },
         parameters: {
           type: 'params',
           required: ['communityId'],
@@ -20150,7 +20309,7 @@ export const schemaDict = {
             ref: 'lex:com.para.community.listMembers#output',
           },
         },
-      },
+      } as any,
       memberView: {
         type: 'object',
         required: [
@@ -21011,6 +21170,103 @@ export const schemaDict = {
                   type: 'ref',
                   ref: 'lex:com.para.highlight.defs#highlightView',
                 },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaNotificationGetPostSubscription: {
+    lexicon: 1,
+    id: 'com.para.notification.getPostSubscription',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          "Get the requesting viewer's notification subscription for a post.",
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'reply', 'quote'],
+            properties: {
+              post: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              reply: {
+                type: 'boolean',
+              },
+              quote: {
+                type: 'boolean',
+              },
+              indexedAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaNotificationPutPostSubscription: {
+    lexicon: 1,
+    id: 'com.para.notification.putPostSubscription',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Enable or disable notification subscriptions for a post. Requires auth.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'reply', 'quote'],
+            properties: {
+              post: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              reply: {
+                type: 'boolean',
+              },
+              quote: {
+                type: 'boolean',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'reply', 'quote'],
+            properties: {
+              post: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              reply: {
+                type: 'boolean',
+              },
+              quote: {
+                type: 'boolean',
+              },
+              indexedAt: {
+                type: 'string',
+                format: 'datetime',
               },
             },
           },
@@ -26892,10 +27148,10 @@ export const ids = {
     'com.atproto.temp.requestPhoneVerification',
   ComAtprotoTempRevokeAccountCredentials:
     'com.atproto.temp.revokeAccountCredentials',
-  ComGermnetworkDeclaration: 'com.germnetwork.declaration',
   ComParaActorDefs: 'com.para.actor.defs',
   ComParaActorGetProfileStats: 'com.para.actor.getProfileStats',
   ComParaCivicCabildeo: 'com.para.civic.cabildeo',
+  ComParaCivicCastVote: 'com.para.civic.castVote',
   ComParaCivicDefs: 'com.para.civic.defs',
   ComParaCivicDelegation: 'com.para.civic.delegation',
   ComParaCivicGetCabildeo: 'com.para.civic.getCabildeo',
@@ -26914,6 +27170,8 @@ export const ids = {
   ComParaCommunityGetBoard: 'com.para.community.getBoard',
   ComParaCommunityGetGovernance: 'com.para.community.getGovernance',
   ComParaCommunityGovernance: 'com.para.community.governance',
+  ComParaCommunityJoin: 'com.para.community.join',
+  ComParaCommunityLeave: 'com.para.community.leave',
   ComParaCommunityListBoards: 'com.para.community.listBoards',
   ComParaCommunityListMembers: 'com.para.community.listMembers',
   ComParaCommunityMembership: 'com.para.community.membership',
@@ -26928,6 +27186,10 @@ export const ids = {
   ComParaHighlightDefs: 'com.para.highlight.defs',
   ComParaHighlightGetHighlight: 'com.para.highlight.getHighlight',
   ComParaHighlightListHighlights: 'com.para.highlight.listHighlights',
+  ComParaNotificationGetPostSubscription:
+    'com.para.notification.getPostSubscription',
+  ComParaNotificationPutPostSubscription:
+    'com.para.notification.putPostSubscription',
   ComParaPost: 'com.para.post',
   ComParaSocialGetPostMeta: 'com.para.social.getPostMeta',
   ComParaSocialPostMeta: 'com.para.social.postMeta',

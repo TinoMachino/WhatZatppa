@@ -246,6 +246,27 @@ import * as ComAtprotoTempDereferenceScope from './types/com/atproto/temp/derefe
 import * as ComAtprotoTempFetchLabels from './types/com/atproto/temp/fetchLabels.js'
 import * as ComAtprotoTempRequestPhoneVerification from './types/com/atproto/temp/requestPhoneVerification.js'
 import * as ComAtprotoTempRevokeAccountCredentials from './types/com/atproto/temp/revokeAccountCredentials.js'
+import * as ComParaActorGetProfileStats from './types/com/para/actor/getProfileStats.js'
+import * as ComParaCivicGetCabildeo from './types/com/para/civic/getCabildeo.js'
+import * as ComParaCivicGetPolicyTally from './types/com/para/civic/getPolicyTally.js'
+import * as ComParaCivicListCabildeoPositions from './types/com/para/civic/listCabildeoPositions.js'
+import * as ComParaCivicListCabildeos from './types/com/para/civic/listCabildeos.js'
+import * as ComParaCivicPutLivePresence from './types/com/para/civic/putLivePresence.js'
+import * as ComParaCommunityAcceptDraftInvite from './types/com/para/community/acceptDraftInvite.js'
+import * as ComParaCommunityCreateBoard from './types/com/para/community/createBoard.js'
+import * as ComParaCommunityGetBoard from './types/com/para/community/getBoard.js'
+import * as ComParaCommunityGetGovernance from './types/com/para/community/getGovernance.js'
+import * as ComParaCommunityListBoards from './types/com/para/community/listBoards.js'
+import * as ComParaDiscourseGetSentiment from './types/com/para/discourse/getSentiment.js'
+import * as ComParaDiscourseGetSnapshot from './types/com/para/discourse/getSnapshot.js'
+import * as ComParaDiscourseGetTopics from './types/com/para/discourse/getTopics.js'
+import * as ComParaFeedGetAuthorFeed from './types/com/para/feed/getAuthorFeed.js'
+import * as ComParaFeedGetPostThread from './types/com/para/feed/getPostThread.js'
+import * as ComParaFeedGetPosts from './types/com/para/feed/getPosts.js'
+import * as ComParaFeedGetTimeline from './types/com/para/feed/getTimeline.js'
+import * as ComParaHighlightGetHighlight from './types/com/para/highlight/getHighlight.js'
+import * as ComParaHighlightListHighlights from './types/com/para/highlight/listHighlights.js'
+import * as ComParaSocialGetPostMeta from './types/com/para/social/getPostMeta.js'
 import * as ToolsOzoneCommunicationCreateTemplate from './types/tools/ozone/communication/createTemplate.js'
 import * as ToolsOzoneCommunicationDeleteTemplate from './types/tools/ozone/communication/deleteTemplate.js'
 import * as ToolsOzoneCommunicationListTemplates from './types/tools/ozone/communication/listTemplates.js'
@@ -2428,10 +2449,12 @@ export class ChatBskyModerationNS {
 export class ComNS {
   _server: Server
   atproto: ComAtprotoNS
+  para: ComParaNS
 
   constructor(server: Server) {
     this._server = server
     this.atproto = new ComAtprotoNS(server)
+    this.para = new ComParaNS(server)
   }
 }
 
@@ -3559,6 +3582,336 @@ export class ComAtprotoTempNS {
     >,
   ) {
     const nsid = 'com.atproto.temp.revokeAccountCredentials' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaNS {
+  _server: Server
+  actor: ComParaActorNS
+  civic: ComParaCivicNS
+  community: ComParaCommunityNS
+  discourse: ComParaDiscourseNS
+  feed: ComParaFeedNS
+  highlight: ComParaHighlightNS
+  social: ComParaSocialNS
+
+  constructor(server: Server) {
+    this._server = server
+    this.actor = new ComParaActorNS(server)
+    this.civic = new ComParaCivicNS(server)
+    this.community = new ComParaCommunityNS(server)
+    this.discourse = new ComParaDiscourseNS(server)
+    this.feed = new ComParaFeedNS(server)
+    this.highlight = new ComParaHighlightNS(server)
+    this.social = new ComParaSocialNS(server)
+  }
+}
+
+export class ComParaActorNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  getProfileStats<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaActorGetProfileStats.QueryParams,
+      ComParaActorGetProfileStats.HandlerInput,
+      ComParaActorGetProfileStats.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.actor.getProfileStats' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaCivicNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  getCabildeo<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCivicGetCabildeo.QueryParams,
+      ComParaCivicGetCabildeo.HandlerInput,
+      ComParaCivicGetCabildeo.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.civic.getCabildeo' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getPolicyTally<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCivicGetPolicyTally.QueryParams,
+      ComParaCivicGetPolicyTally.HandlerInput,
+      ComParaCivicGetPolicyTally.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.civic.getPolicyTally' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  listCabildeoPositions<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCivicListCabildeoPositions.QueryParams,
+      ComParaCivicListCabildeoPositions.HandlerInput,
+      ComParaCivicListCabildeoPositions.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.civic.listCabildeoPositions' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  listCabildeos<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCivicListCabildeos.QueryParams,
+      ComParaCivicListCabildeos.HandlerInput,
+      ComParaCivicListCabildeos.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.civic.listCabildeos' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  putLivePresence<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCivicPutLivePresence.QueryParams,
+      ComParaCivicPutLivePresence.HandlerInput,
+      ComParaCivicPutLivePresence.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.civic.putLivePresence' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaCommunityNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  acceptDraftInvite<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityAcceptDraftInvite.QueryParams,
+      ComParaCommunityAcceptDraftInvite.HandlerInput,
+      ComParaCommunityAcceptDraftInvite.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.acceptDraftInvite' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  createBoard<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityCreateBoard.QueryParams,
+      ComParaCommunityCreateBoard.HandlerInput,
+      ComParaCommunityCreateBoard.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.createBoard' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getBoard<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityGetBoard.QueryParams,
+      ComParaCommunityGetBoard.HandlerInput,
+      ComParaCommunityGetBoard.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.getBoard' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getGovernance<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityGetGovernance.QueryParams,
+      ComParaCommunityGetGovernance.HandlerInput,
+      ComParaCommunityGetGovernance.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.getGovernance' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  listBoards<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaCommunityListBoards.QueryParams,
+      ComParaCommunityListBoards.HandlerInput,
+      ComParaCommunityListBoards.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.community.listBoards' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaDiscourseNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  getSentiment<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaDiscourseGetSentiment.QueryParams,
+      ComParaDiscourseGetSentiment.HandlerInput,
+      ComParaDiscourseGetSentiment.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.discourse.getSentiment' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getSnapshot<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaDiscourseGetSnapshot.QueryParams,
+      ComParaDiscourseGetSnapshot.HandlerInput,
+      ComParaDiscourseGetSnapshot.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.discourse.getSnapshot' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getTopics<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaDiscourseGetTopics.QueryParams,
+      ComParaDiscourseGetTopics.HandlerInput,
+      ComParaDiscourseGetTopics.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.discourse.getTopics' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaFeedNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  getAuthorFeed<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaFeedGetAuthorFeed.QueryParams,
+      ComParaFeedGetAuthorFeed.HandlerInput,
+      ComParaFeedGetAuthorFeed.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.feed.getAuthorFeed' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getPostThread<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaFeedGetPostThread.QueryParams,
+      ComParaFeedGetPostThread.HandlerInput,
+      ComParaFeedGetPostThread.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.feed.getPostThread' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getPosts<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaFeedGetPosts.QueryParams,
+      ComParaFeedGetPosts.HandlerInput,
+      ComParaFeedGetPosts.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.feed.getPosts' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  getTimeline<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaFeedGetTimeline.QueryParams,
+      ComParaFeedGetTimeline.HandlerInput,
+      ComParaFeedGetTimeline.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.feed.getTimeline' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaHighlightNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  getHighlight<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaHighlightGetHighlight.QueryParams,
+      ComParaHighlightGetHighlight.HandlerInput,
+      ComParaHighlightGetHighlight.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.highlight.getHighlight' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+
+  listHighlights<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaHighlightListHighlights.QueryParams,
+      ComParaHighlightListHighlights.HandlerInput,
+      ComParaHighlightListHighlights.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.highlight.listHighlights' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
+  }
+}
+
+export class ComParaSocialNS {
+  _server: Server
+
+  constructor(server: Server) {
+    this._server = server
+  }
+
+  getPostMeta<A extends Auth = void>(
+    cfg: MethodConfigOrHandler<
+      A,
+      ComParaSocialGetPostMeta.QueryParams,
+      ComParaSocialGetPostMeta.HandlerInput,
+      ComParaSocialGetPostMeta.HandlerOutput
+    >,
+  ) {
+    const nsid = 'com.para.social.getPostMeta' // @ts-ignore
     return this._server.xrpc.method(nsid, cfg)
   }
 }

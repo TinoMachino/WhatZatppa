@@ -40,6 +40,10 @@
           },
           "cursor": {
             "type": "string"
+          },
+          "quadrant": {
+            "type": "string",
+            "description": "Optional territory quadrant to filter communities by"
           }
         }
       },
@@ -124,6 +128,16 @@
         "founderStarterPackUri": {
           "type": "string",
           "format": "at-uri"
+        },
+        "governanceSummary": {
+          "type": "object",
+          "required": ["moderatorCount", "officialCount", "deputyRoleCount"],
+          "properties": {
+            "moderatorCount": { "type": "integer" },
+            "officialCount": { "type": "integer" },
+            "deputyRoleCount": { "type": "integer" },
+            "lastPublishedAt": { "type": "string", "format": "datetime" }
+          }
         },
         "createdAt": {"type": "string", "format": "datetime"}
       }

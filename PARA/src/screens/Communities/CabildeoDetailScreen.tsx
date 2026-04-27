@@ -12,6 +12,7 @@ import {
 import {
   useCabildeoPositionsQuery,
   useCabildeoQuery,
+  useVoteMutation,
 } from '#/state/queries/cabildeo'
 import {useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
@@ -78,12 +79,13 @@ export function CabildeoDetailScreen({route}: Props) {
     'all' | 'for' | 'against' | 'amendment'
   >('all')
   const delegateEvent = cabildeo?.userContext?.delegateVoteEvent
+  const {mutate: vote, isPending: isVoting} = useVoteMutation()
 
   useEffect(() => {
     if (!cabildeo) return
     setLocalOptions(cabildeo.options)
-    setSelectedOption(null)
-    setHasVoted(false)
+    setSelectedOption(cabildeo.userContext?.viewerVoteOption ?? null)
+    setHasVoted(cabildeo.userContext?.viewerVoteOption !== undefined)
     setHasDismissedGracePeriod(false)
     setPositionFilter('all')
   }, [cabildeo])
@@ -164,15 +166,25 @@ export function CabildeoDetailScreen({route}: Props) {
   const phaseIndex = PHASE_ORDER.indexOf(cabildeo.phase)
 
   const handleVote = () => {
-    if (selectedOption !== null) {
-      setHasVoted(true)
+    if (selectedOption !== null && cabildeoUri) {
+      vote(
+        {cabildeoUri, selectedOption, isDirect: true},
+        {
+          onSuccess: () => setHasVoted(true),
+        },
+      )
     }
   }
 
   const handleConfirmDelegateVote = () => {
-    if (delegateEvent) {
+    if (delegateEvent && cabildeoUri) {
       setSelectedOption(delegateEvent.optionIndex)
-      setHasVoted(true)
+      vote(
+        {cabildeoUri, selectedOption: delegateEvent.optionIndex, isDirect: false},
+        {
+          onSuccess: () => setHasVoted(true),
+        },
+      )
     }
   }
 
@@ -341,14 +353,27 @@ export function CabildeoDetailScreen({route}: Props) {
             const isSelected = selectedOption === i
             const isWinner = cabildeo.outcome?.winningOption === i
 
-            // Calculate bar width for resolved cabildeos
+            // Calculate real-time bar width if voted or resolved
             let barWidth = 0
-            if (cabildeo.outcome) {
-              const total = cabildeo.outcome.effectiveTotalPower
-              const optVotes =
-                cabildeo.outcome.breakdown.find(b => b.optionIndex === i)
-                  ?.effectiveVotes ?? 0
-              barWidth = total > 0 ? (optVotes / total) * 100 : 0
+            let displayVotes = 0
+            const showTally = cabildeo.outcome || hasVoted
+
+            if (showTally) {
+              if (cabildeo.outcome) {
+                // Resolved phase
+                const total = cabildeo.outcome.effectiveTotalPower
+                displayVotes =
+                  cabildeo.outcome.breakdown.find(b => b.optionIndex === i)
+                    ?.effectiveVotes ?? 0
+                barWidth = total > 0 ? (displayVotes / total) * 100 : 0
+              } else {
+                // Real-time voting phase
+                const total = cabildeo.voteTotals.total
+                displayVotes =
+                  cabildeo.optionSummary.find(s => s.optionIndex === i)
+                    ?.votes ?? 0
+                barWidth = total > 0 ? (displayVotes / total) * 100 : 0
+              }
             }
 
             return (
@@ -371,7 +396,7 @@ export function CabildeoDetailScreen({route}: Props) {
                   },
                 ]}>
                 {/* Result bar background */}
-                {cabildeo.outcome && (
+                {showTally && (
                   <View
                     style={[
                       styles.resultBar,
@@ -446,18 +471,28 @@ export function CabildeoDetailScreen({route}: Props) {
                     </View>
 
                     {/* Vote percentage */}
-                    {cabildeo.outcome && (
-                      <Text
-                        style={[
-                          styles.votePercent,
-                          {
-                            color: isWinner
-                              ? '#34C759'
-                              : t.palette.contrast_500,
-                          },
-                        ]}>
-                        {barWidth.toFixed(1)}%
-                      </Text>
+                    {showTally && (
+                      <View style={{alignItems: 'flex-end'}}>
+                        <Text
+                          style={[
+                            styles.votePercent,
+                            {
+                              color: isWinner
+                                ? '#34C759'
+                                : t.palette.contrast_500,
+                            },
+                          ]}>
+                          {barWidth.toFixed(1)}%
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: t.palette.contrast_400,
+                            marginTop: 2,
+                          }}>
+                          {displayVotes} votos
+                        </Text>
+                      </View>
                     )}
                   </View>
                 </View>
@@ -555,12 +590,14 @@ export function CabildeoDetailScreen({route}: Props) {
                 <TouchableOpacity
                   accessibilityRole="button"
                   onPress={handleConfirmDelegateVote}
+                  disabled={isVoting}
                   style={[
                     styles.graceBtn,
                     {backgroundColor: t.palette.primary_500},
+                    isVoting && {opacity: 0.6},
                   ]}>
                   <Text style={[styles.graceBtnText, {color: '#fff'}]}>
-                    Confirmar (Peso 1.0)
+                    {isVoting ? 'Confirmando...' : 'Confirmar (Peso 1.0)'}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -616,17 +653,19 @@ export function CabildeoDetailScreen({route}: Props) {
             <TouchableOpacity
               accessibilityRole="button"
               onPress={handleVote}
-              disabled={selectedOption === null}
+              disabled={selectedOption === null || isVoting}
               style={[
                 styles.voteButton,
                 {
                   backgroundColor:
-                    selectedOption !== null
+                    selectedOption !== null && !isVoting
                       ? t.palette.primary_500
                       : t.palette.contrast_200,
                 },
               ]}>
-              <Text style={styles.voteButtonText}>🗳️ Votar Directamente</Text>
+              <Text style={styles.voteButtonText}>
+                {isVoting ? '⏳ Votando...' : '🗳️ Votar Directamente'}
+              </Text>
               <Text style={styles.voteButtonSub}>Peso: 1.0 (voto directo)</Text>
             </TouchableOpacity>
           )}

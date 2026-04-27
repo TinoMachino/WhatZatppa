@@ -203,17 +203,17 @@ export default function (server: Server, ctx: AppContext) {
     },
   ]
   server.addLexicons(paraSchemas)
-  server.addLexicons(notificationLexicons)
+  server.addLexicons(notificationLexicons as any)
 
-  const paraServer = { xrpc: server } as ParaLexiconServer
+  const paraServer = { xrpc: server } as unknown as ParaLexiconServer
   const para = new ComParaNS(paraServer)
+  ;(paraServer as any).com = { para }
   ;(para as any).notification = {
     getPostSubscription: (cfg) =>
-      server.xrpc.method('com.para.notification.getPostSubscription', cfg),
+      paraServer.xrpc.method('com.para.notification.getPostSubscription', cfg),
     putPostSubscription: (cfg) =>
-      server.xrpc.method('com.para.notification.putPostSubscription', cfg),
+      paraServer.xrpc.method('com.para.notification.putPostSubscription', cfg),
   }
-  ;(paraServer as any).com = { para }
 
   // app.bsky
   getTimeline(server, ctx)

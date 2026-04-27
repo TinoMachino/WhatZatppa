@@ -261,15 +261,14 @@ func serve(cctx *cli.Context) error {
 			return next(c)
 		}
 	})
-
-	// home
-	e.GET("/", server.WebHome)
-
-	// download
-	e.GET("/download", server.Download)
-
 	// generic routes
 	e.GET("/hashtag/:tag", server.WebGeneric)
+	e.GET("/", server.WebHome)
+	e.GET("/index.html", func(c echo.Context) error { return c.Redirect(301, "/") })
+	e.GET("/signin", server.WebGeneric)
+	e.GET("/signup", server.WebGeneric)
+	e.GET("/download", server.Download)
+
 	e.GET("/topic/:topic", server.WebGeneric)
 	e.GET("/search", server.WebGeneric)
 	e.GET("/feeds", server.WebGeneric)

@@ -15,7 +15,15 @@ const is$typed = _is$typed,
 const id = 'com.para.community.listBoards'
 
 export type QueryParams = {
+  query?: string
+  state?: string
+  participationKind?: 'matter' | 'policy' | (string & {})
+  flairId?: string
+  sort: 'recent' | 'activity' | 'size' | (string & {})
   limit: number
+  cursor?: string
+  /** Optional territory quadrant to filter communities by */
+  quadrant?: string
 }
 export type InputSchema = undefined
 export type OutputSchema = Output

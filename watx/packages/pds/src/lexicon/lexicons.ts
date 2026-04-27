@@ -17787,6 +17787,74 @@ export const schemaDict = {
       },
     },
   },
+  ComParaCivicCastVote: {
+    lexicon: 1,
+    id: 'com.para.civic.castVote',
+    defs: {
+      main: {
+        type: 'procedure',
+        description: "Cast or replace the viewer's direct vote for a cabildeo.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['cabildeo', 'selectedOption'],
+            properties: {
+              cabildeo: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              selectedOption: {
+                type: 'integer',
+                minimum: 0,
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['uri', 'cid', 'commit'],
+            properties: {
+              uri: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              cid: {
+                type: 'string',
+                format: 'cid',
+              },
+              commit: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.castVote#commit',
+              },
+            },
+          },
+        },
+        errors: [
+          { name: 'NotFound' },
+          { name: 'InvalidPhase' },
+          { name: 'DeadlineExpired' },
+          { name: 'InvalidOption' },
+          { name: 'CommunityMembershipRequired' },
+        ],
+      },
+      commit: {
+        type: 'object',
+        required: ['cid', 'rev'],
+        properties: {
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          rev: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
   ComParaCivicDefs: {
     lexicon: 1,
     id: 'com.para.civic.defs',
@@ -17943,7 +18011,7 @@ export const schemaDict = {
             type: 'boolean',
           },
         },
-      },
+      } as any,
       liveSessionView: {
         type: 'object',
         required: [
@@ -17978,7 +18046,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       cabildeoLive: {
         type: 'object',
         required: ['cabildeoUri', 'community', 'phase', 'expiresAt'],
@@ -18006,7 +18074,7 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
       cabildeoView: {
         type: 'object',
         required: [
@@ -18133,7 +18201,7 @@ export const schemaDict = {
             ref: 'lex:com.para.civic.defs#liveSessionView',
           },
         },
-      },
+      } as any,
       positionView: {
         type: 'object',
         required: [
@@ -18187,7 +18255,127 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
+      policySignalBucket: {
+        type: 'object',
+        required: ['signal', 'count'],
+        properties: {
+          signal: {
+            type: 'integer',
+            minimum: -3,
+            maximum: 3,
+          },
+          count: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      } as any,
+      policyTally: {
+        type: 'object',
+        required: [
+          'subject',
+          'subjectType',
+          'community',
+          'voteCount',
+          'directVoteCount',
+          'delegatedVoteCount',
+          'signalSum',
+          'signalAverage',
+          'eligibleVoterCount',
+          'quorumTarget',
+          'quorumMet',
+          'official',
+          'certified',
+          'outcome',
+          'state',
+          'breakdown',
+          'computedAt',
+        ],
+        properties: {
+          subject: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          subjectType: {
+            type: 'string',
+            knownValues: ['policy'],
+          },
+          community: {
+            type: 'string',
+            maxLength: 100,
+          },
+          voteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          directVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegatedVoteCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          signalSum: {
+            type: 'integer',
+          },
+          signalAverage: {
+            type: 'string',
+            maxLength: 32,
+          },
+          eligibleVoterCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          quorumTarget: {
+            type: 'integer',
+            minimum: 1,
+          },
+          quorumMet: {
+            type: 'boolean',
+          },
+          official: {
+            type: 'boolean',
+          },
+          certified: {
+            type: 'boolean',
+          },
+          outcome: {
+            type: 'string',
+            knownValues: [
+              'insufficient_quorum',
+              'contested',
+              'passed',
+              'strong_passed',
+              'failed',
+            ],
+          },
+          state: {
+            type: 'string',
+            knownValues: [
+              'draft',
+              'deliberation',
+              'voting',
+              'passed',
+              'failed',
+              'official',
+            ],
+          },
+          breakdown: {
+            type: 'array',
+            maxLength: 7,
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.defs#policySignalBucket',
+            },
+          },
+          computedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+        },
+      } as any,
     },
   },
   ComParaCivicDelegation: {
@@ -18228,7 +18416,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicGetCabildeo: {
@@ -18262,6 +18450,45 @@ export const schemaDict = {
             },
           },
         },
+      } as any,
+    },
+  },
+  ComParaCivicGetPolicyTally: {
+    lexicon: 1,
+    id: 'com.para.civic.getPolicyTally',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Get the weighted consensus tally for a policy post using civic vote signals from -3 to +3.',
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['tally'],
+            properties: {
+              tally: {
+                type: 'ref',
+                ref: 'lex:com.para.civic.defs#policyTally',
+              },
+            },
+          },
+        },
+        errors: [
+          {
+            name: 'NotFound',
+          },
+        ],
       },
     },
   },
@@ -18315,7 +18542,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicListCabildeos: {
@@ -18375,7 +18602,116 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
+    },
+  },
+  ComParaCivicListDelegationCandidates: {
+    lexicon: 1,
+    id: 'com.para.civic.listDelegationCandidates',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          'Lists real delegation candidates for a cabildeo/community.',
+        auth: { type: 'access' },
+        parameters: {
+          type: 'params',
+          required: ['cabildeo'],
+          properties: {
+            cabildeo: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            communityId: {
+              type: 'string',
+              maxLength: 256,
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.civic.listDelegationCandidates#output',
+          },
+        },
+      } as any,
+      candidateView: {
+        type: 'object',
+        required: ['did', 'roles', 'activeDelegationCount', 'hasVoted'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          avatar: {
+            type: 'string',
+            format: 'uri',
+          },
+          description: {
+            type: 'string',
+            maxGraphemes: 300,
+            maxLength: 3000,
+          },
+          roles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+          activeDelegationCount: {
+            type: 'integer',
+            minimum: 0,
+          },
+          hasVoted: {
+            type: 'boolean',
+          },
+          votedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          selectedOption: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      } as any,
+      output: {
+        type: 'object',
+        required: ['candidates'],
+        properties: {
+          candidates: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.civic.listDelegationCandidates#candidateView',
+            },
+          },
+          cursor: {
+            type: 'string',
+          },
+        },
+      } as any,
     },
   },
   ComParaCivicPosition: {
@@ -18416,7 +18752,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCivicPutLivePresence: {
@@ -18549,7 +18885,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityAcceptDraftInvite: {
@@ -18588,7 +18924,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityBoard: {
@@ -18654,7 +18990,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityCreateBoard: {
@@ -18723,7 +19059,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityDefs: {
@@ -18756,7 +19092,7 @@ export const schemaDict = {
             type: 'integer',
           },
         },
-      },
+      } as any,
       person: {
         type: 'object',
         properties: {
@@ -18778,7 +19114,7 @@ export const schemaDict = {
             format: 'uri',
           },
         },
-      },
+      } as any,
       moderatorView: {
         type: 'object',
         required: ['role', 'badge', 'capabilities'],
@@ -18819,7 +19155,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       officialView: {
         type: 'object',
         required: ['office', 'mandate'],
@@ -18852,7 +19188,7 @@ export const schemaDict = {
             maxLength: 1000,
           },
         },
-      },
+      } as any,
       applicant: {
         type: 'object',
         required: ['appliedAt', 'status'],
@@ -18888,7 +19224,7 @@ export const schemaDict = {
             maxLength: 1000,
           },
         },
-      },
+      } as any,
       deputyRoleView: {
         type: 'object',
         required: [
@@ -18948,7 +19284,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       metadata: {
         type: 'object',
         properties: {
@@ -18996,7 +19332,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
       historyEntry: {
         type: 'object',
         required: ['id', 'action', 'createdAt', 'summary'],
@@ -19029,7 +19365,7 @@ export const schemaDict = {
             maxLength: 2000,
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityGetBoard: {
@@ -19060,7 +19396,7 @@ export const schemaDict = {
             ref: 'lex:com.para.community.getBoard#output',
           },
         },
-      },
+      } as any,
       governanceSummary: {
         type: 'object',
         required: ['moderatorCount', 'officialCount', 'deputyRoleCount'],
@@ -19079,7 +19415,7 @@ export const schemaDict = {
             format: 'datetime',
           },
         },
-      },
+      } as any,
       boardView: {
         type: 'object',
         required: [
@@ -19179,16 +19515,22 @@ export const schemaDict = {
             type: 'string',
             format: 'at-uri',
           },
+          governanceSummary: {
+            type: 'object',
+            required: ['moderatorCount', 'officialCount', 'deputyRoleCount'],
+            properties: {
+              moderatorCount: { type: 'integer' },
+              officialCount: { type: 'integer' },
+              deputyRoleCount: { type: 'integer' },
+              lastPublishedAt: { type: 'string', format: 'datetime' },
+            },
+          },
           createdAt: {
             type: 'string',
             format: 'datetime',
           },
-          governanceSummary: {
-            type: 'ref',
-            ref: 'lex:com.para.community.getBoard#governanceSummary',
-          },
         },
-      },
+      } as any,
       output: {
         type: 'object',
         required: ['board', 'viewerCapabilities'],
@@ -19206,7 +19548,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityGetGovernance: {
@@ -19331,7 +19673,7 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
     },
   },
   ComParaCommunityGovernance: {
@@ -19412,7 +19754,151 @@ export const schemaDict = {
             },
           },
         },
-      },
+      } as any,
+    },
+  },
+  ComParaCommunityJoin: {
+    lexicon: 1,
+    id: 'com.para.community.join',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          "Joins a PARA community board by creating or reactivating the caller's membership record.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['communityUri'],
+            properties: {
+              communityUri: {
+                type: 'string',
+                format: 'at-uri',
+                description:
+                  'URI of the com.para.community.board record to join.',
+              },
+              source: {
+                type: 'string',
+                maxLength: 64,
+                maxGraphemes: 64,
+                description: 'Optional source label for how the viewer joined.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.join#output',
+          },
+        },
+      } as any,
+      output: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'communityUri',
+          'membershipState',
+          'viewerCapabilities',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          communityUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          membershipState: {
+            type: 'string',
+            knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+          },
+          viewerCapabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+        },
+      } as any,
+    },
+  },
+  ComParaCommunityLeave: {
+    lexicon: 1,
+    id: 'com.para.community.leave',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          "Leaves a PARA community board by marking the caller's membership record as left.",
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['communityUri'],
+            properties: {
+              communityUri: {
+                type: 'string',
+                format: 'at-uri',
+                description:
+                  'URI of the com.para.community.board record to leave.',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.leave#output',
+          },
+        },
+      } as any,
+      output: {
+        type: 'object',
+        required: [
+          'uri',
+          'cid',
+          'communityUri',
+          'membershipState',
+          'viewerCapabilities',
+        ],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+            format: 'cid',
+          },
+          communityUri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          membershipState: {
+            type: 'string',
+            knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+          },
+          viewerCapabilities: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+        },
+      } as any,
     },
   },
   ComParaCommunityListBoards: {
@@ -19426,11 +19912,42 @@ export const schemaDict = {
         parameters: {
           type: 'params',
           properties: {
+            query: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 256,
+            },
+            state: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+            participationKind: {
+              type: 'string',
+              knownValues: ['matter', 'policy'],
+            },
+            flairId: {
+              type: 'string',
+              maxGraphemes: 128,
+              maxLength: 128,
+            },
+            sort: {
+              type: 'string',
+              knownValues: ['recent', 'activity', 'size'],
+              default: 'recent',
+            },
             limit: {
               type: 'integer',
               minimum: 1,
               maximum: 100,
               default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+            quadrant: {
+              type: 'string',
+              description: 'Optional territory quadrant to filter communities by',
             },
           },
         },
@@ -19441,7 +19958,7 @@ export const schemaDict = {
             ref: 'lex:com.para.community.listBoards#output',
           },
         },
-      },
+      } as any,
       boardView: {
         type: 'object',
         required: [
@@ -19541,12 +20058,22 @@ export const schemaDict = {
             type: 'string',
             format: 'at-uri',
           },
+          governanceSummary: {
+            type: 'object',
+            required: ['moderatorCount', 'officialCount', 'deputyRoleCount'],
+            properties: {
+              moderatorCount: { type: 'integer' },
+              officialCount: { type: 'integer' },
+              deputyRoleCount: { type: 'integer' },
+              lastPublishedAt: { type: 'string', format: 'datetime' },
+            },
+          },
           createdAt: {
             type: 'string',
             format: 'datetime',
           },
         },
-      },
+      } as any,
       output: {
         type: 'object',
         required: ['boards', 'canCreateCommunity'],
@@ -19558,8 +20085,142 @@ export const schemaDict = {
               ref: 'lex:com.para.community.listBoards#boardView',
             },
           },
+          cursor: {
+            type: 'string',
+          },
           canCreateCommunity: {
             type: 'boolean',
+          },
+        },
+      } as any,
+    },
+  },
+  ComParaCommunityListMembers: {
+    lexicon: 1,
+    id: 'com.para.community.listMembers',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Lists real members of a PARA community board.',
+        auth: { type: 'access' },
+        parameters: {
+          type: 'params',
+          required: ['communityId'],
+          properties: {
+            communityId: {
+              type: 'string',
+              maxLength: 256,
+            },
+            membershipState: {
+              type: 'string',
+              knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+            },
+            role: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+            sort: {
+              type: 'string',
+              knownValues: ['joined', 'participation'],
+              default: 'joined',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 50,
+            },
+            cursor: {
+              type: 'string',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'ref',
+            ref: 'lex:com.para.community.listMembers#output',
+          },
+        },
+      },
+      memberView: {
+        type: 'object',
+        required: [
+          'did',
+          'membershipState',
+          'roles',
+          'joinedAt',
+          'votesCast',
+          'delegationsReceived',
+          'policyPosts',
+          'matterPosts',
+        ],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          handle: {
+            type: 'string',
+            format: 'handle',
+          },
+          displayName: {
+            type: 'string',
+            maxGraphemes: 64,
+            maxLength: 640,
+          },
+          avatar: {
+            type: 'string',
+            format: 'uri',
+          },
+          membershipState: {
+            type: 'string',
+            knownValues: ['pending', 'active', 'left', 'removed', 'blocked'],
+          },
+          roles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 128,
+            },
+          },
+          joinedAt: {
+            type: 'string',
+            format: 'datetime',
+          },
+          votesCast: {
+            type: 'integer',
+            minimum: 0,
+          },
+          delegationsReceived: {
+            type: 'integer',
+            minimum: 0,
+          },
+          policyPosts: {
+            type: 'integer',
+            minimum: 0,
+          },
+          matterPosts: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      output: {
+        type: 'object',
+        required: ['members'],
+        properties: {
+          members: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:com.para.community.listMembers#memberView',
+            },
+          },
+          cursor: {
+            type: 'string',
           },
         },
       },
@@ -20343,6 +21004,103 @@ export const schemaDict = {
                   type: 'ref',
                   ref: 'lex:com.para.highlight.defs#highlightView',
                 },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaNotificationGetPostSubscription: {
+    lexicon: 1,
+    id: 'com.para.notification.getPostSubscription',
+    defs: {
+      main: {
+        type: 'query',
+        description:
+          "Get the requesting viewer's notification subscription for a post.",
+        parameters: {
+          type: 'params',
+          required: ['post'],
+          properties: {
+            post: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'reply', 'quote'],
+            properties: {
+              post: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              reply: {
+                type: 'boolean',
+              },
+              quote: {
+                type: 'boolean',
+              },
+              indexedAt: {
+                type: 'string',
+                format: 'datetime',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  ComParaNotificationPutPostSubscription: {
+    lexicon: 1,
+    id: 'com.para.notification.putPostSubscription',
+    defs: {
+      main: {
+        type: 'procedure',
+        description:
+          'Enable or disable notification subscriptions for a post. Requires auth.',
+        input: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'reply', 'quote'],
+            properties: {
+              post: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              reply: {
+                type: 'boolean',
+              },
+              quote: {
+                type: 'boolean',
+              },
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['post', 'reply', 'quote'],
+            properties: {
+              post: {
+                type: 'string',
+                format: 'at-uri',
+              },
+              reply: {
+                type: 'boolean',
+              },
+              quote: {
+                type: 'boolean',
+              },
+              indexedAt: {
+                type: 'string',
+                format: 'datetime',
               },
             },
           },
@@ -26226,11 +26984,15 @@ export const ids = {
   ComParaActorDefs: 'com.para.actor.defs',
   ComParaActorGetProfileStats: 'com.para.actor.getProfileStats',
   ComParaCivicCabildeo: 'com.para.civic.cabildeo',
+  ComParaCivicCastVote: 'com.para.civic.castVote',
   ComParaCivicDefs: 'com.para.civic.defs',
   ComParaCivicDelegation: 'com.para.civic.delegation',
   ComParaCivicGetCabildeo: 'com.para.civic.getCabildeo',
+  ComParaCivicGetPolicyTally: 'com.para.civic.getPolicyTally',
   ComParaCivicListCabildeoPositions: 'com.para.civic.listCabildeoPositions',
   ComParaCivicListCabildeos: 'com.para.civic.listCabildeos',
+  ComParaCivicListDelegationCandidates:
+    'com.para.civic.listDelegationCandidates',
   ComParaCivicPosition: 'com.para.civic.position',
   ComParaCivicPutLivePresence: 'com.para.civic.putLivePresence',
   ComParaCivicVote: 'com.para.civic.vote',
@@ -26241,7 +27003,10 @@ export const ids = {
   ComParaCommunityGetBoard: 'com.para.community.getBoard',
   ComParaCommunityGetGovernance: 'com.para.community.getGovernance',
   ComParaCommunityGovernance: 'com.para.community.governance',
+  ComParaCommunityJoin: 'com.para.community.join',
+  ComParaCommunityLeave: 'com.para.community.leave',
   ComParaCommunityListBoards: 'com.para.community.listBoards',
+  ComParaCommunityListMembers: 'com.para.community.listMembers',
   ComParaCommunityMembership: 'com.para.community.membership',
   ComParaDiscourseGetSentiment: 'com.para.discourse.getSentiment',
   ComParaDiscourseGetSnapshot: 'com.para.discourse.getSnapshot',
@@ -26254,6 +27019,10 @@ export const ids = {
   ComParaHighlightDefs: 'com.para.highlight.defs',
   ComParaHighlightGetHighlight: 'com.para.highlight.getHighlight',
   ComParaHighlightListHighlights: 'com.para.highlight.listHighlights',
+  ComParaNotificationGetPostSubscription:
+    'com.para.notification.getPostSubscription',
+  ComParaNotificationPutPostSubscription:
+    'com.para.notification.putPostSubscription',
   ComParaPost: 'com.para.post',
   ComParaSocialGetPostMeta: 'com.para.social.getPostMeta',
   ComParaSocialPostMeta: 'com.para.social.postMeta',

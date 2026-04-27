@@ -7,6 +7,8 @@ import { QueryParams } from '../../../../lexicon/types/com/para/community/getBoa
 import { resHeaders } from '../../../util'
 
 const CREATE_COMMUNITY_CAPABILITY = 'create_community'
+const JOIN_COMMUNITY_CAPABILITY = 'join_community'
+const LEAVE_COMMUNITY_CAPABILITY = 'leave_community'
 const MANAGE_GOVERNANCE_CAPABILITY = 'manage_governance'
 
 export default function (server: Server, ctx: AppContext) {
@@ -54,6 +56,7 @@ const getBoard = async ({
       viewer,
       creatorDid: res.board.creatorDid,
       viewerRoles: res.board.viewerRoles,
+      viewerMembershipState: res.board.viewerMembershipState || 'none',
       canCreateCommunity: true,
     }),
   }
@@ -109,17 +112,30 @@ const getViewerCapabilities = ({
   viewer,
   creatorDid,
   viewerRoles,
+  viewerMembershipState,
   canCreateCommunity,
 }: {
   viewer?: string
   creatorDid: string
   viewerRoles: string[]
+  viewerMembershipState: string
   canCreateCommunity: boolean
 }) => {
   const capabilities: string[] = []
 
   if (canCreateCommunity) {
     capabilities.push(CREATE_COMMUNITY_CAPABILITY)
+  }
+
+  if (
+    viewer &&
+    (viewerMembershipState === 'none' || viewerMembershipState === 'left')
+  ) {
+    capabilities.push(JOIN_COMMUNITY_CAPABILITY)
+  }
+
+  if (viewer && viewerMembershipState === 'active') {
+    capabilities.push(LEAVE_COMMUNITY_CAPABILITY)
   }
 
   if (

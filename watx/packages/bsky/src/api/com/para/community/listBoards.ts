@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { AppContext } from '../../../../context'
 import { parseString } from '../../../../hydration/util'
 import { Server } from '../../../../lexicon'
@@ -45,6 +44,7 @@ const listBoards = async ({
     participationKind: params.participationKind ?? '',
     flairId: params.flairId ?? '',
     sort: params.sort ?? '',
+    quadrant: params.quadrant,
   })
 
   return {

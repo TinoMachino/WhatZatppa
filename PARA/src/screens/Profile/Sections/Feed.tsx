@@ -51,7 +51,6 @@ export function ProfileFeedSection({
 }: FeedSectionProps) {
   const {_} = useLingui()
   const queryClient = useQueryClient()
-  console.log('DEBUG ProfileFeedSection:', {feed, isFocused, ignoreFilterFor})
   const [hasNew, setHasNew] = useState(false)
   const [isScrolledDown, setIsScrolledDown] = useState(false)
   const shouldUseAdjustedNumToRender = feed.endsWith('posts_and_author_threads')

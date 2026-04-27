@@ -1,4 +1,4 @@
-import { ServiceImpl } from '@connectrpc/connect'
+import { Code, ConnectError, ServiceImpl } from '@connectrpc/connect'
 import { sql } from 'kysely'
 import {
   LIVE_CABILDEO_ALLOWED_PHASES,
@@ -161,6 +161,11 @@ export default (db: Database): Partial<ServiceImpl<typeof Service>> => ({
     const rolesByDid = new Map<string, Set<string>>()
 
     if (board) {
+      await assertActiveCommunityViewer(db, {
+        communityUri: board.uri,
+        viewerDid: req.viewerDid,
+        viewerIsAdmin: req.viewerIsAdmin,
+      })
       const [governance, members] = await Promise.all([
         getCandidateGovernanceRecord(db, board.name, board.slug),
         selectDelegateLikeMembers(db, board.uri),
@@ -426,6 +431,37 @@ const selectDelegateLikeMembers = async (db: Database, communityUri: string) =>
     )
     .select(['creator', 'roles'])
     .execute()
+
+const assertActiveCommunityViewer = async (
+  db: Database,
+  opts: {
+    communityUri: string
+    viewerDid: string
+    viewerIsAdmin: boolean
+  },
+) => {
+  if (opts.viewerIsAdmin) return
+  if (!opts.viewerDid) {
+    throw new ConnectError(
+      'Active community membership is required',
+      Code.PermissionDenied,
+    )
+  }
+  const membership = await db.db
+    .selectFrom('para_community_membership')
+    .where('creator', '=', opts.viewerDid)
+    .where('communityUri', '=', opts.communityUri)
+    .where('membershipState', '=', 'active')
+    .select(['uri'])
+    .executeTakeFirst()
+
+  if (!membership) {
+    throw new ConnectError(
+      'Active community membership is required',
+      Code.PermissionDenied,
+    )
+  }
+}
 
 const getCandidateGovernanceRecord = async (
   db: Database,

@@ -40,6 +40,7 @@ import {Provider as ShellStateProvider} from '#/state/shell'
 import {Provider as ComposerProvider} from '#/state/shell/composer'
 import {Provider as LoggedOutViewProvider} from '#/state/shell/logged-out'
 import {Provider as OnboardingProvider} from '#/state/shell/onboarding'
+import {PoliticalAffiliationProvider} from '#/state/shell/political-affiliation'
 import {Provider as ProgressGuideProvider} from '#/state/shell/progress-guide'
 import {Provider as SelectedFeedProvider} from '#/state/shell/selected-feed'
 import {Provider as StarterPackProvider} from '#/state/shell/starter-pack'
@@ -57,7 +58,7 @@ import {Provider as VideoVolumeProvider} from '#/components/Post/Embed/VideoEmbe
 import * as Toast from '#/components/Toast'
 import {ToastOutlet} from '#/components/Toast'
 import {
-  prefetchAgeAssuranceConfig,
+  // prefetchAgeAssuranceConfig,
   Provider as AgeAssuranceV2Provider,
 } from '#/ageAssurance'
 import {
@@ -67,20 +68,20 @@ import {
   setupDeviceId,
 } from '#/analytics'
 import {
-  prefetchLiveEvents,
+  // prefetchLiveEvents,
   Provider as LiveEventsProvider,
 } from '#/features/liveEvents/context'
 import * as Geo from '#/geolocation'
 import {Splash} from '#/Splash'
 import {BackgroundNotificationPreferencesProvider} from '../modules/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
-import {Provider as HideBottomBarBorderProvider} from './lib/hooks/useHideBottomBarBorder'
+import {HideBottomBarBorderProvider} from './lib/hooks/useHideBottomBarBorder'
 
 /**
  * Begin geolocation ASAP
  */
-Geo.resolve()
-prefetchAgeAssuranceConfig()
-prefetchLiveEvents()
+// Geo.resolve()
+// prefetchAgeAssuranceConfig()
+// prefetchLiveEvents()
 
 function InnerApp() {
   const [isReady, setIsReady] = useState(false)
@@ -192,7 +193,7 @@ function App() {
   const [isReady, setReady] = useState(false)
 
   useEffect(() => {
-    Promise.all([initPersistedState(), Geo.resolve(), setupDeviceId]).then(() =>
+    Promise.all([initPersistedState(), setupDeviceId]).then(() =>
       setReady(true),
     )
   }, [])
@@ -220,7 +221,9 @@ function App() {
                           <PortalProvider>
                             <HighlightProvider>
                               <StarterPackProvider>
-                                <InnerApp />
+                                <PoliticalAffiliationProvider>
+                                  <InnerApp />
+                                </PoliticalAffiliationProvider>
                               </StarterPackProvider>
                             </HighlightProvider>
                           </PortalProvider>
