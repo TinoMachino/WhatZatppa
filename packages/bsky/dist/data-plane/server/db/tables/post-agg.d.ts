@@ -1,0 +1,14 @@
+import { Generated } from 'kysely';
+export declare const tableName = "post_agg";
+export interface PostAgg {
+    uri: string;
+    likeCount: Generated<number>;
+    replyCount: Generated<number>;
+    repostCount: Generated<number>;
+    quoteCount: Generated<number>;
+    bookmarkCount: Generated<number>;
+}
+export type PartialDB = {
+    [tableName]: PostAgg;
+};
+//# sourceMappingURL=post-agg.d.ts.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"delete-operations.d.ts","sourceRoot":"","sources":["../../src/routes/delete-operations.ts"],"names":[],"mappings":"AAAA,OAAO,EAAsB,WAAW,EAAE,MAAM,qBAAqB,CAAA;AACrE,OAAO,EAAE,UAAU,EAAE,MAAM,YAAY,CAAA;AACvC,OAAO,EAAE,OAAO,EAAE,MAAM,wBAAwB,CAAA;yBAKhC,KAAK,UAAU,KAAG,OAAO,CAAC,WAAW,CAAC,OAAO,OAAO,CAAC,CAAC;AAAtE,wBAqCE"}

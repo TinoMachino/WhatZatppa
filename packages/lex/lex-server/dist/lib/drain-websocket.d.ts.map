@@ -1,0 +1,1 @@
+{"version":3,"file":"drain-websocket.d.ts","sourceRoot":"","sources":["../../src/lib/drain-websocket.ts"],"names":[],"mappings":"AAEA;;;;;;GAMG;AACH,wBAAsB,cAAc,CAClC,MAAM,EAAE,SAAS,EACjB,MAAM,EAAE,WAAW,EACnB,EACE,aAAuB,EAAE,SAAS;AAClC,YAAqB,GACtB,GAAE;IACD,aAAa,CAAC,EAAE,MAAM,CAAA;IACtB,YAAY,CAAC,EAAE,MAAM,CAAA;CACjB,GACL,OAAO,CAAC,IAAI,CAAC,CAcf"}

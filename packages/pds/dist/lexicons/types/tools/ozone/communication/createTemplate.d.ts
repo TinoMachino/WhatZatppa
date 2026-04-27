@@ -1,0 +1,33 @@
+import type * as ToolsOzoneCommunicationDefs from './defs.js';
+export type QueryParams = {};
+export interface InputSchema {
+    /** Name of the template. */
+    name: string;
+    /** Content of the template, markdown supported, can contain variable placeholders. */
+    contentMarkdown: string;
+    /** Subject of the message, used in emails. */
+    subject: string;
+    /** Message language. */
+    lang?: string;
+    /** DID of the user who is creating the template. */
+    createdBy?: string;
+}
+export type OutputSchema = ToolsOzoneCommunicationDefs.TemplateView;
+export interface HandlerInput {
+    encoding: 'application/json';
+    body: InputSchema;
+}
+export interface HandlerSuccess {
+    encoding: 'application/json';
+    body: OutputSchema;
+    headers?: {
+        [key: string]: string;
+    };
+}
+export interface HandlerError {
+    status: number;
+    message?: string;
+    error?: 'DuplicateTemplateName';
+}
+export type HandlerOutput = HandlerError | HandlerSuccess;
+//# sourceMappingURL=createTemplate.d.ts.map

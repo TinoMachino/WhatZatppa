@@ -1,0 +1,1 @@
+{"version":3,"file":"property-key.js","sourceRoot":"","sources":["../../src/core/property-key.ts"],"names":[],"mappings":"","sourcesContent":["export type PropertyKey = string | number\n"]}

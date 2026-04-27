@@ -1,0 +1,1 @@
+{"version":3,"file":"getSuggestedFollowsByActor.d.ts","sourceRoot":"","sources":["../../../../../src/api/app/bsky/graph/getSuggestedFollowsByActor.ts"],"names":[],"mappings":"AAEA,OAAO,EAIL,MAAM,EACP,MAAM,sBAAsB,CAAA;AAC7B,OAAO,EAAE,UAAU,EAAE,MAAM,qBAAqB,CAAA;AAahD,MAAM,CAAC,OAAO,WAAW,MAAM,EAAE,MAAM,EAAE,GAAG,EAAE,UAAU,QAqDvD"}

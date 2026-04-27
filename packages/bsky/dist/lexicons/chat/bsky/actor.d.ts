@@ -1,0 +1,5 @@
+export * as declaration from './actor/declaration.js';
+export * as defs from './actor/defs.js';
+export * as deleteAccount from './actor/deleteAccount.js';
+export * as exportAccountData from './actor/exportAccountData.js';
+//# sourceMappingURL=actor.d.ts.map

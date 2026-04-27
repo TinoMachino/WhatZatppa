@@ -1,0 +1,8 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.logger = void 0;
+// @TODO remove dependency on @atproto/common and subsystemLogger
+const common_1 = require("@atproto/common");
+exports.logger = (0, common_1.subsystemLogger)('repo');
+exports.default = exports.logger;
+//# sourceMappingURL=logger.js.map

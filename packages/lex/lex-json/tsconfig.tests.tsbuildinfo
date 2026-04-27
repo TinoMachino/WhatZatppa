@@ -1,0 +1,1 @@
+{"root":["./tests/fixtures.test.ts","./src/bytes.test.ts","./src/json-transform.test.ts","./src/lex-json.test.ts","./src/lex-parse.test.ts","./src/lex-stringify.test.ts"],"errors":true,"version":"5.8.3"}

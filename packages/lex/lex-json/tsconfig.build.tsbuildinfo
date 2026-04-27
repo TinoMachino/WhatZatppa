@@ -1,0 +1,1 @@
+{"root":["./src/blob.ts","./src/bytes.ts","./src/index.ts","./src/iterative-transform.ts","./src/json-stringify-deep.ts","./src/json-to-lex.ts","./src/json.ts","./src/lex-parse.ts","./src/lex-stringify.ts","./src/lex-to-json.ts","./src/link.ts","./src/special-objects.ts","./src/lib/stack.ts","./src/lib/validate-max-utf8-length.ts"],"version":"5.8.3"}

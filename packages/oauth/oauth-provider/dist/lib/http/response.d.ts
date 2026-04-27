@@ -1,0 +1,20 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { type Readable } from 'node:stream';
+import { Awaitable } from '../util/type.js';
+import type { Handler, Middleware } from './types.js';
+export declare function writeRedirect(res: ServerResponse, url: string, status?: number): void;
+export type WriteResponseOptions = {
+    status?: number;
+    contentType?: string;
+};
+export declare function writeStream(res: ServerResponse, stream: Readable, { status, contentType, }?: WriteResponseOptions): void;
+export declare function writeBuffer(res: ServerResponse, chunk: string | Buffer, opts: WriteResponseOptions): void;
+export declare function toJsonBuffer(value: unknown): Buffer;
+export declare function writeJson(res: ServerResponse, payload: unknown, { contentType, ...options }?: WriteResponseOptions): void;
+export declare function staticJsonMiddleware(value: unknown, { contentType, ...options }?: WriteResponseOptions): Handler<unknown>;
+export declare function cacheControlMiddleware(maxAge: number): Middleware<void>;
+export type JsonResponse<P = unknown> = WriteResponseOptions & {
+    json: P;
+};
+export declare function jsonHandler<T, Req extends IncomingMessage = IncomingMessage, Res extends ServerResponse = ServerResponse>(buildJson: (this: T, req: Req, res: Res) => Awaitable<JsonResponse>): Middleware<T, Req, Res>;
+//# sourceMappingURL=response.d.ts.map

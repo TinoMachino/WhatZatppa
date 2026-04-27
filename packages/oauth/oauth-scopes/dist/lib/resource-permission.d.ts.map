@@ -1,0 +1,1 @@
+{"version":3,"file":"resource-permission.d.ts","sourceRoot":"","sources":["../../src/lib/resource-permission.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,MAAM,aAAa,CAAA;AAC5C,OAAO,EAAE,SAAS,EAAE,MAAM,WAAW,CAAA;AAErC;;;GAGG;AACH,MAAM,WAAW,kBAAkB,CAAC,CAAC,SAAS,MAAM,EAAE,CAAC,CAAE,SAAQ,SAAS,CAAC,CAAC,CAAC;IAC3E,QAAQ,IAAI,cAAc,CAAC,CAAC,CAAC,CAAA;CAC9B"}

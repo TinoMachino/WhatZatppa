@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":";;;;AAAA,yDAAkC;AAEzB,cAAC;AADV,wDAA6B","sourcesContent":["import * as l from './external.js'\nexport * from './external.js'\nexport { l }\n"]}

@@ -1,0 +1,42 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = default_1;
+const common_1 = require("@atproto/common");
+const syntax_1 = require("@atproto/syntax");
+const index_js_1 = require("../../../../lexicons/index.js");
+function default_1(server, ctx) {
+    server.add(index_js_1.com.atproto.admin.getAccountInfos, {
+        auth: ctx.authVerifier.optionalStandardOrRole,
+        handler: async ({ params, auth }) => {
+            const { dids } = params;
+            const { includeTakedowns } = ctx.authVerifier.parseCreds(auth);
+            const actors = await ctx.hydrator.actor.getActors(dids, {
+                includeTakedowns: true,
+                skipCacheForDids: dids,
+            });
+            const infos = (0, common_1.mapDefined)(dids, (did) => {
+                const info = actors.get(did);
+                if (!info)
+                    return;
+                if (info.takedownRef && !includeTakedowns)
+                    return;
+                const profileRecord = !info.profileTakedownRef || includeTakedowns
+                    ? info.profile
+                    : undefined;
+                return {
+                    did,
+                    handle: info.handle ?? syntax_1.INVALID_HANDLE,
+                    relatedRecords: profileRecord ? [profileRecord] : undefined,
+                    indexedAt: (info.sortedAt ?? new Date(0)).toISOString(),
+                };
+            });
+            return {
+                encoding: 'application/json',
+                body: {
+                    infos,
+                },
+            };
+        },
+    });
+}
+//# sourceMappingURL=getAccountInfos.js.map

@@ -1,0 +1,1 @@
+{"root":["./tests/_util.ts","./tests/channel.test.ts","./tests/client.test.ts","./tests/lex-indexer.test.ts","./tests/simple-indexer.test.ts","./tests/util.test.ts"],"version":"5.8.3"}

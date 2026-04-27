@@ -1,0 +1,12 @@
+import { l } from '@atproto/lex-schema';
+declare const $nsid = "com.atproto.repo.defs";
+export { $nsid };
+type CommitMeta = {
+    $type?: 'com.atproto.repo.defs#commitMeta';
+    cid: l.CidString;
+    rev: l.TidString;
+};
+export type { CommitMeta };
+declare const commitMeta: l.TypedObjectSchema<"com.atproto.repo.defs#commitMeta", l.Validator<CommitMeta, CommitMeta>>;
+export { commitMeta };
+//# sourceMappingURL=defs.defs.d.ts.map

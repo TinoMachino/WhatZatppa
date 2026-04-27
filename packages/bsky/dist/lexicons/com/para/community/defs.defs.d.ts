@@ -1,0 +1,104 @@
+import { l } from '@atproto/lex';
+declare const $nsid = "com.para.community.defs";
+export { $nsid };
+type Summary = {
+    $type?: 'com.para.community.defs#summary';
+    members: number;
+    visiblePosters: number;
+    policyPosts: number;
+    matterPosts: number;
+    badgeHolders: number;
+};
+export type { Summary };
+declare const summary: l.TypedObjectSchema<"com.para.community.defs#summary", l.Validator<Summary, Summary>>;
+export { summary };
+type Person = {
+    $type?: 'com.para.community.defs#person';
+    did?: l.DidString;
+    handle?: l.HandleString;
+    displayName?: string;
+    avatar?: l.UriString;
+};
+export type { Person };
+declare const person: l.TypedObjectSchema<"com.para.community.defs#person", l.Validator<Person, Person>>;
+export { person };
+type ModeratorView = {
+    $type?: 'com.para.community.defs#moderatorView';
+    did?: l.DidString;
+    handle?: l.HandleString;
+    displayName?: string;
+    avatar?: l.UriString;
+    role: string;
+    badge: string;
+    capabilities: string[];
+};
+export type { ModeratorView };
+declare const moderatorView: l.TypedObjectSchema<"com.para.community.defs#moderatorView", l.Validator<ModeratorView, ModeratorView>>;
+export { moderatorView };
+type OfficialView = {
+    $type?: 'com.para.community.defs#officialView';
+    did?: l.DidString;
+    handle?: l.HandleString;
+    displayName?: string;
+    avatar?: l.UriString;
+    office: string;
+    mandate: string;
+};
+export type { OfficialView };
+declare const officialView: l.TypedObjectSchema<"com.para.community.defs#officialView", l.Validator<OfficialView, OfficialView>>;
+export { officialView };
+type Applicant = {
+    $type?: 'com.para.community.defs#applicant';
+    did?: l.DidString;
+    handle?: l.HandleString;
+    displayName?: string;
+    avatar?: l.UriString;
+    appliedAt: l.DatetimeString;
+    status: 'applied' | 'approved' | 'rejected' | l.UnknownString;
+    note?: string;
+};
+export type { Applicant };
+declare const applicant: l.TypedObjectSchema<"com.para.community.defs#applicant", l.Validator<Applicant, Applicant>>;
+export { applicant };
+type DeputyRoleView = {
+    $type?: 'com.para.community.defs#deputyRoleView';
+    key: string;
+    tier: string;
+    role: string;
+    description: string;
+    capabilities: string[];
+    activeHolder?: Person;
+    activeSince?: l.DatetimeString;
+    votes: number;
+    applicants: Applicant[];
+};
+export type { DeputyRoleView };
+declare const deputyRoleView: l.TypedObjectSchema<"com.para.community.defs#deputyRoleView", l.Validator<DeputyRoleView, DeputyRoleView>>;
+export { deputyRoleView };
+type Metadata = {
+    $type?: 'com.para.community.defs#metadata';
+    termLengthDays?: number;
+    reviewCadence?: string;
+    escalationPath?: string;
+    publicContact?: string;
+    lastPublishedAt?: l.DatetimeString;
+    state?: string;
+    matterFlairIds?: string[];
+    policyFlairIds?: string[];
+};
+export type { Metadata };
+declare const metadata: l.TypedObjectSchema<"com.para.community.defs#metadata", l.Validator<Metadata, Metadata>>;
+export { metadata };
+type HistoryEntry = {
+    $type?: 'com.para.community.defs#historyEntry';
+    id: string;
+    action: string;
+    actorDid?: l.DidString;
+    actorHandle?: l.HandleString;
+    createdAt: l.DatetimeString;
+    summary: string;
+};
+export type { HistoryEntry };
+declare const historyEntry: l.TypedObjectSchema<"com.para.community.defs#historyEntry", l.Validator<HistoryEntry, HistoryEntry>>;
+export { historyEntry };
+//# sourceMappingURL=defs.defs.d.ts.map

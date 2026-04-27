@@ -1,0 +1,244 @@
+import { IdResolver } from '@atproto/identity';
+import { Cid, l } from '@atproto/lex';
+import { WriteOpAction } from '@atproto/repo';
+import { AtUri, DidString } from '@atproto/syntax';
+import { com } from '../../../lexicons';
+import { BackgroundQueue } from '../background';
+import { Database } from '../db';
+import * as Block from './plugins/block';
+import * as Cabildeo from './plugins/cabildeo';
+import * as CabildeoDelegation from './plugins/cabildeo-delegation';
+import * as CabildeoPosition from './plugins/cabildeo-position';
+import * as CabildeoVote from './plugins/cabildeo-vote';
+import * as ChatDeclaration from './plugins/chat-declaration';
+import * as FeedGenerator from './plugins/feed-generator';
+import * as Follow from './plugins/follow';
+import * as GermDeclaration from './plugins/germ-declaration';
+import * as Highlight from './plugins/highlight';
+import * as Labeler from './plugins/labeler';
+import * as Like from './plugins/like';
+import * as List from './plugins/list';
+import * as ListBlock from './plugins/list-block';
+import * as ListItem from './plugins/list-item';
+import * as NotifDeclaration from './plugins/notif-declaration';
+import * as ParaCommunityBoard from './plugins/para-community-board';
+import * as ParaCommunityGovernance from './plugins/para-community-governance';
+import * as ParaCommunityMembership from './plugins/para-community-membership';
+import * as ParaPost from './plugins/para-post';
+import * as ParaPostMeta from './plugins/para-post-meta';
+import * as ParaStatus from './plugins/para-status';
+import * as Post from './plugins/post';
+import * as Postgate from './plugins/post-gate';
+import * as Profile from './plugins/profile';
+import * as Repost from './plugins/repost';
+import * as StarterPack from './plugins/starter-pack';
+import * as Status from './plugins/status';
+import * as Threadgate from './plugins/thread-gate';
+import * as Verification from './plugins/verification';
+export declare class IndexingService {
+    db: Database;
+    idResolver: IdResolver;
+    background: BackgroundQueue;
+    records: {
+        post: Post.PluginType;
+        threadGate: Threadgate.PluginType;
+        postGate: Postgate.PluginType;
+        like: Like.PluginType;
+        repost: Repost.PluginType;
+        follow: Follow.PluginType;
+        profile: Profile.PluginType;
+        list: List.PluginType;
+        listItem: ListItem.PluginType;
+        listBlock: ListBlock.PluginType;
+        block: Block.PluginType;
+        feedGenerator: FeedGenerator.PluginType;
+        starterPack: StarterPack.PluginType;
+        labeler: Labeler.PluginType;
+        notifDeclaration: NotifDeclaration.PluginType;
+        chatDeclaration: ChatDeclaration.PluginType;
+        germDeclaration: GermDeclaration.PluginType;
+        verification: Verification.PluginType;
+        status: Status.PluginType;
+        paraPost: ParaPost.PluginType;
+        paraCommunityBoard: ParaCommunityBoard.PluginType;
+        paraCommunityGovernance: ParaCommunityGovernance.PluginType;
+        paraCommunityMembership: ParaCommunityMembership.PluginType;
+        paraPostMeta: ParaPostMeta.PluginType;
+        paraStatus: ParaStatus.PluginType;
+        cabildeo: Cabildeo.PluginType;
+        cabildeoPosition: CabildeoPosition.PluginType;
+        cabildeoDelegation: CabildeoDelegation.PluginType;
+        cabildeoVote: CabildeoVote.PluginType;
+        highlight: Highlight.PluginType;
+    };
+    constructor(db: Database, idResolver: IdResolver, background: BackgroundQueue);
+    transact(txn: Database): IndexingService;
+    indexRecord(uri: AtUri, cid: Cid, obj: unknown, action: WriteOpAction.Create | WriteOpAction.Update, timestamp: string, opts?: {
+        disableNotifs?: boolean;
+        disableLabels?: boolean;
+    }): Promise<void>;
+    deleteRecord(uri: AtUri, cascading?: boolean): Promise<void>;
+    indexHandle(did: string, timestamp: string, force?: boolean): Promise<void>;
+    indexRepo(did: DidString, commit?: string): Promise<void>;
+    getCurrentRecords(did: string): Promise<Record<string, {
+        uri: AtUri;
+        cid: Cid;
+    }>>;
+    setCommitLastSeen(did: string, commit: Cid, rev: string): Promise<void>;
+    findIndexerForCollection(collection: string): import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.block", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/block.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/block.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        subjectDid: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"literal:self", "chat.bsky.actor.declaration", l.Validator<Omit<import("../../../lexicons/chat/bsky/actor/declaration.defs").Main, "$type">, Omit<import("../../../lexicons/chat/bsky/actor/declaration.defs").Main, "$type">>>, unknown> | import("./processor").RecordProcessor<l.RecordSchema<"any", "app.bsky.feed.generator", l.Validator<Omit<import("../../../lexicons/app/bsky/feed/generator.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/feed/generator.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        displayName: string;
+        description: string | null;
+        avatarCid: string | null;
+        createdAt: string;
+        sortAt: string;
+        feedDid: string;
+        descriptionFacets: string | null;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.follow", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/follow.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/follow.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        subjectDid: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"literal:self", "com.germnetwork.declaration", l.Validator<Omit<com.germnetwork.declaration.$defs.Main, "$type">, Omit<com.germnetwork.declaration.$defs.Main, "$type">>>, unknown> | import("./processor").RecordProcessor<l.RecordSchema<"literal:self", "app.bsky.labeler.service", l.Validator<Omit<import("../../../lexicons/app/bsky/labeler/service.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/labeler/service.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.feed.like", l.Validator<Omit<import("../../../lexicons/app/bsky/feed/like.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/feed/like.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        subject: string;
+        subjectCid: string;
+        via: string | null;
+        viaCid: string | null;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.list", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/list.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/list.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        description: string | null;
+        avatarCid: string | null;
+        createdAt: string;
+        sortAt: string;
+        descriptionFacets: string | null;
+        name: string;
+        purpose: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.listblock", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/listblock.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/listblock.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        subjectUri: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.listitem", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/listitem.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/listitem.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        subjectDid: string;
+        listUri: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"literal:self", "app.bsky.notification.declaration", l.Validator<Omit<import("../../../lexicons/app/bsky/notification/declaration.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/notification/declaration.defs").Main, "$type">>>, unknown> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.feed.post", l.Validator<Omit<import("../../../lexicons/app/bsky/feed/post.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/feed/post.defs").Main, "$type">>>, {
+        post: {
+            text: string;
+            uri: string;
+            cid: string;
+            indexedAt: string;
+            creator: string;
+            replyRoot: string | null;
+            replyRootCid: string | null;
+            replyParent: string | null;
+            replyParentCid: string | null;
+            createdAt: string;
+            sortAt: string;
+            langs: string[] | null;
+            invalidReplyRoot: boolean | null;
+            violatesThreadGate: boolean | null;
+            tags: string[] | null;
+            violatesEmbeddingRules: boolean | null;
+            hasThreadGate: boolean | null;
+            hasPostGate: boolean | null;
+        };
+        facets?: {
+            type: "mention" | "link";
+            value: string;
+        }[];
+        embeds?: (import("../db/tables/post-embed").PostEmbedImage[] | import("../db/tables/post-embed").PostEmbedExternal | import("../db/tables/post-embed").PostEmbedRecord | import("../db/tables/post-embed").PostEmbedVideo)[];
+        ancestors?: {
+            uri: string;
+            height: number;
+        }[];
+        descendents?: {
+            uri: string;
+            depth: number;
+            cid: string;
+            creator: string;
+            sortAt: string;
+        }[];
+        threadgate?: import("../../../lexicons/app/bsky/feed/threadgate.defs").Main;
+        postSubscriptions?: {
+            quote: boolean;
+            indexedAt: string;
+            postUri: string;
+            reply: boolean;
+            subscriberDid: string;
+        }[];
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.feed.postgate", l.Validator<Omit<import("../../../lexicons/app/bsky/feed/postgate.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/feed/postgate.defs").Main, "$type">>>, import("../db/tables/post-gate").Postgate> | import("./processor").RecordProcessor<l.RecordSchema<"literal:self", "app.bsky.actor.profile", l.Validator<Omit<import("../../../lexicons/app/bsky/actor/profile.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/actor/profile.defs").Main, "$type">>>, import("../db/tables/profile").Profile> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.feed.repost", l.Validator<Omit<import("../../../lexicons/app/bsky/feed/repost.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/feed/repost.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        subject: string;
+        subjectCid: string;
+        via: string | null;
+        viaCid: string | null;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.starterpack", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/starterpack.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/starterpack.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        createdAt: string;
+        sortAt: string;
+        name: string;
+    }> | import("./processor").RecordProcessor<l.RecordSchema<"literal:self", "app.bsky.actor.status", l.Validator<Omit<import("../../../lexicons/app/bsky/actor/status.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/actor/status.defs").Main, "$type">>>, unknown> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.feed.threadgate", l.Validator<Omit<import("../../../lexicons/app/bsky/feed/threadgate.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/feed/threadgate.defs").Main, "$type">>>, import("../db/tables/thread-gate").ThreadGate> | import("./processor").RecordProcessor<l.RecordSchema<"tid", "app.bsky.graph.verification", l.Validator<Omit<import("../../../lexicons/app/bsky/graph/verification.defs").Main, "$type">, Omit<import("../../../lexicons/app/bsky/graph/verification.defs").Main, "$type">>>, {
+        uri: string;
+        cid: string;
+        indexedAt: string;
+        creator: string;
+        displayName: string;
+        createdAt: string;
+        subject: string;
+        handle: string;
+        rkey: string;
+        sortedAt: string;
+    }> | ParaPost.PluginType | ParaCommunityBoard.PluginType | ParaCommunityGovernance.PluginType | ParaCommunityMembership.PluginType | ParaPostMeta.PluginType | ParaStatus.PluginType | Cabildeo.PluginType | CabildeoPosition.PluginType | CabildeoDelegation.PluginType | CabildeoVote.PluginType | Highlight.PluginType | undefined;
+    updateActorStatus(did: DidString, active: boolean, status?: string): Promise<void>;
+    deleteActor(did: DidString): Promise<void>;
+    private getActorIsHosted;
+    unindexActor(did: DidString): Promise<void>;
+}
+//# sourceMappingURL=index.d.ts.map

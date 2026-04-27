@@ -1,0 +1,1 @@
+{"version":3,"file":"dpop-proof.js","sourceRoot":"","sources":["../../src/dpop/dpop-proof.ts"],"names":[],"mappings":"","sourcesContent":["export type DpopProof = Readonly<{\n  jti: string\n  jkt: string\n  htm: string\n  htu: string\n}>\n"]}

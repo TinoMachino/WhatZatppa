@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/lexicon-document.ts","./src/lexicon-indexer.ts","./src/lexicon-iterable-indexer.ts","./src/lexicon-schema-builder.ts"],"version":"5.8.3"}

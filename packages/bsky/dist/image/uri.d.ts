@@ -1,0 +1,24 @@
+import { UriString } from '@atproto/lex';
+import { Options } from './util';
+export type ImagePreset = 'avatar' | 'banner' | 'feed_thumbnail' | 'feed_fullsize';
+export declare class ImageUriBuilder {
+    endpoint: UriString;
+    constructor(endpoint: string);
+    static presets: ImagePreset[];
+    getPresetUri(id: ImagePreset, did: string, cid: string): UriString;
+    static getPath(opts: {
+        preset: ImagePreset;
+    } & BlobLocation): string;
+    static getOptions(path: string): Options & BlobLocation & {
+        preset: ImagePreset;
+    };
+}
+type BlobLocation = {
+    cid: string;
+    did: string;
+};
+export declare class BadPathError extends Error {
+}
+export declare const presets: Record<ImagePreset, Options>;
+export {};
+//# sourceMappingURL=uri.d.ts.map

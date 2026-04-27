@@ -1,0 +1,10 @@
+export * as admin from './atproto/admin.js';
+export * as identity from './atproto/identity.js';
+export * as label from './atproto/label.js';
+export * as lexicon from './atproto/lexicon.js';
+export * as moderation from './atproto/moderation.js';
+export * as repo from './atproto/repo.js';
+export * as server from './atproto/server.js';
+export * as sync from './atproto/sync.js';
+export * as temp from './atproto/temp.js';
+//# sourceMappingURL=atproto.d.ts.map

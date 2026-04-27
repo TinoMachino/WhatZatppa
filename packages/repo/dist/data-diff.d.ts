@@ -1,0 +1,38 @@
+import { Cid } from '@atproto/lex-data';
+import { BlockMap } from './block-map';
+import { CidSet } from './cid-set';
+import { MST, NodeEntry } from './mst';
+export declare class DataDiff {
+    adds: Record<string, DataAdd>;
+    updates: Record<string, DataUpdate>;
+    deletes: Record<string, DataDelete>;
+    newMstBlocks: BlockMap;
+    newLeafCids: CidSet;
+    removedCids: CidSet;
+    static of(curr: MST, prev: MST | null): Promise<DataDiff>;
+    nodeAdd(node: NodeEntry): Promise<void>;
+    nodeDelete(node: NodeEntry): Promise<void>;
+    leafAdd(key: string, cid: Cid): void;
+    leafUpdate(key: string, prev: Cid, cid: Cid): void;
+    leafDelete(key: string, cid: Cid): void;
+    treeAdd(cid: Cid, bytes: Uint8Array): void;
+    treeDelete(cid: Cid): void;
+    addList(): DataAdd[];
+    updateList(): DataUpdate[];
+    deleteList(): DataDelete[];
+    updatedKeys(): string[];
+}
+export type DataAdd = {
+    key: string;
+    cid: Cid;
+};
+export type DataUpdate = {
+    key: string;
+    prev: Cid;
+    cid: Cid;
+};
+export type DataDelete = {
+    key: string;
+    cid: Cid;
+};
+//# sourceMappingURL=data-diff.d.ts.map

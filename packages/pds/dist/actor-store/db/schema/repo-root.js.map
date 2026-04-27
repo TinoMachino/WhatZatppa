@@ -1,0 +1,1 @@
+{"version":3,"file":"repo-root.js","sourceRoot":"","sources":["../../../../src/actor-store/db/schema/repo-root.ts"],"names":[],"mappings":";;AAOA,MAAM,SAAS,GAAG,WAAW,CAAA","sourcesContent":["export interface RepoRoot {\n  did: string\n  cid: string\n  rev: string\n  indexedAt: string\n}\n\nconst tableName = 'repo_root'\n\nexport type PartialDB = { [tableName]: RepoRoot }\n"]}

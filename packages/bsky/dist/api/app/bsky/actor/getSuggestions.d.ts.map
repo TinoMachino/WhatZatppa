@@ -1,0 +1,1 @@
+{"version":3,"file":"getSuggestions.d.ts","sourceRoot":"","sources":["../../../../../src/api/app/bsky/actor/getSuggestions.ts"],"names":[],"mappings":"AAEA,OAAO,EAAyB,MAAM,EAAE,MAAM,sBAAsB,CAAA;AACpE,OAAO,EAAE,UAAU,EAAE,MAAM,qBAAqB,CAAA;AAahD,MAAM,CAAC,OAAO,WAAW,MAAM,EAAE,MAAM,EAAE,GAAG,EAAE,UAAU,QAoCvD"}

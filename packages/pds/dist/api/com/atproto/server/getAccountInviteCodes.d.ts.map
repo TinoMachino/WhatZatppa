@@ -1,0 +1,1 @@
+{"version":3,"file":"getAccountInviteCodes.d.ts","sourceRoot":"","sources":["../../../../../src/api/com/atproto/server/getAccountInviteCodes.ts"],"names":[],"mappings":"AAAA,OAAO,EAGL,MAAM,EACP,MAAM,sBAAsB,CAAA;AAG7B,OAAO,EAAE,UAAU,EAAE,MAAM,qBAAqB,CAAA;AAIhD,MAAM,CAAC,OAAO,WAAW,MAAM,EAAE,MAAM,EAAE,GAAG,EAAE,UAAU,QA0EvD"}

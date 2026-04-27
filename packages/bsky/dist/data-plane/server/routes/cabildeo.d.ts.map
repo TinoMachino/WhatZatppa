@@ -1,0 +1,1 @@
+{"version":3,"file":"cabildeo.d.ts","sourceRoot":"","sources":["../../../../src/data-plane/server/routes/cabildeo.ts"],"names":[],"mappings":"AAAA,OAAO,EAAsB,WAAW,EAAE,MAAM,qBAAqB,CAAA;AAUrE,OAAO,EAAE,OAAO,EAAE,MAAM,6BAA6B,CAAA;AACrD,OAAO,EAAE,QAAQ,EAAE,MAAM,OAAO,CAAA;yBAGhB,IAAI,QAAQ,KAAG,OAAO,CAAC,WAAW,CAAC,OAAO,OAAO,CAAC,CAAC;AAAnE,wBAmWE"}

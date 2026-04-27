@@ -1,0 +1,42 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.decodeHttpRequest = decodeHttpRequest;
+exports.parseHttpRequest = parseHttpRequest;
+exports.flushStream = flushStream;
+const http_errors_1 = __importDefault(require("http-errors"));
+const common_1 = require("@atproto/common");
+const parser_js_1 = require("./parser.js");
+function decodeHttpRequest(req) {
+    try {
+        return (0, common_1.decodeStream)(req, req.headers['content-encoding']);
+    }
+    catch (cause) {
+        const message = cause instanceof TypeError ? cause.message : `Invalid content-encoding`;
+        throw (0, http_errors_1.default)(415, message, { cause });
+    }
+}
+/**
+ * Generic method that parses a stream of unknown nature (HTTP request/response,
+ * socket, file, etc.), but of known mime type, into a parsed object.
+ *
+ * @throws {TypeError} If the content-type is not valid or supported.
+ */
+async function parseHttpRequest(req, allow) {
+    const type = (0, parser_js_1.parseContentType)(req.headers['content-type'] ?? 'application/octet-stream');
+    const parser = parser_js_1.parsers.find((parser) => allow.includes(parser.name) && parser.test(type.mime));
+    if (!parser) {
+        throw (0, http_errors_1.default)(415, `Unsupported content-type: ${type.mime}`);
+    }
+    const stream = decodeHttpRequest(req);
+    const buffer = await (0, common_1.streamToNodeBuffer)(stream);
+    return parser.parse(buffer, type);
+}
+async function flushStream(stream) {
+    for await (const _ of stream) {
+        // Consume the stream to completion
+    }
+}
+//# sourceMappingURL=stream.js.map

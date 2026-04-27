@@ -1,0 +1,16 @@
+import { check } from '@atproto/common-web';
+import { Cid, LexMap } from '@atproto/lex-data';
+import { BlockMap } from './block-map';
+export declare const getAndParseRecord: (blocks: BlockMap, cid: Cid) => Promise<{
+    record: LexMap;
+    bytes: Uint8Array;
+}>;
+export declare const getAndParseByDef: <T>(blocks: BlockMap, cid: Cid, def: check.Def<T>) => Promise<{
+    obj: T;
+    bytes: Uint8Array;
+}>;
+export declare const parseObjByDef: <T>(bytes: Uint8Array, cid: Cid, def: check.Def<T>) => {
+    obj: T;
+    bytes: Uint8Array;
+};
+//# sourceMappingURL=parse.d.ts.map

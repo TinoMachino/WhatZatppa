@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/storage/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,wDAAqC;AACrC,sDAAmC;AACnC,iDAA8B;AAC9B,0CAAuB","sourcesContent":["export * from './readable-blockstore'\nexport * from './memory-blockstore'\nexport * from './sync-storage'\nexport * from './types'\n"]}

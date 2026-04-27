@@ -1,0 +1,5 @@
+export * as annotation from './highlight/annotation.js';
+export * as defs from './highlight/defs.js';
+export * as getHighlight from './highlight/getHighlight.js';
+export * as listHighlights from './highlight/listHighlights.js';
+//# sourceMappingURL=highlight.d.ts.map

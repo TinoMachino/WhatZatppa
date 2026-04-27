@@ -1,0 +1,13 @@
+import http from 'node:http';
+import { IdResolver } from '@atproto/identity';
+import { Database, DatabaseSchema } from './db';
+export type { DatabaseSchema };
+export { RepoSubscription } from './subscription';
+export declare class DataPlaneServer {
+    server: http.Server;
+    idResolver: IdResolver;
+    constructor(server: http.Server, idResolver: IdResolver);
+    static create(db: Database, port: number, plcUrl?: string): Promise<DataPlaneServer>;
+    destroy(): Promise<void>;
+}
+//# sourceMappingURL=index.d.ts.map

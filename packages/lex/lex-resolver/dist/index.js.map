@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":";;;AAAA,4DAAiC;AACjC,kEAAuC","sourcesContent":["export * from './lex-resolver.js'\nexport * from './lex-resolver-error.js'\n"]}

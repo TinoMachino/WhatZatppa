@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/lex-resolver-error.ts","./src/lex-resolver.ts","./src/lexicons/com.ts","./src/lexicons/index.ts","./src/lexicons/com/atproto.ts","./src/lexicons/com/atproto/sync.ts","./src/lexicons/com/atproto/sync/getrecord.defs.ts","./src/lexicons/com/atproto/sync/getrecord.ts"],"version":"5.8.3"}

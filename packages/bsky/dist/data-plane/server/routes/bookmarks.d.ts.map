@@ -1,0 +1,1 @@
+{"version":3,"file":"bookmarks.d.ts","sourceRoot":"","sources":["../../../../src/data-plane/server/routes/bookmarks.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,WAAW,EAAE,MAAM,qBAAqB,CAAA;AAEjD,OAAO,EAAE,OAAO,EAAE,MAAM,6BAA6B,CAAA;AAMrD,OAAO,EAAE,QAAQ,EAAE,MAAM,OAAO,CAAA;yBAGhB,IAAI,QAAQ,KAAG,OAAO,CAAC,WAAW,CAAC,OAAO,OAAO,CAAC,CAAC;AAAnE,wBAsEE"}

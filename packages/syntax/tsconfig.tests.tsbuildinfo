@@ -1,0 +1,1 @@
+{"root":["./tests/aturi-string.test.ts","./tests/aturi.test.ts","./tests/datetime.test.ts","./tests/did.test.ts","./tests/handle.test.ts","./tests/language.test.ts","./tests/nsid.test.ts","./tests/recordkey.test.ts","./tests/tid.test.ts"],"version":"5.8.3"}

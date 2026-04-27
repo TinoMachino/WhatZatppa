@@ -1,0 +1,1 @@
+{"version":3,"file":"getTaggedSuggestions.d.ts","sourceRoot":"","sources":["../../../../../src/api/app/bsky/unspecced/getTaggedSuggestions.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,MAAM,EAAE,MAAM,sBAAsB,CAAA;AAC7C,OAAO,EAAE,UAAU,EAAE,MAAM,qBAAqB,CAAA;AAIhD,MAAM,CAAC,OAAO,WAAW,MAAM,EAAE,MAAM,EAAE,GAAG,EAAE,UAAU,QAoBvD"}

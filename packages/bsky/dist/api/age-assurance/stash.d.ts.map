@@ -1,0 +1,1 @@
+{"version":3,"file":"stash.d.ts","sourceRoot":"","sources":["../../../src/api/age-assurance/stash.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,UAAU,EAAE,MAAM,eAAe,CAAA;AAC1C,OAAO,EAAE,GAAG,EAAE,MAAM,yBAAyB,CAAA;AAG7C,wBAAsB,WAAW,CAC/B,GAAG,EAAE,UAAU,EACf,QAAQ,EAAE,MAAM,EAChB,KAAK,EAAE,IAAI,CAAC,GAAG,CAAC,IAAI,CAAC,YAAY,CAAC,IAAI,CAAC,KAAK,EAAE,WAAW,CAAC,mDAa3D"}

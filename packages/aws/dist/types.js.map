@@ -1,0 +1,1 @@
+{"version":3,"file":"types.js","sourceRoot":"","sources":["../src/types.ts"],"names":[],"mappings":"","sourcesContent":["// @NOTE keep in sync with same interface in bsky/src/image/invalidator.ts\n// this is separate to avoid the dependency on @atproto/bsky.\nexport interface ImageInvalidator {\n  invalidate(subject: string, paths: string[]): Promise<void>\n}\n"]}

@@ -1,0 +1,5 @@
+export * as createBookmark from './bookmark/createBookmark.js';
+export * as defs from './bookmark/defs.js';
+export * as deleteBookmark from './bookmark/deleteBookmark.js';
+export * as getBookmarks from './bookmark/getBookmarks.js';
+//# sourceMappingURL=bookmark.d.ts.map

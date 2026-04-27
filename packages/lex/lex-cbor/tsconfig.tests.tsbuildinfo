@@ -1,0 +1,1 @@
+{"root":["./tests/codec.test.ts","./tests/dag-cbor.test.ts","./tests/fixtures.test.ts","./tests/vectors.test.ts","./tests/vectors.ts"],"version":"5.8.3"}

@@ -1,0 +1,25 @@
+import type * as AppBskyActorDefs from '../actor/defs.js';
+export type QueryParams = {
+    limit: number;
+    cursor?: string;
+};
+export type InputSchema = undefined;
+export interface OutputSchema {
+    cursor?: string;
+    matches: AppBskyActorDefs.ProfileView[];
+}
+export type HandlerInput = void;
+export interface HandlerSuccess {
+    encoding: 'application/json';
+    body: OutputSchema;
+    headers?: {
+        [key: string]: string;
+    };
+}
+export interface HandlerError {
+    status: number;
+    message?: string;
+    error?: 'InvalidDid' | 'InvalidLimit' | 'InvalidCursor' | 'InternalError';
+}
+export type HandlerOutput = HandlerError | HandlerSuccess;
+//# sourceMappingURL=getMatches.d.ts.map

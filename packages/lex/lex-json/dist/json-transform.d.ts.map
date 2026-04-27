@@ -1,0 +1,1 @@
+{"version":3,"file":"json-transform.d.ts","sourceRoot":"","sources":["../src/json-transform.ts"],"names":[],"mappings":"AAUA,MAAM,MAAM,oBAAoB,GAAG;IACjC,MAAM,CAAC,EAAE,OAAO,CAAA;IAChB,QAAQ,CAAC,EAAE,MAAM,CAAA;CAClB,CAAA;AAED,wBAAgB,aAAa,CAAC,CAAC,EAC7B,KAAK,EAAE,OAAO,EACd,SAAS,EAAE,CAAC,KAAK,EAAE,MAAM,KAAK,OAAO,EACrC,EACE,MAAc,EACd,QAA4D,GAC7D,GAAE,oBAAyB,GAC3B,CAAC,CAgEH"}

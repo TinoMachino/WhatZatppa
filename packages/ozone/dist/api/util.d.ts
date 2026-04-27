@@ -1,0 +1,24 @@
+import { AppContext } from '../context';
+import { AccountView } from '../lexicon/types/com/atproto/admin/defs';
+import { RepoView, RepoViewDetail } from '../lexicon/types/tools/ozone/moderation/defs';
+export declare const getPdsAccountInfos: (ctx: AppContext, dids: string[]) => Promise<Map<string, AccountView | null>>;
+export declare const addAccountInfoToRepoViewDetail: (repoView: RepoView | RepoViewDetail, accountInfo: AccountView | null, includeEmail?: boolean) => RepoViewDetail;
+export declare const addAccountInfoToRepoView: (repoView: RepoView, accountInfo: AccountView | null, includeEmail?: boolean) => RepoView;
+export declare const getEventType: (type: string) => "tools.ozone.moderation.defs#modEventTakedown" | "tools.ozone.moderation.defs#modEventReverseTakedown" | "tools.ozone.moderation.defs#modEventComment" | "tools.ozone.moderation.defs#modEventReport" | "tools.ozone.moderation.defs#modEventLabel" | "tools.ozone.moderation.defs#modEventAcknowledge" | "tools.ozone.moderation.defs#modEventEscalate" | "tools.ozone.moderation.defs#modEventMute" | "tools.ozone.moderation.defs#modEventUnmute" | "tools.ozone.moderation.defs#modEventMuteReporter" | "tools.ozone.moderation.defs#modEventUnmuteReporter" | "tools.ozone.moderation.defs#modEventEmail" | "tools.ozone.moderation.defs#modEventResolveAppeal" | "tools.ozone.moderation.defs#modEventTag" | "tools.ozone.moderation.defs#accountEvent" | "tools.ozone.moderation.defs#identityEvent" | "tools.ozone.moderation.defs#recordEvent" | "tools.ozone.moderation.defs#modEventPriorityScore" | "tools.ozone.moderation.defs#revokeAccountCredentialsEvent" | "tools.ozone.moderation.defs#ageAssuranceEvent" | "tools.ozone.moderation.defs#ageAssuranceOverrideEvent" | "tools.ozone.moderation.defs#ageAssurancePurgeEvent";
+export declare const getReviewState: (reviewState?: string) => "tools.ozone.moderation.defs#reviewOpen" | "tools.ozone.moderation.defs#reviewEscalated" | "tools.ozone.moderation.defs#reviewClosed" | "tools.ozone.moderation.defs#reviewNone" | undefined;
+export declare const getMemberRole: (role: string) => "tools.ozone.team.defs#roleAdmin" | "tools.ozone.team.defs#roleModerator" | "tools.ozone.team.defs#roleTriage" | "tools.ozone.team.defs#roleVerifier";
+export declare const OZONE_APPEAL_REASON_TYPE = "tools.ozone.report.defs#reasonAppeal";
+export declare const isAppealReport: (reasonType?: string) => boolean;
+export declare const getSafelinkPattern: (pattern: string) => SafelinkPatternType;
+export declare const getSafelinkAction: (action: string) => SafelinkActionType;
+export declare const getSafelinkReason: (reason: string) => SafelinkReasonType;
+export declare const getSafelinkEventType: (eventType: string) => SafelinkEventType;
+export type SafelinkEventType = 'addRule' | 'updateRule' | 'removeRule';
+export type SafelinkPatternType = 'domain' | 'url';
+export type SafelinkActionType = 'block' | 'warn' | 'whitelist';
+export type SafelinkReasonType = 'csam' | 'spam' | 'phishing' | 'none';
+export declare const getScheduledActionType: (action: string) => ScheduledActionType;
+export declare const getScheduledActionStatus: (status: string) => ScheduledActionStatus;
+export type ScheduledActionType = 'takedown';
+export type ScheduledActionStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
+//# sourceMappingURL=util.d.ts.map

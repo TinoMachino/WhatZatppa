@@ -1,0 +1,1 @@
+{"version":3,"file":"types.js","sourceRoot":"","sources":["../../../../src/data-plane/server/db/types.ts"],"names":[],"mappings":"","sourcesContent":["import { Pool as PgPool } from 'pg'\n\nexport type PgOptions = {\n  url: string\n  pool?: PgPool\n  schema?: string\n  poolSize?: number\n  poolMaxUses?: number\n  poolIdleTimeoutMs?: number\n}\n"]}

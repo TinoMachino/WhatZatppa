@@ -1,0 +1,1 @@
+{"version":3,"file":"getDrafts.d.ts","sourceRoot":"","sources":["../../../../../src/api/app/bsky/draft/getDrafts.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,MAAM,EAAE,MAAM,sBAAsB,CAAA;AAC7C,OAAO,EAAE,UAAU,EAAE,MAAM,qBAAqB,CAAA;AAGhD,MAAM,CAAC,OAAO,WAAW,MAAM,EAAE,MAAM,EAAE,GAAG,EAAE,UAAU,QAuCvD"}

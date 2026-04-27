@@ -1,0 +1,1 @@
+{"root":["./src/filter.ts","./src/filtered-indexer.ts","./src/formatter.ts","./src/index.ts","./src/lex-builder.ts","./src/lex-def-builder.ts","./src/lexicon-directory-indexer.ts","./src/polyfill.ts","./src/ref-resolver.ts","./src/ts-lang.ts","./src/util.ts"],"version":"5.8.3"}
